@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE `booking` ADD COLUMN `timezone` VARCHAR(191) NOT NULL DEFAULT 'UTC';

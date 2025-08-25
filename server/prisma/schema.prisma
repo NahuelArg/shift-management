@@ -1,0 +1,92 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  CLIENT
+  ADMIN
+  EMPLOYEE
+}
+
+enum AuthProvider {
+  LOCAL
+  GOOGLE
+  APPLE
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+}
+
+model User {
+  id         String     @id @default(uuid())
+  name       String
+  password   String?  
+  email      String     @unique
+  phone      String?
+  role       Role       @default(CLIENT)
+  authProvider AuthProvider @default(LOCAL)
+  businesses   Business[] @relation("BusinessOwner")
+  business   Business? @relation("BusinessEmployees", fields:[businessId], references:[id])
+  businessId String?
+  bookings   Booking[]
+    // Aquí añadimos el campo de contraseña
+  createdAt  DateTime   @default(now())
+}
+
+
+
+model Business {
+  id         String     @id @default(uuid())
+  name       String
+  owner      User       @relation("BusinessOwner", fields: [ownerId], references: [id])
+  ownerId    String     
+  services   Service[]
+  schedules  Schedule[]
+  bookings   Booking[]
+  employees User[] @relation("BusinessEmployees")
+  createdAt  DateTime   @default(now())
+}
+
+model Service {
+  id          String     @id @default(uuid())
+  name        String
+  description String?
+  durationMin Int
+  price       Float
+  business    Business   @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  businessId  String
+  bookings    Booking[]
+}
+
+model Schedule {
+  id         String    @id @default(uuid())
+  dayOfWeek  Int       // 0 = domingo, 6 = sábado
+  from       String    // "09:00"
+  to         String    // "17:00"
+  business   Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  businessId String
+}
+
+model Booking {
+  id         String        @id @default(uuid())
+  user       User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId     String
+  timezone     String      @default("UTC")
+  service    Service       @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  serviceId  String
+  business   Business      @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  businessId String
+  date       DateTime    
+  endTime     DateTime     @default(now())
+  finalPrice Float
+  status     BookingStatus @default(PENDING)
+  createdAt  DateTime      @default(now())
+}
