@@ -1,8 +1,9 @@
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../hooks/useAuth";
 import { login as loginService } from "../services/authService";
 import NavBar from "../components/navBar";
+import { debugLog } from "../utils/debugLogger";
 
 const Login: React.FC = () => {
   const { login } = useAuth();
@@ -12,39 +13,63 @@ const Login: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-    setLoading(true);
-  function handleLoginError(error: unknown) {
-      if (!navigator.onLine) {
-        setError("No internet connection. Please check your network");
+  const handleLoginError = useCallback((error: unknown) => {
+    debugLog('LoginPage', '❌ Error en login', { error });
+
+    if (!navigator.onLine) {
+      const offlineError = "No internet connection. Please check your network";
+      debugLog('LoginPage', '🔌 Error de conexión', { message: offlineError });
+      setError(offlineError);
+      return;
+    }
+
+    if (error instanceof Error) {
+      debugLog('LoginPage', '🔍 Error tipado detectado', {
+        name: error.name,
+        message: error.message,
+        stack: error.stack
+      });
+
+      if (error.name === "AuthError") {
+        setError(error.message);
         return;
       }
-
-      // Manejar el error personalizado de auth service
-      if (error instanceof Error) {
-        if (error.name === "AuthError") {
-          // Usar el mensaje del backend directamente
-          setError(error.message);
-          return;
-        }
-        if (error.name === "NetworkError") {
-          setError("Unable to connect to the server. Please try again");
-          return;
-        }
+      if (error.name === "NetworkError") {
+        setError("Unable to connect to the server. Please try again");
+        return;
       }
-
-      // Si llegamos aquí, es un error no manejado
-      console.error('Unexpected login error:', error);
-      setError("An unexpected error occurred. Please try again");
     }
+
+    debugLog('LoginPage', '⚠️ Error no manejado', { error });
+    setError("An unexpected error occurred. Please try again");
+  }, []);
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    console.log('🎯 Login - Formulario enviado:', { email });
+    setError(null);
+    setLoading(true);
+    
     try {
+      console.log('⏳ Login - Llamando al servicio de autenticación...');
       const data = await loginService(email, password);
-      login(data.accessToken, data.user);
-      // now redirect based on role
-      const dashboardPath = data.user.role === "ADMIN" ? "/dashboard/admin" : "/dashboard";
-      navigate(dashboardPath);
+      console.log('✅ Login - Respuesta del servicio:', data);
+      
+      await login(data.accessToken, data.user);
+      console.log('✅ Login - Usuario autenticado, role:', data.user.role);
+      
+      // Asegurarse de que la redirección ocurra después de que el estado se actualice
+      const targetPath = data.user.role === 'ADMIN' ? '/dashboard/admin' : '/dashboard';
+      console.log('🚀 Login - Redirigiendo a:', targetPath);
+      
+      // Usar un pequeño delay para asegurar que los logs se registren antes de la navegación
+      setTimeout(() => {
+        navigate(targetPath, { 
+          replace: true,
+          state: { from: 'login' }  // Agregar estado para tracking
+        });
+      }, 100);
       
     } catch (error) {
       handleLoginError(error);
@@ -76,8 +101,8 @@ const Login: React.FC = () => {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
+              autoComplete="username"
               className="px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition"
-
             />
             <input
               type="password"
@@ -85,6 +110,7 @@ const Login: React.FC = () => {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
+              autoComplete="current-password"
               className="px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition"
             />
             <button

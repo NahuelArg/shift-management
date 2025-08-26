@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import ServiceSelector from './ServiceSelector';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../hooks/useAuth';
 
 interface Service {
   id: string;

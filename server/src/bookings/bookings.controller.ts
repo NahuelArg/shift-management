@@ -29,9 +29,6 @@ import { JwtAuthGuard } from '../guard/jwt-auth.guard';
 import { RolesGuard } from 'src/guard/roles.guard';
 import { Roles } from '../decorator/roles.decorator';
 import { CreateBookingDto } from './dto/createBookingDto.dto';
-import {zonedTimeToUtc, utcToZonedTime} from 'date-fns-tz';
-import {format} from 'date-fns';
-
 @ApiTags('bookings')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, RolesGuard)
