@@ -1,0 +1,22 @@
+{
+  "name": "Shift Management Development",
+  "dockerComposeFile": "docker-compose.yml",
+  "service": "app",
+  "workspaceFolder": "/workspaces/shift-management",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        "Prisma.prisma",
+        "ms-vscode.vscode-typescript-next",
+        "bradlc.vscode-tailwindcss",
+        "github.copilot",
+        "github.copilot-chat"
+      ]
+    }
+  },
+  "forwardPorts": [3000, 5173, 5432],
+  "postCreateCommand": "npm install && cd client && npm install && cd ../server && npm install",
+  "remoteUser": "node"
+}
