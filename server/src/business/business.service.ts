@@ -4,7 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { Business } from '@prisma/client';
+import { Business, Prisma } from '@prisma/client';
 import { UpdateBusinessDto } from './dto/updateBusiness.dto';
 
 @Injectable()
@@ -57,10 +57,12 @@ export class BusinessService {
         where: { id },
         data: updateBusinessDto,
       });
-    } catch (error) {
+    } catch (error: unknown) {
       // Si Prisma no encuentra el registro (código P2025)
-      if (error.code === 'P2025') {
-        throw new NotFoundException(`Business with id ${id} not found`);
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        if (error.code === 'P2025') {
+          throw new NotFoundException(`Business with id ${id} not found`);
+        }
       }
       // Otros errores se propagan
       throw error;
