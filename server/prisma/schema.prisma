@@ -85,7 +85,7 @@ model Booking {
   business   Business      @relation(fields: [businessId], references: [id], onDelete: Cascade)
   businessId String
   date       DateTime    
-  endTime     DateTime     @default(now())
+  endTime     DateTime     
   finalPrice Float
   status     BookingStatus @default(PENDING)
   createdAt  DateTime      @default(now())
