@@ -1,5 +1,12 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsString, IsUUID, IsNumber, IsNotEmpty, IsOptional } from 'class-validator';
+import {
+  IsString,
+  IsUUID,
+  IsNumber,
+  IsNotEmpty,
+  IsOptional,
+  Min,
+} from 'class-validator';
 
 export class CreateServiceDto {
   @ApiProperty({
@@ -23,7 +30,7 @@ export class CreateServiceDto {
     example: 30,
   })
   @IsNumber()
-  @IsOptional()
+  @Min(1, { message: 'Duration must be at least 1 minute' })
   durationMin: number;
 
   @ApiProperty({

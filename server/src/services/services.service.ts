@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { Service } from '@prisma/client';
 import { CreateServiceDto } from './dto/create-service.dto';
@@ -13,6 +13,8 @@ export class ServicesService {
   }
 
   async create(data: CreateServiceDto): Promise<Service> {
+    if (data.durationMin <= 0)
+      throw new BadRequestException('Duration must be at least 1 minute');
     return this.prisma.service.create({
       data,
     });

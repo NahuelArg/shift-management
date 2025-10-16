@@ -40,9 +40,13 @@ export class BookingsService {
       where: { id: serviceId },
     });
     if (!service) throw new BadRequestException('Service not found');
+    if (!service.durationMin || service.durationMin <= 0) {
+      throw new BadRequestException(
+        'Service duration must be a positive number and greater than zero',
+      );
+    }
 
     const durationMin = service.durationMin;
-    console.log('Service duration:', durationMin);
 
     // Parse date if it comes as a string
     const parsedDate =
