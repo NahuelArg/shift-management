@@ -1,4 +1,9 @@
-import { Injectable, BadRequestException, NotFoundException, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { PrismaService } from 'prisma/prisma.service';
 import { Booking } from '@prisma/client';
 import { getDay, format } from 'date-fns';
@@ -6,87 +11,105 @@ import { BookingDto } from './dto/BookingsDto.dto';
 import { UpdateBookingDto } from './dto/updateBookingDto.dto';
 import { BookingStatus } from '@prisma/client';
 import { CreateBookingDto } from './dto/createBookingDto.dto';
-import {zonedTimeToUtc} from 'date-fns-tz';
-import { Service } from '@prisma/client';
-import { start } from 'repl';
+import { zonedTimeToUtc } from 'date-fns-tz';
 
 @Injectable()
 export class BookingsService {
-  constructor(private prisma: PrismaService, private readonly service: PrismaService) { }
+  constructor(
+    private prisma: PrismaService,
+    private readonly service: PrismaService,
+  ) {}
 
   async findAll(): Promise<Booking[]> {
     return this.prisma.booking.findMany();
   }
- async create(data: CreateBookingDto & { userId: string }): Promise<Booking> {
-  const { serviceId, businessId, date: dateInput, timezone = 'UTC', userId } = data;
-
-
-  if (!businessId) throw new BadRequestException('Business ID is required');
-  if (!serviceId) throw new BadRequestException('Service ID is required');
-  if (!dateInput) throw new BadRequestException('Booking date is required');
-
-  const service = await this.prisma.service.findUnique({ where: { id: serviceId } });
-  if (!service) throw new BadRequestException('Service not found');
-
-  const durationMin = service.durationMin;
-  console.log('Service duration:', durationMin);
-
-  // Parse date if it comes as a string
-  let parsedDate = typeof dateInput === 'string' ? new Date(dateInput) : dateInput;
-  if (isNaN(parsedDate.getTime())) throw new BadRequestException('Invalid date');
-
-  // Convert local date to UTC
-  const dateUtc = zonedTimeToUtc(parsedDate, timezone);
-
-  // Get info to validate against allowed hours
-  const dayOfWeek = getDay(dateUtc); // 0 = Sunday
-  const timeStr = format(dateUtc, 'HH:mm');
-
-  const schedule = await this.prisma.schedule.findFirst({
-    where: {
+  async create(data: CreateBookingDto & { userId: string }): Promise<Booking> {
+    const {
+      serviceId,
       businessId,
-      dayOfWeek,
-      from: { lte: timeStr },
-      to: { gte: timeStr },
-    },
-  });
-
-  if (!schedule) {
-    throw new BadRequestException(
-      `El negocio no atiende el día ${dayOfWeek} a las ${timeStr}.`
-    );
-  }
-
-  const endTime = new Date(dateUtc.getTime() + durationMin * 60000);
-  console.log('End time:', endTime);
-
-  // Check for overlapping bookings
-  const conflicting = await this.prisma.booking.findFirst({
-    where: {
-      businessId,
-      status: { not: 'CANCELLED' },
-      date: { lt: endTime },
-      endTime: { gt: dateUtc },
-      
-    },
-  });
-
-  if (conflicting) {
-    throw new BadRequestException('Booking already exists for this time slot');
-  }
-
-  // Create the booking
-  return this.prisma.booking.create({
-    data: {
-      ...data,
-      date: dateUtc,
-      endTime,
+      date: dateInput,
+      timezone = 'UTC',
       userId,
-      status: BookingStatus.PENDING,
-    },
-  });
-}
-  async remove(id: string, user: { userId: string, role: string }): Promise<BookingDto> {
+    } = data;
+
+    if (!businessId) throw new BadRequestException('Business ID is required');
+    if (!serviceId) throw new BadRequestException('Service ID is required');
+    if (!dateInput) throw new BadRequestException('Booking date is required');
+
+    const service = await this.prisma.service.findUnique({
+      where: { id: serviceId },
+    });
+    if (!service) throw new BadRequestException('Service not found');
+    if (!service.durationMin || service.durationMin <= 0) {
+      throw new BadRequestException(
+        'Service duration must be a positive number and greater than zero',
+      );
+    }
+
+    const durationMin = service.durationMin;
+
+    // Parse date if it comes as a string
+    const parsedDate =
+      typeof dateInput === 'string' ? new Date(dateInput) : dateInput;
+    if (isNaN(parsedDate.getTime()))
+      throw new BadRequestException('Invalid date');
+
+    // Convert local date to UTC
+    const dateUtc = zonedTimeToUtc(parsedDate, timezone);
+
+    // Get info to validate against allowed hours
+    const dayOfWeek = getDay(dateUtc); // 0 = Sunday
+    const timeStr = format(dateUtc, 'HH:mm');
+
+    const schedule = await this.prisma.schedule.findFirst({
+      where: {
+        businessId,
+        dayOfWeek,
+        from: { lte: timeStr },
+        to: { gte: timeStr },
+      },
+    });
+
+    if (!schedule) {
+      throw new BadRequestException(
+        `El negocio no atiende el día ${dayOfWeek} a las ${timeStr}.`,
+      );
+    }
+
+    const endTime = new Date(dateUtc.getTime() + durationMin * 60000);
+    console.log('End time:', endTime);
+
+    // Check for overlapping bookings
+    const conflicting = await this.prisma.booking.findFirst({
+      where: {
+        businessId,
+        status: { not: 'CANCELLED' },
+        date: { lt: endTime },
+        endTime: { gt: dateUtc },
+      },
+    });
+
+    if (conflicting) {
+      throw new BadRequestException(
+        'Booking already exists for this time slot',
+      );
+    }
+
+    // Create the booking
+    return this.prisma.booking.create({
+      data: {
+        ...data,
+        date: dateUtc,
+        endTime,
+        userId,
+        status: BookingStatus.PENDING,
+      },
+    });
+  }
+  async remove(
+    id: string,
+    user: { userId: string; role: string },
+  ): Promise<BookingDto> {
     const booking = await this.prisma.booking.findUnique({ where: { id } });
 
     if (!booking) {
@@ -101,14 +124,17 @@ export class BookingsService {
     const deleted = await this.prisma.booking.delete({ where: { id } });
     return deleted;
   }
-  async update(id: string, updateBookingDto: UpdateBookingDto): Promise<Booking> {
+  async update(
+    id: string,
+    updateBookingDto: UpdateBookingDto,
+  ): Promise<Booking> {
     try {
       return await this.prisma.booking.update({
         where: { id },
         data: updateBookingDto,
       });
-    } catch (error) {
-      throw new NotFoundException('Booking not found');
+    } catch (error: unknown) {
+      throw new NotFoundException(error, 'Booking not found');
     }
   }
   async findOne(id: string): Promise<Booking> {
@@ -118,8 +144,16 @@ export class BookingsService {
     }
     return booking;
   }
-  async getBookingByQuery(filters: { status?: BookingStatus, date?: string, userId?: string }) {
-    const where: any = {}
+  async getBookingByQuery(filters: {
+    status?: BookingStatus;
+    date?: string;
+    userId?: string;
+  }) {
+    const where: {
+      status?: BookingStatus;
+      date?: { gte: Date; lte: Date };
+      userId?: string;
+    } = {};
     if (filters.status) where.status = filters.status;
     if (filters.date) {
       const targetDate = new Date(filters.date);
@@ -136,12 +170,10 @@ export class BookingsService {
 
     return this.prisma.booking.findMany({ where });
   }
- async updateStatus(id: string, status: BookingStatus) {
-  return this.prisma.booking.update({
-    where: { id },
-    data: { status }
-  });
+  async updateStatus(id: string, status: BookingStatus) {
+    return this.prisma.booking.update({
+      where: { id },
+      data: { status },
+    });
+  }
 }
-
-}
-

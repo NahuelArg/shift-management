@@ -59,7 +59,7 @@ model Service {
   id          String     @id @default(uuid())
   name        String
   description String?
-  durationMin Int
+  durationMin Int @default(30)
   price       Float
   business    Business   @relation(fields: [businessId], references: [id], onDelete: Cascade)
   businessId  String
@@ -85,7 +85,7 @@ model Booking {
   business   Business      @relation(fields: [businessId], references: [id], onDelete: Cascade)
   businessId String
   date       DateTime    
-  endTime     DateTime     @default(now())
+  endTime     DateTime     
   finalPrice Float
   status     BookingStatus @default(PENDING)
   createdAt  DateTime      @default(now())
