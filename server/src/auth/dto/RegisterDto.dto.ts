@@ -1,6 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsString, IsEmail, MinLength, IsEnum, IsOptional } from 'class-validator';
-import { AuthProvider } from '@prisma/client'; // Esto se utiliza para el enum de proveedores de autenticación
+import { IsString, IsEmail, IsEnum, IsOptional } from 'class-validator';
+import { AuthProvider } from '@prisma/client';
 
 export class RegisterDto {
   @ApiProperty({
@@ -17,21 +17,21 @@ export class RegisterDto {
   @IsEmail()
   email: string;
 
-  @ApiProperty({
-    description: 'User Password',
+  @ApiPropertyOptional({
+    description: 'User Password (required only for LOCAL auth, min 6 characters)',
     example: 'my_secure_password',
   })
+  @IsOptional()
   @IsString()
-  @MinLength(6)
-  password: string;
+  password?: string;
 
   @ApiPropertyOptional({
-    description: 'User Auth Provider',
+    description: 'Auth Provider',
     example: 'LOCAL',
     enum: ['LOCAL', 'GOOGLE', 'APPLE'],
-    required: false,
+    default: 'LOCAL',
   })
-  @IsEnum(['LOCAL', 'GOOGLE', 'APPLE'])
   @IsOptional()
-  authProvider: AuthProvider = 'LOCAL';
+  @IsEnum(['LOCAL', 'GOOGLE', 'APPLE'])
+  authProvider?: AuthProvider;
 }
