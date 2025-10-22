@@ -1,69 +1,51 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsDate, IsUUID, IsOptional, IsString, IsNumber, IsEnum} from 'class-validator';
-import { Type } from 'class-transformer';
-import { BookingStatus } from '@prisma/client';
+import { IsString, IsNotEmpty, IsNumber, IsOptional, IsUUID } from 'class-validator';
 
 export class CreateBookingDto {
   @ApiProperty({
-    description: 'ID of the user making the booking (will be taken from JWT token if not provided)',
-    example: '1cfc9fb7-238d-4583-9754-6aff4be64b73',
+    description: 'Service ID',
+    example: 'abc-123-def-456',
   })
-  @IsUUID()
-  @IsOptional()
-  userId?: string;
-
-  @ApiProperty({
-    description: 'ID of the booked service',
-    example: '572ba60c-1fc5-4bc3-8472-afee5062b0e1',
-  })
-  @IsUUID()
+  @IsString()
+  @IsNotEmpty()
   serviceId: string;
 
   @ApiProperty({
-    description: 'ID of the business where the booking is made',
-    example: '14d5613d-9786-45c4-8a12-a6cd9cb8e8e3',
+    description: 'Business ID',
+    example: 'xyz-789-ghi-012',
   })
-  @IsUUID()
+  @IsString()
+  @IsNotEmpty()
   businessId: string;
 
-  @ApiProperty({
-    description: 'Date and time of the booking (ISO 8601 format)',
-    example: '2025-07-18T18:00:00.000Z',
+  @ApiPropertyOptional({
+    description: 'Employee ID (optional - if not provided, system assigns available employee)',
+    example: 'emp-111-222-333',
   })
-  @IsDate()
-  @Type(() => Date)
-  date: Date;
+  @IsOptional()
+  @IsUUID()
+  employeeId?: string;
 
   @ApiProperty({
-    description: 'Client timezone',
-    example: 'America/Argentina/Buenos_Aires',
-    default: 'UTC'
+    description: 'Booking date and time',
+    example: '2025-01-21T14:00:00.000Z',
   })
-  @IsString()
-  @IsOptional()
-  timezone?: string;
+  @IsNotEmpty()
+  date: string | Date;
 
   @ApiPropertyOptional({
-    description: 'Additional notes for the booking',
-    example: 'Cliente prefiere horario de tarde'
+    description: 'Timezone for the booking',
+    example: 'Europe/Madrid',
+    default: 'Europe/Madrid',
   })
-  @IsString()
   @IsOptional()
-  notes?: string;
+  @IsString()
+  timezone?: string;
 
   @ApiProperty({
-    description: 'Final price for the booking',
+    description: 'Final price for the service',
     example: 2500,
   })
   @IsNumber()
   finalPrice: number;
-
-  @ApiProperty({
-    description: 'Booking status',
-    enum: BookingStatus,
-    default: BookingStatus.PENDING
-  })
-  @IsEnum(BookingStatus)
-  @IsOptional()
-  status?: BookingStatus;
 }
