@@ -164,26 +164,24 @@ export class AdminService {
         'Invalid groupBy value. Use "day", "month", or "year".',
       );
     }
-    // Set group format for SQL
-    let groupFormat: string;
-    if (groupByLowerCase === 'day') groupFormat = '%Y-%m-%d';
-    else if (groupByLowerCase === 'month') groupFormat = '%Y-%m';
-    else groupFormat = '%Y';
-    // Bookings by group (raw SQL)
-    const bookingsByGroup = await this.prisma.$queryRawUnsafe<any[]>(
-      `
-            SELECT
-                DATE_FORMAT(date, '${groupFormat}') AS period,
-                COUNT(*) AS totalBookings,
-                SUM(CASE WHEN status = 'CONFIRMED' THEN finalPrice ELSE 0 END) AS totalRevenue
-            FROM Booking
-            WHERE businessId = ? AND date BETWEEN ? AND ?
-            GROUP BY period
-            ORDER BY period ASC;
-        `,
-      businessId,
-      from,
-      to,
+    const allBookings = await this.prisma.booking.findMany({
+      where: {
+        businessId,
+        date: {
+          gte: startDate,
+          lte: endDate,
+        },
+        },
+        select: {
+          date: true,
+          finalPrice: true,
+          status: true,
+        },
+        orderBy: { date: 'asc' },
+    });
+    const bookingsByGroup = this.groupBookingsByPeriod(
+      allBookings,
+      groupByLowerCase as 'day' | 'month' | 'year',
     );
 
     //Bookings by service
@@ -225,10 +223,11 @@ export class AdminService {
         finalPrice: booking.finalPrice,
         status: booking.status,
       })),
-      groupFormat: groupFormat
-        .replace('%', 'Y')
-        .replace('-%m', '-MM')
-        .replace('-%d', '-DD'),
+      groupFormat: groupByLowerCase === 'day'
+        ? 'YYYY-MM-DD'
+        : groupByLowerCase === 'month'
+        ? 'YYYY-MM'
+        : 'YYYY',
     };
     // eslint-disable-next-line @typescript-eslint/no-unsafe-return
     return convertBigIntToString(result);
@@ -349,4 +348,58 @@ export class AdminService {
       },
     });
   }
+  /**
+ * Agrupa bookings por período (día, mes o año)
+ * @param bookings Lista de bookings
+ * @param groupBy Período de agrupación: 'day', 'month', 'year'
+ * @returns Array de objetos con período, totalBookings y totalRevenue
+ */
+private groupBookingsByPeriod(
+  bookings: { date: Date; status: string; finalPrice: number }[],
+  groupBy: 'day' | 'month' | 'year',
+): { period: string; totalBookings: bigint; totalRevenue: number }[] {
+  // Crear un mapa para agrupar
+  const groupMap = new Map<string, { count: number; revenue: number }>();
+
+  for (const booking of bookings) {
+    // Formatear la fecha según el groupBy
+    let period: string;
+    const date = new Date(booking.date);
+
+    if (groupBy === 'day') {
+      // Formato: YYYY-MM-DD
+      period = date.toISOString().split('T')[0];
+    } else if (groupBy === 'month') {
+      // Formato: YYYY-MM
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      period = `${year}-${month}`;
+    } else {
+      // Formato: YYYY
+      period = String(date.getFullYear());
+    }
+
+    // Obtener o inicializar el grupo
+    const group = groupMap.get(period) || { count: 0, revenue: 0 };
+
+    // Incrementar contador
+    group.count++;
+
+    // Sumar revenue solo si está confirmado
+    if (booking.status === 'CONFIRMED') {
+      group.revenue += booking.finalPrice;
+    }
+
+    groupMap.set(period, group);
+  }
+
+  // Convertir el mapa a array y ordenar por período
+  return Array.from(groupMap.entries())
+    .map(([period, data]) => ({
+      period,
+      totalBookings: BigInt(data.count),
+      totalRevenue: data.revenue,
+    }))
+    .sort((a, b) => a.period.localeCompare(b.period));
+}
 }
