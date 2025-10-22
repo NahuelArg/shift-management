@@ -164,20 +164,6 @@ export class AdminService {
         'Invalid groupBy value. Use "day", "month", or "year".',
       );
     }
-
-    const userWithBusiness = await this.prisma.user.findUnique({
-      where: { id: userId },
-      include: {
-        businesses: true,
-      },
-    });
-
-    if (!userWithBusiness) {
-      throw new ForbiddenException(
-        'Business not found or you do not have access to it.',
-      );
-    }
-
     // Set group format for SQL
     let groupFormat: string;
     if (groupByLowerCase === 'day') groupFormat = '%Y-%m-%d';
