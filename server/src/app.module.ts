@@ -13,6 +13,7 @@ import { AuthService } from './auth/auth.service';
 import { AuthModule } from './auth/auth.module';
 import { JwtService } from '@nestjs/jwt';
 import { AdminModule } from './admin/admin.module';
+import { CashRegisterModule } from './cash-register/cash-register.module';
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { AdminModule } from './admin/admin.module';
     SchedulesModule,
     AuthModule,
     AdminModule,
+    CashRegisterModule,
   ],
   controllers: [AppController],
   providers: [AppService, PrismaService, AuthService, JwtService],
