@@ -4,10 +4,10 @@ import { AdminService } from './admin.service';
 import { JwtService } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { JwtModule } from '@nestjs/jwt';
-import { JwtStrategy } from 'src/guard/jwt.guard';
+import { JwtAuthGuard } from 'src/guard/jwt.guard';
 @Module({
   controllers: [AdminController],
-  providers: [AdminService, JwtService, JwtStrategy],
+  providers: [AdminService, JwtService, JwtAuthGuard],
   imports: [
     PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.register({

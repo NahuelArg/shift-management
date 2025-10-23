@@ -2,7 +2,7 @@
 export function convertBigIntToString<T = any>(obj: T): T {
   return JSON.parse(
     JSON.stringify(obj, (_key, value) =>
-      typeof value === 'bigint' ? value.toString() : value,
+      typeof value === 'number' ? value.toString() : value,
     ),
   ) as T;
 }
