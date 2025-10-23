@@ -2,6 +2,7 @@ import {
   BadRequestException,
   ForbiddenException,
   Injectable,
+  Logger,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import * as bcrypt from 'bcrypt';
@@ -15,6 +16,7 @@ import { CreateEmployeeDto } from './DTO/createEmployeeDto.dto';
 @Injectable()
 export class AdminService {
   constructor(private prisma: PrismaService) {}
+  private readonly logger = new Logger(AdminService.name);
   async createAdmin(dto: CreateAdminDto) {
     const { email, password, name, authProvider, role } = dto;
 
@@ -142,7 +144,7 @@ export class AdminService {
         businesses: true,
       },
     });
-    console.log('User with Business:', UserWithBusiness);
+    this.logger.debug(`User with Business: ${JSON.stringify(UserWithBusiness)}`);
     if (!UserWithBusiness) {
       throw new ForbiddenException(
         'Business not found or you do not have access to it.',
@@ -355,7 +357,7 @@ export class AdminService {
   private groupBookingsByPeriod(
     bookings: { date: Date; status: string; finalPrice: number }[],
     groupBy: 'day' | 'month' | 'year',
-  ): { period: string; totalBookings: bigint; totalRevenue: number }[] {
+  ): { period: string; totalBookings: number; totalRevenue: number }[] {
     // Crear un mapa para agrupar
     const groupMap = new Map<string, { count: number; revenue: number }>();
 
@@ -395,7 +397,7 @@ export class AdminService {
     return Array.from(groupMap.entries())
       .map(([period, data]) => ({
         period,
-        totalBookings: BigInt(data.count),
+        totalBookings: data.count,
         totalRevenue: data.revenue,
       }))
       .sort((a, b) => a.period.localeCompare(b.period));
