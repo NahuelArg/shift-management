@@ -1,7 +1,23 @@
-import { Controller, Post, Get, Body, Delete, Param, UseGuards, Put, Req } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Get,
+  Body,
+  Delete,
+  Param,
+  UseGuards,
+  Put,
+  Req,
+} from '@nestjs/common';
+import { RequestWithUser } from 'src/types/express-request.interface';
 import { BusinessService } from './business.service';
-import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { BusinessDto } from './dto/BusinessDto.dto';  // Asumiendo que vamos a crear un DTO para la respuesta
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
+import { BusinessDto } from './dto/BusinessDto.dto'; // Asumiendo que vamos a crear un DTO para la respuesta
 import { JwtAuthGuard } from '../guard/jwt-auth.guard';
 import { RolesGuard } from '../guard/roles.guard';
 import { Roles } from '../decorator/roles.decorator';
@@ -11,7 +27,7 @@ import { UpdateBusinessDto } from './dto/updateBusiness.dto';
 @ApiTags('business')
 @Controller('business')
 export class BusinessController {
-  constructor(private readonly businessService: BusinessService) { }
+  constructor(private readonly businessService: BusinessService) {}
   @Delete(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
@@ -56,7 +72,6 @@ export class BusinessController {
   @ApiResponse({
     status: 403,
     description: 'No permission to create business',
-
   })
   @ApiResponse({
     status: 500,
@@ -70,12 +85,14 @@ export class BusinessController {
     status: 404,
     description: 'Business not found',
   })
-
-  async create(@Req() req, @Body() body: CreateBusinessDto): Promise<BusinessDto> {
+  async create(
+    @Req() req: RequestWithUser,
+    @Body() body: CreateBusinessDto,
+  ): Promise<BusinessDto> {
     return this.businessService.create({
       creatorRole: req.user.role,
-      ...body});
-
+      ...body,
+    });
   }
   @Put(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -91,12 +108,14 @@ export class BusinessController {
     status: 400,
     description: 'Error updating business',
   })
-  async update(@Param('id') id: string, @Body() updateBusinessDto: UpdateBusinessDto): Promise<BusinessDto> {
+  async update(
+    @Param('id') id: string,
+    @Body() updateBusinessDto: UpdateBusinessDto,
+  ): Promise<BusinessDto> {
     const business = await this.businessService.update(id, updateBusinessDto);
     if (!business) {
       throw new Error('Business not found');
     }
     return business;
   }
-
 }

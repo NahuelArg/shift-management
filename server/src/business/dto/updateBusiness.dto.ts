@@ -10,5 +10,4 @@ export class UpdateBusinessDto {
   @IsString()
   @ApiPropertyOptional()
   name?: string;
-  
 }

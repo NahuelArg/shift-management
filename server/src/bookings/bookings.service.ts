@@ -10,17 +10,14 @@ import { BookingDto } from './dto/BookingsDto.dto';
 import { UpdateBookingDto } from './dto/updateBookingDto.dto';
 import { BookingStatus } from '@prisma/client';
 import { CreateBookingDto } from './dto/createBookingDto.dto';
-import { toDate, zonedTimeToUtc } from 'date-fns-tz';
-import { getDay, format } from 'date-fns';
-import { parse } from 'path';
-import { id } from 'date-fns/locale';
+import { format } from 'date-fns';
 
 @Injectable()
 export class BookingsService {
   constructor(
     private prisma: PrismaService,
     private readonly service: PrismaService,
-  ) { }
+  ) {}
 
   async findAll(): Promise<Booking[]> {
     return this.prisma.booking.findMany();
@@ -66,7 +63,9 @@ export class BookingsService {
 
     const dateUtc = parsedDate;
 
-    const localDate = new Date(dateUtc.toLocaleString('en-US', { timeZone: timezone }));
+    const localDate = new Date(
+      dateUtc.toLocaleString('en-US', { timeZone: timezone }),
+    );
     const dayOfWeek = localDate.getDay();
     const timeStr = format(localDate, 'HH:mm');
 
@@ -87,18 +86,20 @@ export class BookingsService {
 
     const endTime = new Date(dateUtc.getTime() + durationMin * 60000);
 
-    const localEndTime = new Date(endTime.toLocaleString('en-US', { timeZone: timezone }));
+    const localEndTime = new Date(
+      endTime.toLocaleString('en-US', { timeZone: timezone }),
+    );
     const endTimeStr = format(localEndTime, 'HH:mm');
 
     if (endTimeStr > schedule.to) {
       throw new BadRequestException(
-        `Service would end at ${endTimeStr}, after business closing time (${schedule.to}). Please choose an earlier time.`
+        `Service would end at ${endTimeStr}, after business closing time (${schedule.to}). Please choose an earlier time.`,
       );
     }
 
-    let finalEmployeeId: string | null = employeeId || null;  // ✅ Correcto
+    let finalEmployeeId: string | null = employeeId || null; // ✅ Correcto
     if (!finalEmployeeId) {
-        finalEmployeeId = await this.findAvailableEmployee(
+      finalEmployeeId = await this.findAvailableEmployee(
         businessId,
         dateUtc,
         endTime,
@@ -114,8 +115,8 @@ export class BookingsService {
           id: finalEmployeeId,
           businessId,
           role: 'EMPLOYEE',
-        }
-      })
+        },
+      });
       if (!employee) {
         throw new BadRequestException('Employee not found in this business');
       }
@@ -132,7 +133,8 @@ export class BookingsService {
 
     if (conflicting) {
       throw new BadRequestException(
-        'The selected employee is not available at the chosen time',);
+        'The selected employee is not available at the chosen time',
+      );
     }
 
     // Create the booking
@@ -258,7 +260,6 @@ export class BookingsService {
     }
     for (const employee of employees) {
       const hasConflicting = await this.prisma.booking.findFirst({
-        
         where: {
           employeeId: employee.id,
           status: { not: 'CANCELLED' },

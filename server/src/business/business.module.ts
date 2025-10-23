@@ -5,6 +5,6 @@ import { JwtService } from '@nestjs/jwt';
 
 @Module({
   controllers: [BusinessController],
-  providers: [BusinessService, JwtService]
+  providers: [BusinessService, JwtService],
 })
 export class BusinessModule {}

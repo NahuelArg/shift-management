@@ -1,8 +1,27 @@
-import { Controller, Get, UseGuards, Post, Body, Request, Put, Param, NotFoundException, Query, Delete, } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  UseGuards,
+  Post,
+  Body,
+  Request,
+  Put,
+  Param,
+  NotFoundException,
+  Query,
+  Delete,
+} from '@nestjs/common';
+import { GetAllEmployeesQueryDto } from './DTO/getAllEmployeesQuery.dto';
+import { RequestWithUser } from 'src/types/express-request.interface';
 import { Roles } from '../decorator/roles.decorator';
 import { RolesGuard } from '../guard/roles.guard';
 import { JwtAuthGuard } from 'src/guard/jwt-auth.guard';
-import { ApiBearerAuth, ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+} from '@nestjs/swagger';
 import { AdminService } from './admin.service';
 import { UserDto } from '../users/dto/UserDto.dto';
 import { UpdateAdminDto } from './DTO/updateAdmin.dto';
@@ -10,13 +29,12 @@ import MetricsResponse from './DTO/metricsDto.dto';
 import { CreateAdminDto } from './DTO/createAdminDto.dto';
 import { CreateEmployeeDto } from './DTO/createEmployeeDto.dto';
 
-
 @ApiTags('Admin')
 @ApiBearerAuth()
 @Controller('admin')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class AdminController {
-  constructor(private readonly adminService: AdminService) { }
+  constructor(private readonly adminService: AdminService) {}
 
   @Get('me')
   @Roles('ADMIN')
@@ -28,7 +46,7 @@ export class AdminController {
     description: 'Successful response',
     type: UserDto,
   })
-  async getAdminById(@Request() req: any): Promise<UserDto> {
+  async getAdminById(@Request() req: RequestWithUser): Promise<UserDto> {
     const id = req.user.userId;
     const admin = await this.adminService.getAdminById(id);
     if (!admin) {
@@ -46,8 +64,8 @@ export class AdminController {
     status: 200,
     description: 'Employee deleted successfully',
   })
-  async deleteEmployee(@Param('id') id: string): Promise<void> {
-    await this.adminService.deleteEmployee(id);
+  async deleteEmployee(@Param('id') req: RequestWithUser): Promise<void> {
+    await this.adminService.deleteEmployee(req.user.userId);
   }
 
   @Get('dashboard')
@@ -58,9 +76,9 @@ export class AdminController {
   @ApiResponse({
     status: 200,
     description: 'Successful response',
-    type: UserDto, 
+    type: UserDto,
   })
-  getDashboard(@Request() req: any) {
+  getDashboard(@Request() req: RequestWithUser) {
     const userId = req.user.userId;
     return this.adminService.getDashboard(userId);
   }
@@ -73,17 +91,24 @@ export class AdminController {
   @ApiResponse({
     status: 200,
     description: 'Successful response',
-    type: MetricsResponse, 
+    type: MetricsResponse,
   })
   getAllMetrics(
-    @Request() req,
+    @Request() req: RequestWithUser,
     @Query('businessId') businessId: string,
     @Query('from') from: string,
     @Query('to') to: string,
-    @Query('groupBy') groupBy: string) {
-    const userId = req.user.userId; 
-    
-    return this.adminService.getAllMetrics(businessId, userId, from, to, groupBy);
+    @Query('groupBy') groupBy: string,
+  ) {
+    const userId = req.user.userId;
+
+    return this.adminService.getAllMetrics(
+      businessId,
+      userId,
+      from,
+      to,
+      groupBy,
+    );
   }
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
@@ -95,7 +120,7 @@ export class AdminController {
     description: 'Employer created successfully',
     type: CreateAdminDto,
   })
-  async createAdmin(@Body() dto: CreateAdminDto, @Request() req: any) {
+  async createAdmin(@Body() dto: CreateAdminDto) {
     return this.adminService.createAdmin(dto);
   }
   @Put(':id')
@@ -103,9 +128,16 @@ export class AdminController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Update User' })
-  @ApiResponse({ status: 200, description: 'User updated successfully', type: UserDto })
+  @ApiResponse({
+    status: 200,
+    description: 'User updated successfully',
+    type: UserDto,
+  })
   @ApiResponse({ status: 404, description: 'User not found' })
-  async updateUser(@Param('id') id: string, @Body() updateAdminDto: UpdateAdminDto): Promise<UserDto> {
+  async updateUser(
+    @Param('id') id: string,
+    @Body() updateAdminDto: UpdateAdminDto,
+  ): Promise<UserDto> {
     const admin = await this.adminService.updateAdmin(id, updateAdminDto);
     if (!admin) {
       throw new NotFoundException('Admin not found');
@@ -113,17 +145,22 @@ export class AdminController {
     return admin;
   }
 
-
   @UseGuards(JwtAuthGuard)
   @Get('employees')
-  async getEmployees(@Request() req, @Query() query) {
-    return this.adminService.getAllEmployees(req.user.userId, query);
+  async getEmployees(
+    @Request() req: RequestWithUser,
+    @Query() query: GetAllEmployeesQueryDto,
+  ) {
+    const adminId = req.user.userId;
+    return this.adminService.getAllEmployees(adminId, query);
   }
 
   @UseGuards(JwtAuthGuard)
   @Post('employee')
-  async createEmployee(@Request() req, @Body() dto: CreateEmployeeDto) {
+  async createEmployee(
+    @Request() req: RequestWithUser,
+    @Body() dto: CreateEmployeeDto,
+  ) {
     return this.adminService.createEmployee(dto, req.user.userId);
   }
-
 }

@@ -37,5 +37,4 @@ export class UpdateAdminDto {
   @IsString()
   @IsOptional()
   role?: 'ADMIN';
-  
 }

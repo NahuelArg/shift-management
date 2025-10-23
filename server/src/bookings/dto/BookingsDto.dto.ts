@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString, IsUUID, IsDate, IsEnum } from 'class-validator';
+import { IsUUID, IsDate, IsEnum } from 'class-validator';
 import { BookingStatus } from '@prisma/client'; // Para el tipo BookingStatus
 
 export class BookingDto {

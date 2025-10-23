@@ -1,6 +1,12 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsString, IsOptional, IsEmail, MinLength, IsEnum, IsNotEmpty } from 'class-validator';
-
+import {
+  IsString,
+  IsOptional,
+  IsEmail,
+  MinLength,
+  IsEnum,
+  IsNotEmpty,
+} from 'class-validator';
 
 export class CreateAdminDto {
   @ApiProperty({
@@ -24,7 +30,6 @@ export class CreateAdminDto {
     example: '123456789',
     required: false,
   })
-
   @ApiPropertyOptional({
     description: 'User phone number (optional)',
     example: '123456789',
@@ -46,8 +51,8 @@ export class CreateAdminDto {
   @ApiPropertyOptional({
     description: 'User authentication provider',
     example: 'LOCAL',
-    enum: ['LOCAL', 'GOOGLE', 'APPLE'], 
-    required: false, 
+    enum: ['LOCAL', 'GOOGLE', 'APPLE'],
+    required: false,
   })
   @IsEnum(['LOCAL', 'GOOGLE', 'APPLE'])
   authProvider: 'LOCAL' | 'GOOGLE' | 'APPLE' = 'LOCAL';

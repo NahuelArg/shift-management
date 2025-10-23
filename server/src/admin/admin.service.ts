@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-/* eslint-disable @typescript-eslint/no-unsafe-call */
 import {
   BadRequestException,
   ForbiddenException,
@@ -41,7 +39,7 @@ export class AdminService {
           'Password is required for local authentication',
         );
       }
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+
       hashedPassword = await bcrypt.hash(password, 10);
     }
 
@@ -171,13 +169,13 @@ export class AdminService {
           gte: startDate,
           lte: endDate,
         },
-        },
-        select: {
-          date: true,
-          finalPrice: true,
-          status: true,
-        },
-        orderBy: { date: 'asc' },
+      },
+      select: {
+        date: true,
+        finalPrice: true,
+        status: true,
+      },
+      orderBy: { date: 'asc' },
     });
     const bookingsByGroup = this.groupBookingsByPeriod(
       allBookings,
@@ -223,13 +221,14 @@ export class AdminService {
         finalPrice: booking.finalPrice,
         status: booking.status,
       })),
-      groupFormat: groupByLowerCase === 'day'
-        ? 'YYYY-MM-DD'
-        : groupByLowerCase === 'month'
-        ? 'YYYY-MM'
-        : 'YYYY',
+      groupFormat:
+        groupByLowerCase === 'day'
+          ? 'YYYY-MM-DD'
+          : groupByLowerCase === 'month'
+            ? 'YYYY-MM'
+            : 'YYYY',
     };
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+
     return convertBigIntToString(result);
   }
   async getAdminById(userId: string) {
@@ -334,13 +333,12 @@ export class AdminService {
       );
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const hashedPassword = await bcrypt.hash(password, 10);
     return this.prisma.user.create({
       data: {
         name,
         email,
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+
         password: hashedPassword,
         role: Role.EMPLOYEE,
         authProvider: AuthProvider.LOCAL,
@@ -349,57 +347,57 @@ export class AdminService {
     });
   }
   /**
- * Agrupa bookings por período (día, mes o año)
- * @param bookings Lista de bookings
- * @param groupBy Período de agrupación: 'day', 'month', 'year'
- * @returns Array de objetos con período, totalBookings y totalRevenue
- */
-private groupBookingsByPeriod(
-  bookings: { date: Date; status: string; finalPrice: number }[],
-  groupBy: 'day' | 'month' | 'year',
-): { period: string; totalBookings: bigint; totalRevenue: number }[] {
-  // Crear un mapa para agrupar
-  const groupMap = new Map<string, { count: number; revenue: number }>();
+   * Agrupa bookings por período (día, mes o año)
+   * @param bookings Lista de bookings
+   * @param groupBy Período de agrupación: 'day', 'month', 'year'
+   * @returns Array de objetos con período, totalBookings y totalRevenue
+   */
+  private groupBookingsByPeriod(
+    bookings: { date: Date; status: string; finalPrice: number }[],
+    groupBy: 'day' | 'month' | 'year',
+  ): { period: string; totalBookings: bigint; totalRevenue: number }[] {
+    // Crear un mapa para agrupar
+    const groupMap = new Map<string, { count: number; revenue: number }>();
 
-  for (const booking of bookings) {
-    // Formatear la fecha según el groupBy
-    let period: string;
-    const date = new Date(booking.date);
+    for (const booking of bookings) {
+      // Formatear la fecha según el groupBy
+      let period: string;
+      const date = new Date(booking.date);
 
-    if (groupBy === 'day') {
-      // Formato: YYYY-MM-DD
-      period = date.toISOString().split('T')[0];
-    } else if (groupBy === 'month') {
-      // Formato: YYYY-MM
-      const year = date.getFullYear();
-      const month = String(date.getMonth() + 1).padStart(2, '0');
-      period = `${year}-${month}`;
-    } else {
-      // Formato: YYYY
-      period = String(date.getFullYear());
+      if (groupBy === 'day') {
+        // Formato: YYYY-MM-DD
+        period = date.toISOString().split('T')[0];
+      } else if (groupBy === 'month') {
+        // Formato: YYYY-MM
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        period = `${year}-${month}`;
+      } else {
+        // Formato: YYYY
+        period = String(date.getFullYear());
+      }
+
+      // Obtener o inicializar el grupo
+      const group = groupMap.get(period) || { count: 0, revenue: 0 };
+
+      // Incrementar contador
+      group.count++;
+
+      // Sumar revenue solo si está confirmado
+      if (booking.status === 'CONFIRMED') {
+        group.revenue += booking.finalPrice;
+      }
+
+      groupMap.set(period, group);
     }
 
-    // Obtener o inicializar el grupo
-    const group = groupMap.get(period) || { count: 0, revenue: 0 };
-
-    // Incrementar contador
-    group.count++;
-
-    // Sumar revenue solo si está confirmado
-    if (booking.status === 'CONFIRMED') {
-      group.revenue += booking.finalPrice;
-    }
-
-    groupMap.set(period, group);
+    // Convertir el mapa a array y ordenar por período
+    return Array.from(groupMap.entries())
+      .map(([period, data]) => ({
+        period,
+        totalBookings: BigInt(data.count),
+        totalRevenue: data.revenue,
+      }))
+      .sort((a, b) => a.period.localeCompare(b.period));
   }
-
-  // Convertir el mapa a array y ordenar por período
-  return Array.from(groupMap.entries())
-    .map(([period, data]) => ({
-      period,
-      totalBookings: BigInt(data.count),
-      totalRevenue: data.revenue,
-    }))
-    .sort((a, b) => a.period.localeCompare(b.period));
-}
 }

@@ -1,5 +1,11 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsString, IsNotEmpty, IsNumber, IsOptional, IsUUID } from 'class-validator';
+import {
+  IsString,
+  IsNotEmpty,
+  IsNumber,
+  IsOptional,
+  IsUUID,
+} from 'class-validator';
 
 export class CreateBookingDto {
   @ApiProperty({
@@ -19,7 +25,8 @@ export class CreateBookingDto {
   businessId: string;
 
   @ApiPropertyOptional({
-    description: 'Employee ID (optional - if not provided, system assigns available employee)',
+    description:
+      'Employee ID (optional - if not provided, system assigns available employee)',
     example: 'emp-111-222-333',
   })
   @IsOptional()

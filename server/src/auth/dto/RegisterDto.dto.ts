@@ -18,7 +18,8 @@ export class RegisterDto {
   email: string;
 
   @ApiPropertyOptional({
-    description: 'User Password (required only for LOCAL auth, min 6 characters)',
+    description:
+      'User Password (required only for LOCAL auth, min 6 characters)',
     example: 'my_secure_password',
   })
   @IsOptional()

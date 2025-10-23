@@ -1,6 +1,21 @@
-import { Controller, Get, Post, Body, Delete, Param, BadRequestException, UseGuards, Put } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Delete,
+  Param,
+  BadRequestException,
+  UseGuards,
+  Put,
+} from '@nestjs/common';
 import { ServicesService } from './services.service';
-import { ApiOperation, ApiResponse, ApiTags, ApiBearerAuth } from '@nestjs/swagger';
+import {
+  ApiOperation,
+  ApiResponse,
+  ApiTags,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 import { Service } from '@prisma/client';
 import { JwtAuthGuard } from 'src/guard/jwt-auth.guard';
 import { RolesGuard } from 'src/guard/roles.guard';
@@ -19,7 +34,11 @@ export class ServicesController {
   @Roles('ADMIN')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @ApiOperation({ summary: 'Eliminar un servicio por ID' })
-  @ApiResponse({ status: 200, description: 'Servicio eliminado', type: ServiceDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Servicio eliminado',
+    type: ServiceDto,
+  })
   async delete(@Param('id') id: string): Promise<Service> {
     return this.servicesService.delete(id);
   }
@@ -44,7 +63,10 @@ export class ServicesController {
     try {
       return this.servicesService.create(body);
     } catch (error) {
-      throw new BadRequestException(error.message);
+      if (error instanceof Error) {
+        throw new BadRequestException(error.message);
+      }
+      throw new BadRequestException('Unknown error occurred');
     }
   }
   @Put(':id')
@@ -53,7 +75,10 @@ export class ServicesController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Update service by ID' })
   @ApiResponse({ status: 200, type: ServiceDto })
-  async update(@Param('id') id: string, @Body() updateServiceDto: UpdateServiceDto): Promise<Service> {
+  async update(
+    @Param('id') id: string,
+    @Body() updateServiceDto: UpdateServiceDto,
+  ): Promise<Service> {
     const service = await this.servicesService.update(id, updateServiceDto);
     if (!service) {
       throw new BadRequestException('Service not found');

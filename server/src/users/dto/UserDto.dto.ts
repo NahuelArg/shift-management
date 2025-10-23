@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsOptional, IsUUID, } from 'class-validator';
+import { IsOptional, IsUUID } from 'class-validator';
 import { BookingDto } from '../../bookings/dto/BookingsDto.dto'; // Importa el DTO de Booking
 import { CreateUserDto } from './CreateUserDto.dto';
 export class UserDto extends CreateUserDto {
@@ -31,9 +31,4 @@ export class UserDto extends CreateUserDto {
     required: false,
   })
   bookings?: BookingDto[];
-
-
-
-
 }
-  
