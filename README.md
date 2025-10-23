@@ -60,7 +60,7 @@ A modern, full-stack appointment management system built with React, NestJS, and
 
 - Node.js (v22.18 or higher)
 - npm or yarn
-- PostgreSQL database
+- MySQL database
 - Git
 
 ## 🔧 Installation
@@ -162,7 +162,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 👤 Author
 
-Your Name
+Nahuel Argañaraz
 - GitHub: [@NahuelArg](https://github.com/NahuelArg)
 - LinkedIn: [Nahuel Argañaraz](https://www.linkedin.com/in/nahuel-arga%C3%B1araz/)
 
