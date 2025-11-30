@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { scheduleService, Schedule, CreateScheduleDto, UpdateScheduleDto } from '../services/scheduleService';
-import { businessService, Business } from '../services/businessService';
+import { scheduleService, type Schedule, type CreateScheduleDto,  type UpdateScheduleDto } from '../services/scheduleService';
+import { businessService, type Business } from '../services/businessService';
 import NavBar from '../components/navBar';
 
 const daysOfWeek = [
@@ -24,8 +24,8 @@ const Schedules: React.FC = () => {
 
   const [formData, setFormData] = useState<CreateScheduleDto>({
     dayOfWeek: 1,
-    startTime: '09:00',
-    endTime: '18:00',
+    from: '09:00',
+    to: '18:00',
     businessId: '',
   });
 
@@ -67,7 +67,7 @@ const Schedules: React.FC = () => {
       await scheduleService.create(formData);
       setSuccess('Horario creado exitosamente');
       setShowCreateForm(false);
-      setFormData({ dayOfWeek: 1, startTime: '09:00', endTime: '18:00', businessId: businesses[0]?.id || '' });
+      setFormData({ dayOfWeek: 1, from: '09:00', to: '18:00', businessId: businesses[0]?.id || '' });
       fetchSchedules();
     } catch (err: any) {
       setError(err.response?.data?.message || 'Error al crear horario');
@@ -81,14 +81,13 @@ const Schedules: React.FC = () => {
     setSuccess(null);
     try {
       const updateData: UpdateScheduleDto = {
-        dayOfWeek: formData.dayOfWeek,
-        startTime: formData.startTime,
-        endTime: formData.endTime,
+        from: formData.from,
+        to: formData.to,
       };
       await scheduleService.update(editingSchedule.id, updateData);
       setSuccess('Horario actualizado exitosamente');
       setEditingSchedule(null);
-      setFormData({ dayOfWeek: 1, startTime: '09:00', endTime: '18:00', businessId: businesses[0]?.id || '' });
+      setFormData({ dayOfWeek: 1, from: '09:00', to: '18:00', businessId: businesses[0]?.id || '' });
       fetchSchedules();
     } catch (err: any) {
       setError(err.response?.data?.message || 'Error al actualizar horario');
@@ -112,8 +111,8 @@ const Schedules: React.FC = () => {
     setEditingSchedule(schedule);
     setFormData({
       dayOfWeek: schedule.dayOfWeek,
-      startTime: schedule.startTime,
-      endTime: schedule.endTime,
+      from: schedule.from,
+      to: schedule.to,
       businessId: schedule.businessId,
     });
     setShowCreateForm(false);
@@ -121,7 +120,7 @@ const Schedules: React.FC = () => {
 
   const handleCancelEdit = () => {
     setEditingSchedule(null);
-    setFormData({ dayOfWeek: 1, startTime: '09:00', endTime: '18:00', businessId: businesses[0]?.id || '' });
+    setFormData({ dayOfWeek: 1, from: '09:00', to: '18:00', businessId: businesses[0]?.id || '' });
   };
 
   const getBusinessName = (businessId: string) => {
@@ -191,15 +190,15 @@ const Schedules: React.FC = () => {
                 </select>
                 <input
                   type="time"
-                  value={formData.startTime}
-                  onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
+                  value={formData.from}
+                  onChange={(e) => setFormData({ ...formData, from: e.target.value })}
                   required
                   className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-400"
                 />
                 <input
                   type="time"
-                  value={formData.endTime}
-                  onChange={(e) => setFormData({ ...formData, endTime: e.target.value })}
+                  value={formData.to}
+                  onChange={(e) => setFormData({ ...formData, to: e.target.value })}
                   required
                   className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-400"
                 />
@@ -258,8 +257,8 @@ const Schedules: React.FC = () => {
                           {daysOfWeek[schedule.dayOfWeek]}
                         </span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">{schedule.startTime}</td>
-                      <td className="px-6 py-4 whitespace-nowrap">{schedule.endTime}</td>
+                      <td className="px-6 py-4 whitespace-nowrap">{schedule.from}</td>
+                      <td className="px-6 py-4 whitespace-nowrap">{schedule.to}</td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <button
                           onClick={() => handleEdit(schedule)}

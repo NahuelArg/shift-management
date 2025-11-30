@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { serviceService, Service, CreateServiceDto, UpdateServiceDto } from '../services/serviceService';
-import { businessService, Business } from '../services/businessService';
+import { serviceService, type Service, type CreateServiceDto, type UpdateServiceDto } from '../services/serviceService';
+import { businessService, type Business } from '../services/businessService';
 import NavBar from '../components/navBar';
 
 const Services: React.FC = () => {
@@ -15,7 +15,7 @@ const Services: React.FC = () => {
   const [formData, setFormData] = useState<CreateServiceDto>({
     name: '',
     description: '',
-    duration: 30,
+    durationMin: 30,
     price: 0,
     businessId: '',
   });
@@ -58,7 +58,7 @@ const Services: React.FC = () => {
       await serviceService.create(formData);
       setSuccess('Servicio creado exitosamente');
       setShowCreateForm(false);
-      setFormData({ name: '', description: '', duration: 30, price: 0, businessId: businesses[0]?.id || '' });
+      setFormData({ name: '', description: '', durationMin: 30, price: 0, businessId: businesses[0]?.id || '' });
       fetchServices();
     } catch (err: any) {
       setError(err.response?.data?.message || 'Error al crear servicio');
@@ -72,15 +72,16 @@ const Services: React.FC = () => {
     setSuccess(null);
     try {
       const updateData: UpdateServiceDto = {
+        businessId: formData.businessId,
         name: formData.name,
         description: formData.description,
-        duration: formData.duration,
+        durationMin: formData.durationMin,
         price: formData.price,
       };
       await serviceService.update(editingService.id, updateData);
       setSuccess('Servicio actualizado exitosamente');
       setEditingService(null);
-      setFormData({ name: '', description: '', duration: 30, price: 0, businessId: businesses[0]?.id || '' });
+      setFormData({ name: '', description: '', durationMin:30, price: 0, businessId: businesses[0]?.id || '' });
       fetchServices();
     } catch (err: any) {
       setError(err.response?.data?.message || 'Error al actualizar servicio');
@@ -105,7 +106,7 @@ const Services: React.FC = () => {
     setFormData({
       name: service.name,
       description: service.description || '',
-      duration: service.duration,
+      durationMin: service.durationMin,
       price: service.price,
       businessId: service.businessId,
     });
@@ -114,7 +115,7 @@ const Services: React.FC = () => {
 
   const handleCancelEdit = () => {
     setEditingService(null);
-    setFormData({ name: '', description: '', duration: 30, price: 0, businessId: businesses[0]?.id || '' });
+    setFormData({ name: '', description: '', durationMin: 30, price: 0, businessId: businesses[0]?.id || '' });
   };
 
   const getBusinessName = (businessId: string) => {
@@ -181,8 +182,8 @@ const Services: React.FC = () => {
                 <input
                   type="number"
                   placeholder="Duración (minutos)"
-                  value={formData.duration}
-                  onChange={(e) => setFormData({ ...formData, duration: parseInt(e.target.value) })}
+                  value={formData.durationMin}
+                  onChange={(e) => setFormData({ ...formData, durationMin: parseInt(e.target.value) })}
                   required
                   min="1"
                   className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-400"
@@ -258,7 +259,7 @@ const Services: React.FC = () => {
                     <tr key={service.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap font-medium">{service.name}</td>
                       <td className="px-6 py-4 whitespace-nowrap">{getBusinessName(service.businessId)}</td>
-                      <td className="px-6 py-4 whitespace-nowrap">{service.duration} min</td>
+                      <td className="px-6 py-4 whitespace-nowrap">{service.durationMin}</td>
                       <td className="px-6 py-4 whitespace-nowrap">${service.price.toFixed(2)}</td>
                       <td className="px-6 py-4">{service.description || '-'}</td>
                       <td className="px-6 py-4 whitespace-nowrap">

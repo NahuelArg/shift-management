@@ -4,7 +4,7 @@ export interface Service {
   id: string;
   name: string;
   description?: string;
-  duration: number;
+  durationMin: number;
   price: number;
   businessId: string;
   createdAt: string;
@@ -13,7 +13,7 @@ export interface Service {
 export interface CreateServiceDto {
   name: string;
   description?: string;
-  duration: number;
+  durationMin: number;
   price: number;
   businessId: string;
 }
@@ -21,8 +21,9 @@ export interface CreateServiceDto {
 export interface UpdateServiceDto {
   name?: string;
   description?: string;
-  duration?: number;
+  durationMin: number;
   price?: number;
+  businessId?: string;
 }
 
 export const serviceService = {

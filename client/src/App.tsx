@@ -23,8 +23,13 @@ function App() {
         <Route path="/dashboard" element={<PrivateRoute requiredRole="CLIENT"><Dashboard /></PrivateRoute>} />
         <Route path="/bookings" element={<PrivateRoute><Bookings /></PrivateRoute>} />
         <Route path="/dashboard/admin" element={<PrivateRoute requiredRole="ADMIN"><Admin /></PrivateRoute>} />
-        <Route path="/users" element={<PrivateRoute requiredRole="ADMIN"><Users /></PrivateRoute>} />
-        <Route path="/business" element={<PrivateRoute requiredRole="ADMIN"><BusinessPage /></PrivateRoute>} />
+        <Route path="/business/:businessId/employees"
+          element={
+            <PrivateRoute requiredRole="ADMIN">
+              <Users/>
+            </PrivateRoute>
+          }
+        />        <Route path="/business" element={<PrivateRoute requiredRole="ADMIN"><BusinessPage /></PrivateRoute>} />
         <Route path="/services" element={<PrivateRoute requiredRole="ADMIN"><Services /></PrivateRoute>} />
         <Route path="/schedules" element={<PrivateRoute requiredRole="ADMIN"><Schedules /></PrivateRoute>} />
         <Route path="/" element={<Navigate to="/home" replace />} />

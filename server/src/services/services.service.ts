@@ -8,13 +8,19 @@ import { UpdateServiceDto } from './dto/updateServices.dto';
 export class ServicesService {
   constructor(private readonly prisma: PrismaService) {}
 
+  async findBy(businessId: string): Promise<Service[]> {
+    return this.prisma.service.findMany({
+      where: { businessId },
+    });
+  }
+
   async findAll(): Promise<Service[]> {
     return this.prisma.service.findMany();
   }
 
   async create(data: CreateServiceDto): Promise<Service> {
     if (data.durationMin <= 0)
-      throw new BadRequestException('Duration must be at least 1 minute');
+      throw new BadRequestException('DurationMin must be at least 1 minute');
     return this.prisma.service.create({
       data,
     });

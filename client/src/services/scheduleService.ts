@@ -3,22 +3,21 @@ import apiClient from './apiClient';
 export interface Schedule {
   id: string;
   dayOfWeek: number;
-  startTime: string;
-  endTime: string;
+  from: string;
+  to: string;
   businessId: string;
-  createdAt: string;
 }
 
 export interface CreateScheduleDto {
   dayOfWeek: number;
-  startTime: string;
-  endTime: string;
+  from: string;
+  to: string;
   businessId: string;
 }
 
 export interface UpdateScheduleDto {
-  dayOfWeek?: number;
-  startTime?: string;
+  from?: string;
+  to?: string;
   endTime?: string;
 }
 

@@ -25,7 +25,7 @@ import {
 } from '@nestjs/swagger';
 import { BookingDto } from './dto/BookingsDto.dto';
 import { UpdateBookingDto } from './dto/updateBookingDto.dto';
-import { JwtAuthGuard } from '../guard/jwt-auth.guard';
+import { JwtAuthGuard } from '../guard/jwt.guard';
 import { RolesGuard } from 'src/guard/roles.guard';
 import { Roles } from '../decorator/roles.decorator';
 import { CreateBookingDto } from './dto/createBookingDto.dto';

@@ -8,7 +8,13 @@ export class SchedulesService {
   constructor(private prisma: PrismaService) {}
 
   async findAll(): Promise<Schedule[]> {
-    return this.prisma.schedule.findMany();
+    const schedules = await this.prisma.schedule.findMany();
+    if (!schedules || schedules.length === 0) {
+      throw new Error('No schedules found');
+    }
+    
+    return schedules;
+
   }
 
   async create(data: CreateScheduleDto): Promise<Schedule> {

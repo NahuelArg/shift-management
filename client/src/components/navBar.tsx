@@ -2,7 +2,11 @@ import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
-const NavBar: React.FC = () => {
+interface NavBarProps {
+  businessId?: string;
+}
+
+const NavBar: React.FC<NavBarProps> = ({ businessId }) => {
   const [isOpen, setIsOpen] = useState(false);
   const { user, logout } = useAuth();
   const navigate = useNavigate();
@@ -44,7 +48,7 @@ const NavBar: React.FC = () => {
         {user && user.role === "ADMIN" && (
           <>
             <Link to="/dashboard/admin" className="hover:text-gray-600 transition-colors text-lg">Admin</Link>
-            <Link to="/users" className="hover:text-gray-600 transition-colors text-lg">Users</Link>
+            <Link to={`/business/${businessId}/employees`} className="hover:text-gray-600 transition-colors text-lg">Users</Link>
             <Link to="/business" className="hover:text-gray-600 transition-colors text-lg">Business</Link>
             <Link to="/services" className="hover:text-gray-600 transition-colors text-lg">Services</Link>
             <Link to="/schedules" className="hover:text-gray-600 transition-colors text-lg">Schedules</Link>
@@ -78,7 +82,7 @@ const NavBar: React.FC = () => {
           {user && user.role === "ADMIN" && (
             <>
               <Link to="/dashboard/admin" className="py-2 w-full text-center hover:bg-gray-700" onClick={() => setIsOpen(false)}>Admin</Link>
-              <Link to="/users" className="py-2 w-full text-center hover:bg-gray-700" onClick={() => setIsOpen(false)}>Users</Link>
+              <Link to={`/business/${businessId}/employees`} className="py-2 w-full text-center hover:bg-gray-700" onClick={() => setIsOpen(false)}>Users</Link>
               <Link to="/business" className="py-2 w-full text-center hover:bg-gray-700" onClick={() => setIsOpen(false)}>Business</Link>
               <Link to="/services" className="py-2 w-full text-center hover:bg-gray-700" onClick={() => setIsOpen(false)}>Services</Link>
               <Link to="/schedules" className="py-2 w-full text-center hover:bg-gray-700" onClick={() => setIsOpen(false)}>Schedules</Link>
