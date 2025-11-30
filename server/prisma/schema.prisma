@@ -111,6 +111,8 @@ model Booking {
   @@index([paymentStatus])
 }
 
+//Cash Register enums
+
 enum CashRegisterStatus{
   OPEN
   CLOSED
