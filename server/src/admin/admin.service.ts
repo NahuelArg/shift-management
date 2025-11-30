@@ -44,7 +44,7 @@ export class AdminService {
 
       hashedPassword = await bcrypt.hash(password, 10);
     }
-
+    
     // Crear admin SIN business asignado
     const user = await this.prisma.user.create({
       data: {
@@ -65,6 +65,27 @@ export class AdminService {
       data: updateAdminDto,
     });
   }
+  async getEmployeesByBusiness(businessId: string, userId: string) {
+  // Verificar que el business pertenece al admin (ownerId)
+  const business = await this.prisma.business.findFirst({
+    where: { 
+      id: businessId, 
+      ownerId: userId  // Aquí verificamos que es propietario
+    },
+  });
+
+  if (!business) {
+    throw new ForbiddenException(
+      'You do not have permission to access this business employees.',
+    );
+  }
+
+  // Obtener todos los employees del business
+  return this.prisma.user.findMany({
+    where: { businessId },
+    orderBy: { createdAt: 'desc' },
+  });
+}
   async getDashboard(userId: string) {
     // 1. Obtener los negocios del admin
     const userWithBusinesses = await this.prisma.user.findUnique({
@@ -230,8 +251,7 @@ export class AdminService {
             ? 'YYYY-MM'
             : 'YYYY',
     };
-
-    return convertBigIntToString(result);
+        return convertBigIntToString(result);
   }
   async getAdminById(userId: string) {
     if (!userId) throw new Error('User ID is required');
@@ -240,8 +260,10 @@ export class AdminService {
       where: { id: userId },
       include: {
         businesses: true,
-      },
-    });
+      }
+    }
+  );
+  
   }
   async getAllEmployees(
     userId: string,
@@ -401,5 +423,39 @@ export class AdminService {
         totalRevenue: data.revenue,
       }))
       .sort((a, b) => a.period.localeCompare(b.period));
+  }
+  async updateEmployee(
+    dto: CreateEmployeeDto,
+    adminId: string,
+    employeeId: string,
+  ) {
+    // Validar que el negocio pertenece al admin
+    const business = await this.prisma.business.findFirst({
+      where: { id: dto.businessId, ownerId: adminId },
+    });
+    if (!business) throw new Error('No puedes actualizar empleados en este negocio');
+
+    // Validar que el email no exista en otro usuario
+    const existingUser = await this.prisma.user.findFirst({
+      where: { email: dto.email, NOT: { id: employeeId } },
+    });
+    if (existingUser) {
+      throw new Error('El email ya está registrado');
+    }
+
+    const updateData: any = {
+      name: dto.name,
+      email: dto.email,
+      businessId: dto.businessId,
+    };
+
+    if (dto.password && dto.password.trim().length > 0) {
+      updateData.password = await bcrypt.hash(dto.password, 10);
+    }
+
+    return this.prisma.user.update({
+      where: { id: employeeId, role: 'EMPLOYEE' },
+      data: updateData,
+    });
   }
 }

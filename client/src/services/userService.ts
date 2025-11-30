@@ -1,5 +1,17 @@
 import apiClient from './apiClient';
 
+// src/services/employeeService.ts
+
+export interface Employee {
+  id: string;
+  name: string;
+  email: string;
+  businessId: string;
+  role: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface User {
   id: string;
   name: string;
@@ -42,6 +54,15 @@ export const userService = {
 
   async delete(id: string): Promise<User> {
     const response = await apiClient.delete(`/users/${id}`);
+    return response.data;
+  },
+};
+
+export const employeeService = {
+  async getEmployeesByBusiness(businessId: string): Promise<Employee[]> {
+    const response = await apiClient.get(
+      `/admin/business/${businessId}/employees`
+    );
     return response.data;
   },
 };
