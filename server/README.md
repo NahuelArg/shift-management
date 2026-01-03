@@ -22,7 +22,7 @@ A robust and modular appointment management system built with NestJS, supporting
 
 - Node.js (v18+ recommended)
 - npm or yarn
-- PostgreSQL (or your preferred database, update `.env` accordingly)
+- PostgreSQL 16+ (or use Docker Compose for local development)
 
 ### Installation
 
@@ -42,8 +42,34 @@ cp .env.example .env
 
 ### Database Setup
 
+#### Option 1: Using Docker Compose (Recommended for Development)
+
+The project includes a Docker Compose configuration with PostgreSQL:
+
 ```bash
+# Start the database
+docker-compose -f .devcontainer/docker-compose.yml up -d db
+
+# Run migrations
 npx prisma migrate dev
+
+# (Optional) Seed the database
+npx prisma db seed
+```
+
+#### Option 2: Using Local PostgreSQL
+
+If you have PostgreSQL installed locally:
+
+```bash
+# Create database
+createdb appointment_manager
+
+# Run migrations
+npx prisma migrate dev
+
+# (Optional) Seed the database
+npx prisma db seed
 ```
 
 ### Running the Application
