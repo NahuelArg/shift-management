@@ -8,7 +8,8 @@ import { PrismaService } from 'prisma/prisma.service';
 import { UsersModule } from 'src/users/users.module';
 import { PassportModule } from '@nestjs/passport';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { JwtStrategy } from 'src/guard/jwt.guard';
+import {JwtAuthGuard } from 'src/guard/jwt.guard';
+import { JwtStrategy } from 'src/strategies/jwt.strategy';
 
 @Module({
   imports: [
@@ -19,13 +20,13 @@ import { JwtStrategy } from 'src/guard/jwt.guard';
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => ({
-        secret: configService.get('JWT_SECRET'),
+        secret: configService.get('T'),
         signOptions: { expiresIn: '1d' },
       }),
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, GoogleStrategy, PrismaService, JwtStrategy], //AppleStrategy]
+  providers: [AuthService, GoogleStrategy, PrismaService, JwtAuthGuard, JwtStrategy], //AppleStrategy]
   exports: [AuthService],
 })
 export class AuthModule {}

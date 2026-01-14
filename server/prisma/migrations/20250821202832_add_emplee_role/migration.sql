@@ -1,6 +1,0 @@
--- AlterTable
-ALTER TABLE `user` ADD COLUMN `businessId` VARCHAR(191) NULL,
-    MODIFY `role` ENUM('CLIENT', 'ADMIN', 'EMPLOYEE') NOT NULL DEFAULT 'CLIENT';
-
--- AddForeignKey
-ALTER TABLE `User` ADD CONSTRAINT `User_businessId_fkey` FOREIGN KEY (`businessId`) REFERENCES `Business`(`id`) ON DELETE SET NULL ON UPDATE CASCADE;

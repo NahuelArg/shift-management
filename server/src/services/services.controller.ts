@@ -17,7 +17,7 @@ import {
   ApiBearerAuth,
 } from '@nestjs/swagger';
 import { Service } from '@prisma/client';
-import { JwtAuthGuard } from 'src/guard/jwt-auth.guard';
+import { JwtAuthGuard } from 'src/guard/jwt.guard';
 import { RolesGuard } from 'src/guard/roles.guard';
 import { Roles } from 'src/decorator/roles.decorator';
 import { ServiceDto } from './dto/service.dto';
@@ -28,6 +28,16 @@ import { UpdateServiceDto } from './dto/updateServices.dto';
 @Controller('services')
 export class ServicesController {
   constructor(private readonly servicesService: ServicesService) {}
+
+  @Get()
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN', 'CLIENT')
+  @ApiOperation({ summary: 'Get all services' })
+  @ApiResponse({ status: 200, type: [ServiceDto] })
+  async findAll(): Promise<Service[]> {
+    return this.servicesService.findAll();
+  }
 
   @Delete(':id')
   @ApiBearerAuth()
@@ -43,14 +53,15 @@ export class ServicesController {
     return this.servicesService.delete(id);
   }
 
-  @Get()
+
+  @Get(':businessId')
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN', 'CLIENT')
   @ApiOperation({ summary: 'Get all services' })
   @ApiResponse({ status: 200, type: [ServiceDto] })
-  async findAll(): Promise<Service[]> {
-    return this.servicesService.findAll();
+  async findById(@Param('businessId') businessId: string): Promise<Service[]> {
+    return this.servicesService.findBy(businessId);
   }
 
   @Post()

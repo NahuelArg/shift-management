@@ -8,17 +8,16 @@ services:
     depends_on:
       - db
   db:
-    image: mysql:8.0
+    image: postgres:16-alpine
     restart: always
     environment:
-      MYSQL_ROOT_PASSWORD: Nahuecoco
-      MYSQL_DATABASE: gestor_turnos
-      MYSQL_USER: user
-      MYSQL_PASSWORD: password
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: appointment_manager
+      POSTGRES_USER: user
     ports:
-      - "3306:3306"
+      - "5432:5432"
     volumes:
-      - mysql-data:/var/lib/mysql
+      - postgres-data:/var/lib/postgresql/data
 
 volumes:
-  mysql-data:
+  postgres-data:

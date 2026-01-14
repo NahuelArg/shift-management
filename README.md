@@ -7,6 +7,13 @@ A modern, full-stack appointment management system built with React, NestJS, and
 ![React](https://img.shields.io/badge/React-18.x-blue.svg)
 ![NestJS](https://img.shields.io/badge/NestJS-10.x-red.svg)
 
+## 📚 Documentación Adicional
+
+- **[📑 Índice de Documentación](./INDICE-DOCUMENTACION.md)** - Guía de navegación de toda la documentación disponible
+- **[🏗️ Análisis Arquitectónico Completo](./ANALISIS-ARQUITECTURA.md)** - Análisis detallado de arquitectura, problemas, mejoras y plan de migración (en Español)
+- **[⚡ Guía de Validación Rápida](./VALIDACION-RAPIDA.md)** - Comandos esenciales para validación y troubleshooting
+- **[📊 Resumen de Entregables](./RESUMEN-ENTREGABLES.md)** - Resumen ejecutivo del análisis realizado
+
 ## 🚀 Features
 
 - **User Authentication & Authorization**
@@ -45,7 +52,7 @@ A modern, full-stack appointment management system built with React, NestJS, and
 ### Backend
 - NestJS
 - Prisma ORM
-- PostgreSQL
+- MySQL (configurable para PostgreSQL)
 - JWT Authentication
 - REST API
 
@@ -53,7 +60,7 @@ A modern, full-stack appointment management system built with React, NestJS, and
 
 - Node.js (v22.18 or higher)
 - npm or yarn
-- PostgreSQL database
+- MySQL database
 - Git
 
 ## 🔧 Installation
@@ -121,7 +128,12 @@ API documentation is available through Swagger UI at `/api` when running the bac
 
 ### Backend (.env)
 ```
-DATABASE_URL="postgresql://user:password@localhost:5432/dbname"
+# MySQL (configuración actual)
+DATABASE_URL="mysql://user:password@localhost:3306/shift_management"
+
+# O PostgreSQL (alternativa)
+# DATABASE_URL="postgresql://user:password@localhost:5432/shift_management"
+
 JWT_SECRET="your-secret-key"
 PORT=3000
 ```
@@ -150,7 +162,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 👤 Author
 
-Your Name
+Nahuel Argañaraz
 - GitHub: [@NahuelArg](https://github.com/NahuelArg)
 - LinkedIn: [Nahuel Argañaraz](https://www.linkedin.com/in/nahuel-arga%C3%B1araz/)
 
