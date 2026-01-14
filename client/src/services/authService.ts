@@ -11,10 +11,12 @@ export interface LoginResponse {
   };
 }
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+
 export async function login(email: string, password: string): Promise<LoginResponse> {
   try {
     const response = await axios.post<LoginResponse>(
-      "http://localhost:3000/auth/login",
+      `${API_BASE_URL}/auth/login`,
       { email, password },
       {
         withCredentials: true, // importante si usás cookies

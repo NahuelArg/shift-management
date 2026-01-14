@@ -5,6 +5,9 @@ import { createBooking } from "../services/bookingService";
 import NavBar from "../components/navBar";
 import BookingForm from "../components/bookingManagement/BookingForm";
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+
+
 const Admin: React.FC = () => {
   const { user, token } = useAuth();
   const [businesses, setBusinesses] = useState<any[]>([]);
@@ -51,7 +54,7 @@ const Admin: React.FC = () => {
     const fetchBusinesses = async () => {
       if (user && token) {
         try {
-          const res = await axios.get(`http://localhost:3000/admin/me`, {
+          const res = await axios.get(`${API_BASE_URL}/admin/me`, {
             headers: { Authorization: `Bearer ${token}` },
           });
           setBusinesses(res.data.businesses || []);
@@ -86,7 +89,7 @@ const Admin: React.FC = () => {
       fromParam = from.slice(0, 7);
       toParam = to.slice(0, 7);
     }
-    const res = await axios.get("http://localhost:3000/admin/metrics", {
+    const res = await axios.get(`${API_BASE_URL}/admin/metrics`, {
       params: {
         businessId,
         userId,
@@ -110,7 +113,7 @@ if (!selectedBusiness || !user?.id || !fromDate || !toDate) return;    // Fetch 
     const fetchEmployees = async () => {
       setLoadingEmployees(true);
       try {
-        const res = await axios.get("http://localhost:3000/admin/employees", {
+        const res = await axios.get(`${API_BASE_URL}/admin/employees`, {
           params: { businessId: selectedBusiness, search, page, limit, authProvider: AuthProvider },
           headers: { Authorization: `Bearer ${token}` }
         });
@@ -131,7 +134,7 @@ if (!selectedBusiness || !user?.id || !fromDate || !toDate) return;    // Fetch 
     setEmployeeLoading(true);
     try {
       await axios.post(
-        "http://localhost:3000/admin/employee",
+        `${API_BASE_URL}/admin/employee`,
         {
           ...newEmployee,
           role: "EMPLOYEE",
@@ -157,7 +160,7 @@ if (!selectedBusiness || !user?.id || !fromDate || !toDate) return;    // Fetch 
   const handleDeleteEmployee = async (id: string) => {
     if (!window.confirm("¿Seguro que deseas eliminar este empleado?")) return;
     try {
-      await axios.delete(`http://localhost:3000/admin/employees/${id}`, {
+      await axios.delete(`${API_BASE_URL}/admin/employees/${id}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setEmployees(employees.filter(a => a.id !== id));
@@ -181,7 +184,7 @@ if (!selectedBusiness || !user?.id || !fromDate || !toDate) return;    // Fetch 
     setEditEmployeeSuccess(null);
     try {
       await axios.put(
-        `http://localhost:3000/admin/employees/${editEmployee.id}`,
+        `${API_BASE_URL}/admin/employees/${editEmployee.id}`,
         {
           name: editEmployee.name,
           email: editEmployee.email,

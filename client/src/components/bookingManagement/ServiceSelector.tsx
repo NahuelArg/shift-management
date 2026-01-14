@@ -2,6 +2,9 @@ import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { useAuth } from '../../context/AuthContext';
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+
+
 interface Service {
   id: string;
   name: string;
@@ -33,7 +36,7 @@ const ServiceSelector: React.FC<ServiceSelectorProps> = ({
       
       setLoading(true);
       try {
-        const response = await axios.get(`http://localhost:3000/services?businessId=${businessId}`, {
+        const response = await axios.get(`${API_BASE_URL}/services?businessId=${businessId}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         setServices(response.data);

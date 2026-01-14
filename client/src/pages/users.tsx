@@ -4,6 +4,8 @@ import { useAuth } from '../context/AuthContext'; // Asume que tienes esto
 import axios from 'axios';
 import NavBar from '../components/navBar';
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+
 const Users: React.FC = () => {
   const { user, token } = useAuth();
 
@@ -49,7 +51,7 @@ const Users: React.FC = () => {
     try {
       setLoadingBusinesses(true);
       const response = await axios.get(
-        `http://localhost:3000/admin/me`,
+        `${API_BASE_URL}/admin/me`,
         {
           headers: { Authorization: `Bearer ${token}` },
         }
@@ -79,7 +81,7 @@ const Users: React.FC = () => {
       setLoadingEmployees(true);
       setError(null);
       const response = await axios.get(
-        `http://localhost:3000/admin/business/${selectedBusiness}/employees`,
+        `${API_BASE_URL}/admin/business/${selectedBusiness}/employees`,
         {
           params: { search, page, limit },
           headers: { Authorization: `Bearer ${token}` },
@@ -105,7 +107,7 @@ const Users: React.FC = () => {
 
     try {
       await axios.post(
-        `http://localhost:3000/admin/business/${selectedBusiness}/employee`,
+        `${API_BASE_URL}/admin/business/${selectedBusiness}/employee`,
         {
           name: newEmployee.name,
           email: newEmployee.email,
@@ -136,7 +138,7 @@ const Users: React.FC = () => {
 
     try {
       await axios.put(
-        `http://localhost:3000/admin/employee/${editEmployee.id}`,
+        `${API_BASE_URL}/admin/employee/${editEmployee.id}`,
         {
           name: editEmployee.name,
           email: editEmployee.email,
@@ -162,7 +164,7 @@ const Users: React.FC = () => {
 
     try {
       await axios.delete(
-        `http://localhost:3000/admin/employee/${id}`,
+        `${API_BASE_URL}/admin/employee/${id}`,
         {
           headers: { Authorization: `Bearer ${token}` },
         }

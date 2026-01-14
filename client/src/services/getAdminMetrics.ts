@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const API_URL = "http://localhost:3000";
+const API_BASE_URL = "http://localhost:3000";
 
 export async function getAdminMetrics(params:{
     userId: string;
@@ -10,7 +10,7 @@ export async function getAdminMetrics(params:{
     groupBy: string;
 }, token:string) {
   try {
-    const response = await axios.get(`${API_URL}/admin/metrics`, { params, 
+    const response = await axios.get(`${API_BASE_URL}/admin/metrics`, { params, 
     headers: 
     { Authorization: `Bearer ${token}` } });
     return response.data;
