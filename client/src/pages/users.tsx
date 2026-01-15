@@ -181,7 +181,7 @@ const Users: React.FC = () => {
   };
 
   // Iniciar edición
-  const handleEditClick = (employee: any) => {
+  const handleEditClick = (employee: Employee) => {
     setEditEmployee({ ...employee, password: '' });
   };
 

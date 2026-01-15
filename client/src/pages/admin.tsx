@@ -176,7 +176,7 @@ const Admin: React.FC = () => {
   };
 
   // Editar empleado
-  const handleEditClick = (employee: any) => {
+  const handleEditClick = (employee: Employee) => {
     setEditEmployee({ ...employee, password: "" });
     setEditEmployeeError(null);
     setEditEmployeeSuccess(null);

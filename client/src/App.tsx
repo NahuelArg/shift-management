@@ -11,7 +11,7 @@ import Users from "./pages/users";
 import Services from "./pages/services";
 import Schedules from "./pages/schedules";
 import BusinessPage from "./pages/business";
-import { Route, BrowserRouter, Routes, Navigate } from "react-router";
+import { Route, BrowserRouter, Routes, Navigate } from "react-router-dom";
 import PrivateRoute from "./components/privateRoute";
 
 function App() {
