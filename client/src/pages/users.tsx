@@ -3,26 +3,21 @@ import React, { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext'; // Asume que tienes esto
 import axios from 'axios';
 import NavBar from '../components/navBar';
+import { Business } from '../services/businessService';
+import { Employee } from '../services/userService';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 const Users: React.FC = () => {
   const { user, token } = useAuth();
 
-  // Verificar que el usuario es ADMIN
-  useEffect(() => {
-    if (user && user.role !== 'ADMIN') {
-      window.location.href = '/';
-    }
-  }, [user]);
-
   // Estado de negocios
-  const [businesses, setBusinesses] = useState<any[]>([]);
+  const [businesses, setBusinesses] = useState<Business[]>([]);
   const [selectedBusiness, setSelectedBusiness] = useState<string>('');
   const [loadingBusinesses, setLoadingBusinesses] = useState(false);
 
   // Estado de empleados
-  const [employees, setEmployees] = useState<any[]>([]);
+  const [employees, setEmployees] = useState<Employee[]>([]);
   const [totalEmployees, setTotalEmployees] = useState(0);
   const [loadingEmployees, setLoadingEmployees] = useState(false);
   const [search, setSearch] = useState('');

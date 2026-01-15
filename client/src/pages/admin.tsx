@@ -4,23 +4,17 @@ import { useAuth } from "../context/AuthContext";
 import { createBooking } from "../services/bookingService";
 import NavBar from "../components/navBar";
 import BookingForm from "../components/bookingManagement/BookingForm";
+import { Business } from "../services/businessService";
+import { Employee } from "../services/userService";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 
 const Admin: React.FC = () => {
   const { user, token } = useAuth();
-
-  // Verificar que el usuario es ADMIN
-  useEffect(() => {
-    if (user && user.role !== 'ADMIN') {
-      window.location.href = '/';
-    }
-  }, [user]);
-
-  const [businesses, setBusinesses] = useState<any[]>([]);
+  const [businesses, setBusinesses] = useState<Business[]>([]);
   const [selectedBusiness, setSelectedBusiness] = useState<string>("");
-  const [employees, setEmployees] = useState<any[]>([]);
+  const [employees, setEmployees] = useState<Employee[]>([]);
   const [totalEmployees, setTotalEmployees] = useState(0);
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
@@ -207,7 +201,7 @@ const Admin: React.FC = () => {
       );
       setEditEmployeeSuccess("Empleado actualizado correctamente.");
       setEmployees(employees.map(a => a.id === editEmployee.id ? { ...a, name: editEmployee.name, email: editEmployee.email } : a));
-      setTimeout(() => setEditEmployee(null), 1000);
+      setTimeout(() => setEditEmployee(null), 3000);
     } catch (err: any) {
       setEditEmployeeError(err.response?.data?.message || "Error al actualizar empleado.");
     } finally {
