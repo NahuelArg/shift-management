@@ -19,6 +19,7 @@ export interface UpdateScheduleDto {
   from?: string;
   to?: string;
   dayOfWeek?: number;
+  businessId?: string;
 }
 
 export const scheduleService = {

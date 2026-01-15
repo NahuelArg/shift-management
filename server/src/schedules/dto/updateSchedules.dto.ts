@@ -1,10 +1,6 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { PartialType, OmitType } from '@nestjs/mapped-types';
 import { CreateScheduleDto } from './create-schedule.dto';
 
-export class UpdateScheduleDto extends CreateScheduleDto {
-  @ApiProperty({
-    description: 'Schedule ID',
-    example: 'c0739fff-d821-4c0f-b7e9-b8cc151e4afb',
-  })
-  id: string;
-}
+export class UpdateScheduleDto extends PartialType(
+    OmitType(CreateScheduleDto, ['businessId'] as const)
+) { }
