@@ -1,8 +1,10 @@
 import {
   BadRequestException,
+  ConflictException,
   ForbiddenException,
   Injectable,
   Logger,
+  NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import * as bcrypt from 'bcrypt';
@@ -22,7 +24,7 @@ export class AdminService {
     const { email, password, name, authProvider, role } = dto;
 
     if (role !== 'ADMIN') {
-      throw new Error('Role must be ADMIN');
+      throw new BadRequestException('Role must be ADMIN');
     }
 
     const existingUser = await this.prisma.user.findUnique({
@@ -30,7 +32,7 @@ export class AdminService {
     });
 
     if (existingUser) {
-      throw new Error('Email already exists');
+      throw new ConflictException('Email already exists');
     }
 
     // Validación condicional de password
@@ -93,7 +95,7 @@ export class AdminService {
       where: { id: userId },
       include: { businesses: true },
     });
-    if (!userWithBusinesses) throw new Error('User not found');
+    if (!userWithBusinesses) throw new NotFoundException('User not found');
 
     const businessIds = userWithBusinesses.businesses.map((b) => b.id);
 
@@ -255,7 +257,7 @@ export class AdminService {
         return convertBigIntToString(result);
   }
   async getAdminById(userId: string) {
-    if (!userId) throw new Error('User ID is required');
+    if (!userId) throw new BadRequestException('User ID is required');
 
     return this.prisma.user.findUnique({
       where: { id: userId },
@@ -331,7 +333,7 @@ export class AdminService {
     return { employees: mapped, total };
   }
   async deleteEmployee(employeeId: string, adminId: string) {
-    if (!employeeId) throw new Error('Employee ID is required');
+    if (!employeeId) throw new BadRequestException('Employee ID is required');
 
     // Verificar que el empleado pertenece a un negocio del admin
     const employee = await this.prisma.user.findFirst({
@@ -345,7 +347,7 @@ export class AdminService {
     });
 
     if (!employee) {
-      throw new Error('No puedes eliminar este empleado');
+      throw new ForbiddenException('No puedes eliminar este empleado');
     }
 
     return this.prisma.user.delete({
@@ -358,14 +360,14 @@ export class AdminService {
     const business = await this.prisma.business.findFirst({
       where: { id: businessId, ownerId: adminId },
     });
-    if (!business) throw new Error('No puedes crear empleados en este negocio');
+    if (!business) throw new ForbiddenException('No puedes crear empleados en este negocio');
 
     // Validar que el email no exista
     const existingUser = await this.prisma.user.findUnique({
       where: { email },
     });
     if (existingUser) {
-      throw new Error('El email ya está registrado');
+      throw new ConflictException('El email ya está registrado');
     }
     if (!password || password.trim().length === 0) {
       throw new BadRequestException(
@@ -457,7 +459,7 @@ export class AdminService {
     });
 
     if (!employee) {
-      throw new Error('No puedes actualizar este empleado');
+      throw new ForbiddenException('No puedes actualizar este empleado');
     }
 
     // Validar que el email no exista en otro usuario (solo si se está actualizando)
@@ -466,7 +468,7 @@ export class AdminService {
         where: { email: dto.email, NOT: { id: employeeId } },
       });
       if (existingUser) {
-        throw new Error('El email ya está registrado');
+        throw new ConflictException('El email ya está registrado');
       }
     }
 
