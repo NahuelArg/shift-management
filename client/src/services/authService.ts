@@ -5,7 +5,7 @@ export interface LoginResponse {
   user: {
     id: string;
     name: string;
-    role: 'ADMIN' | 'CLIENT';
+    role: 'ADMIN' | 'CLIENT' | 'EMPLOYEE';
     password: string;
     email: string;
   };

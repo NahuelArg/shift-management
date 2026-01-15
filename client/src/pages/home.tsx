@@ -31,6 +31,10 @@ const Home: React.FC = () => {
               <Link to="/dashboard/admin">
                 <button className="bg-emerald-500 hover:bg-esmerald-700 text-white shadow font-semibold text-lg py-3 px-6 rounded-lg transition-colors">Go to Admin Dashboard</button>
               </Link>
+            ) : user.role === "EMPLOYEE" ? (
+              <Link to="/dashboard/employee">
+                <button className="bg-emerald-500 hover:bg-esmerald-700 text-white font-semibold text-lg py-3 px-6 rounded-lg transition-colors">Go to Employee Dashboard</button>
+              </Link>
             ) : (
               <Link to="/dashboard">
                 <button className="bg-emerald-500 hover:bg-esmerald-700 text-white font-semibold text-lg py-3 px-6 rounded-lg transition-colors">Go to My Dashboard</button>
