@@ -38,7 +38,7 @@ const BusinessPage: React.FC = () => {
     name: '',
     description: '',
     price: '',
-    duration: '',
+    durationMin: '',
   });
 
   // Cargar negocios al montar
@@ -180,12 +180,12 @@ useEffect(() => {
         name: serviceFormData.name,
         description: serviceFormData.description || undefined,
         price: serviceFormData.price ? parseFloat(serviceFormData.price) : undefined,
-        duration: serviceFormData.duration ? parseInt(serviceFormData.duration) : undefined,
+        durationMin: serviceFormData.durationMin ? parseInt(serviceFormData.durationMin) : undefined,
         businessId: selectedBusinessForServices.id,
       });
 
       setSuccess('Servicio creado exitosamente');
-      setServiceFormData({ name: '', description: '', price: '', duration: '' });
+      setServiceFormData({ name: '', description: '', price: '', durationMin: '' });
       setShowServiceForm(false);
       
       // Recarga servicios
@@ -391,8 +391,8 @@ useEffect(() => {
                   <input
                     type="number"
                     placeholder="Duración en minutos (opcional)"
-                    value={serviceFormData.duration}
-                    onChange={(e) => setServiceFormData({ ...serviceFormData, duration: e.target.value })}
+                    value={serviceFormData.durationMin}
+                    onChange={(e) => setServiceFormData({ ...serviceFormData, durationMin: e.target.value })}
                     className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400"
                   />
                 </div>
@@ -407,7 +407,7 @@ useEffect(() => {
                     type="button"
                     onClick={() => {
                       setShowServiceForm(false);
-                      setServiceFormData({ name: '', description: '', price: '', duration: '' });
+                      setServiceFormData({ name: '', description: '', price: '', durationMin: '' });
                     }}
                     className="bg-gray-300 hover:bg-gray-400 text-gray-800 font-semibold py-2 px-4 rounded-lg"
                   >
