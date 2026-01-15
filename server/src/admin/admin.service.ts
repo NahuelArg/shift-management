@@ -12,6 +12,7 @@ import MetricsResponse from './DTO/metricsDto.dto';
 import { convertBigIntToString } from 'src/utils/convertBigIntToString';
 import { CreateAdminDto } from './DTO/createAdminDto.dto';
 import { CreateEmployeeDto } from './DTO/createEmployeeDto.dto';
+import { UpdateEmployeeDto } from './DTO/updateEmployeeDto.dto';
 
 @Injectable()
 export class AdminService {
@@ -329,11 +330,26 @@ export class AdminService {
     }));
     return { employees: mapped, total };
   }
-  async deleteEmployee(id: string) {
-    if (!id) throw new Error('Employee ID is required');
+  async deleteEmployee(employeeId: string, adminId: string) {
+    if (!employeeId) throw new Error('Employee ID is required');
+
+    // Verificar que el empleado pertenece a un negocio del admin
+    const employee = await this.prisma.user.findFirst({
+      where: {
+        id: employeeId,
+        role: 'EMPLOYEE',
+        business: {
+          ownerId: adminId
+        }
+      },
+    });
+
+    if (!employee) {
+      throw new Error('No puedes eliminar este empleado');
+    }
 
     return this.prisma.user.delete({
-      where: { id, role: 'EMPLOYEE' },
+      where: { id: employeeId },
     });
   }
   async createEmployee(dto: CreateEmployeeDto, adminId: string) {
@@ -425,36 +441,45 @@ export class AdminService {
       .sort((a, b) => a.period.localeCompare(b.period));
   }
   async updateEmployee(
-    dto: CreateEmployeeDto,
+    dto: UpdateEmployeeDto,
     adminId: string,
     employeeId: string,
   ) {
-    // Validar que el negocio pertenece al admin
-    const business = await this.prisma.business.findFirst({
-      where: { id: dto.businessId, ownerId: adminId },
+    // Verificar que el empleado existe y pertenece a un negocio del admin
+    const employee = await this.prisma.user.findFirst({
+      where: {
+        id: employeeId,
+        role: 'EMPLOYEE',
+        business: {
+          ownerId: adminId
+        }
+      },
     });
-    if (!business) throw new Error('No puedes actualizar empleados en este negocio');
 
-    // Validar que el email no exista en otro usuario
-    const existingUser = await this.prisma.user.findFirst({
-      where: { email: dto.email, NOT: { id: employeeId } },
-    });
-    if (existingUser) {
-      throw new Error('El email ya está registrado');
+    if (!employee) {
+      throw new Error('No puedes actualizar este empleado');
     }
 
-    const updateData: any = {
-      name: dto.name,
-      email: dto.email,
-      businessId: dto.businessId,
-    };
+    // Validar que el email no exista en otro usuario (solo si se está actualizando)
+    if (dto.email) {
+      const existingUser = await this.prisma.user.findFirst({
+        where: { email: dto.email, NOT: { id: employeeId } },
+      });
+      if (existingUser) {
+        throw new Error('El email ya está registrado');
+      }
+    }
 
+    const updateData: any = {};
+
+    if (dto.name) updateData.name = dto.name;
+    if (dto.email) updateData.email = dto.email;
     if (dto.password && dto.password.trim().length > 0) {
       updateData.password = await bcrypt.hash(dto.password, 10);
     }
 
     return this.prisma.user.update({
-      where: { id: employeeId, role: 'EMPLOYEE' },
+      where: { id: employeeId },
       data: updateData,
     });
   }

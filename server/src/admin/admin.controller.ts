@@ -28,6 +28,7 @@ import { UpdateAdminDto } from './DTO/updateAdmin.dto';
 import MetricsResponse from './DTO/metricsDto.dto';
 import { CreateAdminDto } from './DTO/createAdminDto.dto';
 import { CreateEmployeeDto } from './DTO/createEmployeeDto.dto';
+import { UpdateEmployeeDto } from './DTO/updateEmployeeDto.dto';
 
 @ApiTags('Admin')
 @ApiBearerAuth()
@@ -70,17 +71,20 @@ async getEmployeesByBusiness(
   );
 }
 
-  @Delete(':id')
+  @Delete('employee/:employeeId')
   @Roles('ADMIN')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Delete admin by ID' })
+  @ApiOperation({ summary: 'Delete employee by ID' })
   @ApiResponse({
     status: 200,
     description: 'Employee deleted successfully',
   })
-  async deleteEmployee(@Param('id') req: RequestWithUser): Promise<void> {
-    await this.adminService.deleteEmployee(req.user.userId);
+  async deleteEmployee(
+    @Request() req: RequestWithUser,
+    @Param('employeeId') employeeId: string,
+  ): Promise<void> {
+    await this.adminService.deleteEmployee(employeeId, req.user.userId);
   }
 
   @Get('dashboard')
@@ -184,7 +188,7 @@ async getEmployeesByBusiness(
   async updateEmployee(
     @Request() req: RequestWithUser,
     @Param('employeeId') employeeId: string,
-    @Body() dto: CreateEmployeeDto,
+    @Body() dto: UpdateEmployeeDto,
   ) {
     return this.adminService.updateEmployee(
       dto,

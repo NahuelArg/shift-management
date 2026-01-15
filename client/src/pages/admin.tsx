@@ -160,7 +160,7 @@ if (!selectedBusiness || !user?.id || !fromDate || !toDate) return;    // Fetch 
   const handleDeleteEmployee = async (id: string) => {
     if (!window.confirm("¿Seguro que deseas eliminar este empleado?")) return;
     try {
-      await axios.delete(`${API_BASE_URL}/admin/employees/${id}`, {
+      await axios.delete(`${API_BASE_URL}/admin/employee/${id}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setEmployees(employees.filter(a => a.id !== id));
@@ -184,7 +184,7 @@ if (!selectedBusiness || !user?.id || !fromDate || !toDate) return;    // Fetch 
     setEditEmployeeSuccess(null);
     try {
       await axios.put(
-        `${API_BASE_URL}/admin/employees/${editEmployee.id}`,
+        `${API_BASE_URL}/admin/employee/${editEmployee.id}`,
         {
           name: editEmployee.name,
           email: editEmployee.email,
