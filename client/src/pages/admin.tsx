@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
-import { AuthProvider, useAuth } from "../context/AuthContext";
+import { useAuth } from "../context/AuthContext";
 import { createBooking } from "../services/bookingService";
 import NavBar from "../components/navBar";
 import BookingForm from "../components/bookingManagement/BookingForm";
