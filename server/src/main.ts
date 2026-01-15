@@ -5,8 +5,12 @@ import { ValidationPipe } from '@nestjs/common';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+
+  // Configurar CORS para desarrollo (acepta cualquier origen)
+  const isDevelopment = process.env.NODE_ENV !== 'production';
+
   app.enableCors({
-    origin: process.env.ALLOWED_ORIGINS|| 'http://localhost:4200', // Permite cualquier origen en desarrollo
+    origin: isDevelopment ? true : (process.env.ALLOWED_ORIGINS || 'http://localhost:4200'),
     credentials: true,
     allowedHeaders: 'Content-Type, Authorization',
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',

@@ -10,6 +10,14 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 const Admin: React.FC = () => {
   const { user, token } = useAuth();
+
+  // Verificar que el usuario es ADMIN
+  useEffect(() => {
+    if (user && user.role !== 'ADMIN') {
+      window.location.href = '/';
+    }
+  }, [user]);
+
   const [businesses, setBusinesses] = useState<any[]>([]);
   const [selectedBusiness, setSelectedBusiness] = useState<string>("");
   const [employees, setEmployees] = useState<any[]>([]);
@@ -109,7 +117,8 @@ const Admin: React.FC = () => {
   }, [selectedBusiness, token, user?.id, fromDate, toDate, groupBy]);
 
   useEffect(() => {
-if (!selectedBusiness || !user?.id || !fromDate || !toDate) return;    // Fetch employees solo del negocio seleccionado
+    if (!selectedBusiness) return;
+
     const fetchEmployees = async () => {
       setLoadingEmployees(true);
       try {
@@ -119,12 +128,14 @@ if (!selectedBusiness || !user?.id || !fromDate || !toDate) return;    // Fetch 
         });
         setEmployees(res.data.employees);
         setTotalEmployees(res.data.total);
+      } catch (error) {
+        console.error('Error fetching employees:', error);
       } finally {
         setLoadingEmployees(false);
       }
     };
     fetchEmployees();
-  }, [selectedBusiness, search, page, limit, token, employeeSuccess, editEmployeeSuccess]);
+  }, [selectedBusiness, search, page, limit, token]);
 
   // Crear empleado
   const handleCreateEmployee = async (e: React.FormEvent) => {
@@ -145,7 +156,7 @@ if (!selectedBusiness || !user?.id || !fromDate || !toDate) return;    // Fetch 
         }
       );
       setEmployeeSuccess("Empleado creado exitosamente.");
-      setNewEmployee({ name: "", email: "", password: "", businessId: businesses[0]?.id || "" });
+      setNewEmployee({ name: "", email: "", password: "", businessId: selectedBusiness });
       setShowEmployeeForm(false);
     } catch (err: any) {
       setEmployeeError(
@@ -210,16 +221,14 @@ if (!selectedBusiness || !user?.id || !fromDate || !toDate) return;    // Fetch 
       <div className="flex flex-col items-center justify-start flex-1 w-full px-4 py-8" style={{ minHeight: "calc(100vh - 48px)" }}>
         <div className="bg-white/90 rounded-xl shadow-lg p-8 w-full max-w-5xl">
           <h2 className="text-3xl font-extrabold text-gray-900 mb-6 text-center">Gestión de Empleados</h2>
-                  {/* Botón para mostrar formulario de reservas*/}
-                  <div className="flex justify-center mb-6">
-                    <button
-                      onClick={() => BookingForm}
-                      className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-6 rounded-lg transition-colors focus:ring-2 focus:ring-blue-400"
-                    >
-                      Crear nueva reserva
-                    </button>
-                    
-                  </div>
+
+          {/* Mensaje de error si no hay negocios */}
+          {businesses.length === 0 && (
+            <div className="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded mb-4 text-center">
+              No tienes negocios asignados. Por favor, crea un negocio primero.
+            </div>
+          )}
+
           {/* Botón para mostrar formulario */}
           {!showEmployeeForm ? (
             <div className="flex justify-center mb-6">
