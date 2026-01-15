@@ -4,8 +4,8 @@ import { useAuth } from "../context/AuthContext";
 import { createBooking } from "../services/bookingService";
 import NavBar from "../components/navBar";
 import BookingForm from "../components/bookingManagement/BookingForm";
-import { Business } from "../services/businessService";
-import { Employee } from "../services/userService";
+import type { Business } from "../services/businessService";
+import type { Employee } from "../services/userService";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 

@@ -3,8 +3,8 @@ import React, { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext'; // Asume que tienes esto
 import axios from 'axios';
 import NavBar from '../components/navBar';
-import { Business } from '../services/businessService';
-import { Employee } from '../services/userService';
+import type { Business } from '../services/businessService';
+import type { Employee } from '../services/userService';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 

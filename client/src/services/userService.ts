@@ -7,6 +7,7 @@ export interface Employee {
   name: string;
   email: string;
   businessId: string;
+  businessName?: string;
   role: string;
   createdAt: string;
   updatedAt: string;
