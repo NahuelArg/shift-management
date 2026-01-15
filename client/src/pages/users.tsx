@@ -9,6 +9,13 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 const Users: React.FC = () => {
   const { user, token } = useAuth();
 
+  // Verificar que el usuario es ADMIN
+  useEffect(() => {
+    if (user && user.role !== 'ADMIN') {
+      window.location.href = '/';
+    }
+  }, [user]);
+
   // Estado de negocios
   const [businesses, setBusinesses] = useState<any[]>([]);
   const [selectedBusiness, setSelectedBusiness] = useState<string>('');
@@ -60,7 +67,7 @@ const Users: React.FC = () => {
       setBusinesses(biz);
       if (biz.length > 0) {
         setSelectedBusiness(biz[0].id);
-        setNewEmployee({ ...newEmployee, businessId: biz[0].id });
+        setNewEmployee({ name: '', email: '', password: '', businessId: biz[0].id });
       }
     } catch (err: any) {
       setError(err.response?.data?.message || 'Error al cargar negocios');
@@ -74,21 +81,21 @@ const Users: React.FC = () => {
     if (selectedBusiness) {
       fetchEmployees();
     }
-  }, [selectedBusiness, search, page]);
+  }, [selectedBusiness, search, page, limit]);
 
   const fetchEmployees = async () => {
     try {
       setLoadingEmployees(true);
       setError(null);
       const response = await axios.get(
-        `${API_BASE_URL}/admin/business/${selectedBusiness}/employees`,
+        `${API_BASE_URL}/admin/employees`,
         {
-          params: { search, page, limit },
+          params: { businessId: selectedBusiness, search, page, limit },
           headers: { Authorization: `Bearer ${token}` },
         }
       );
-      setEmployees(response.data);
-      setTotalEmployees(response.data.length);
+      setEmployees(response.data.employees);
+      setTotalEmployees(response.data.total);
     } catch (err: any) {
       setError(
         err.response?.data?.message || 'Error al cargar empleados'
@@ -107,12 +114,14 @@ const Users: React.FC = () => {
 
     try {
       await axios.post(
-        `${API_BASE_URL}/admin/business/${selectedBusiness}/employee`,
+        `${API_BASE_URL}/admin/employee`,
         {
           name: newEmployee.name,
           email: newEmployee.email,
           password: newEmployee.password,
           businessId: selectedBusiness,
+          role: 'EMPLOYEE',
+          authProvider: 'LOCAL',
         },
         {
           headers: { Authorization: `Bearer ${token}` },
@@ -215,10 +224,17 @@ const Users: React.FC = () => {
             </div>
           )}
 
+          {/* Mensaje de error si no hay negocios */}
+          {businesses.length === 0 && !loadingBusinesses && (
+            <div className="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded mb-4 text-center">
+              No tienes negocios asignados. Por favor, crea un negocio primero.
+            </div>
+          )}
+
           {/* Selector de negocio */}
           {loadingBusinesses ? (
             <div className="mb-6 p-4 bg-gray-100 rounded">Cargando negocios...</div>
-          ) : (
+          ) : businesses.length > 0 ? (
             <div className="mb-6">
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Selecciona un negocio:
@@ -227,7 +243,7 @@ const Users: React.FC = () => {
                 value={selectedBusiness}
                 onChange={(e) => {
                   setSelectedBusiness(e.target.value);
-                  setNewEmployee({ ...newEmployee, businessId: e.target.value });
+                  setNewEmployee({ name: '', email: '', password: '', businessId: e.target.value });
                   setPage(1);
                 }}
                 className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400 w-full md:w-64"
@@ -240,7 +256,7 @@ const Users: React.FC = () => {
                 ))}
               </select>
             </div>
-          )}
+          ) : null}
 
           {/* Botón crear empleado */}
           {!showEmployeeForm && !editEmployee && selectedBusiness && (
