@@ -1,4 +1,4 @@
-# Appointment Manager
+# Shift Management
 
 A modern, full-stack appointment management system built with React, NestJS, and Prisma. This application allows businesses to manage their appointments, employees, and client bookings efficiently.
 
@@ -52,23 +52,24 @@ A modern, full-stack appointment management system built with React, NestJS, and
 ### Backend
 - NestJS
 - Prisma ORM
-- MySQL (configurable para PostgreSQL)
+- PostgreSQL (MySQL also supported)
 - JWT Authentication
 - REST API
+- Swagger/OpenAPI Documentation
 
 ## 📋 Prerequisites
 
 - Node.js (v22.18 or higher)
 - npm or yarn
-- MySQL database
+- PostgreSQL 16+ (or MySQL 8+)
 - Git
 
 ## 🔧 Installation
 
 1. Clone the repository
 ```bash
-git clone https://github.com/yourusername/appointment-manager.git
-cd appointment-manager
+git clone https://github.com/NahuelArg/shift-management.git
+cd shift-management
 ```
 
 2. Install dependencies for both frontend and backend
@@ -127,21 +128,75 @@ API documentation is available through Swagger UI at `/api` when running the bac
 ## 🔒 Environment Variables
 
 ### Backend (.env)
-```
-# MySQL (configuración actual)
-DATABASE_URL="mysql://user:password@localhost:3306/shift_management"
+```bash
+# Database - PostgreSQL (Recommended)
+DATABASE_URL="postgresql://user:password@localhost:5432/shift_management"
 
-# O PostgreSQL (alternativa)
-# DATABASE_URL="postgresql://user:password@localhost:5432/shift_management"
+# Or MySQL
+# DATABASE_URL="mysql://user:password@localhost:3306/shift_management"
 
-JWT_SECRET="your-secret-key"
+# JWT Secret (use a strong random string)
+JWT_SECRET="your-super-secret-jwt-key-change-this"
+
+# Server Port
 PORT=3000
+
+# Node Environment
+NODE_ENV=development
+
+# CORS (optional, defaults to allow all in development)
+# ALLOWED_ORIGINS=http://localhost:5173,https://your-frontend.vercel.app
 ```
 
 ### Frontend (.env)
+```bash
+# Development
+VITE_API_URL=http://localhost:3000
+
+# Production
+# VITE_API_URL=https://your-backend-api.com
 ```
-VITE_API_URL="http://localhost:3000"
-```
+
+## 🚢 Deployment
+
+### Frontend (Vercel - Recommended)
+
+1. Push your code to GitHub
+2. Import project to [Vercel](https://vercel.com)
+3. Configure build settings:
+   - **Framework Preset:** Vite
+   - **Root Directory:** `client`
+   - **Build Command:** `npm run build`
+   - **Output Directory:** `dist`
+4. Add environment variable:
+   - `VITE_API_URL` = `https://your-backend-url.com`
+5. Deploy
+
+### Backend (Render - Recommended)
+
+1. Push your code to GitHub
+2. Create new Web Service on [Render](https://render.com)
+3. Configure service:
+   - **Root Directory:** `server`
+   - **Build Command:** `npm install && npx prisma generate && npm run build`
+   - **Start Command:** `npm run start:prod`
+4. Add environment variables:
+   - `DATABASE_URL` (from Render PostgreSQL or external DB)
+   - `JWT_SECRET`
+   - `PORT=3000`
+   - `NODE_ENV=production`
+5. Deploy
+
+### Database
+
+**Option 1: Supabase (Recommended)**
+- Free PostgreSQL database
+- Automatic backups
+- Connection pooling
+
+**Option 2: Render PostgreSQL**
+- Integrated with Render services
+- Easy setup
 
 ## 🎯 Future Features
 
