@@ -5,8 +5,10 @@ import { ValidationPipe } from '@nestjs/common';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+
+  // Configurar CORS - acepta todos los orígenes
   app.enableCors({
-    origin: process.env.ALLOWED_ORIGINS|| 'http://localhost:4200', // Permite cualquier origen en desarrollo
+    origin: true,
     credentials: true,
     allowedHeaders: 'Content-Type, Authorization',
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
