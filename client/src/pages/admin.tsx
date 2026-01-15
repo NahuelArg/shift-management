@@ -114,7 +114,7 @@ if (!selectedBusiness || !user?.id || !fromDate || !toDate) return;    // Fetch 
       setLoadingEmployees(true);
       try {
         const res = await axios.get(`${API_BASE_URL}/admin/employees`, {
-          params: { businessId: selectedBusiness, search, page, limit, authProvider: AuthProvider },
+          params: { businessId: selectedBusiness, search, page, limit },
           headers: { Authorization: `Bearer ${token}` }
         });
         setEmployees(res.data.employees);
