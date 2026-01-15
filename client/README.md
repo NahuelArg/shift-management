@@ -71,16 +71,17 @@ src/
 ├── context/            # React Context providers
 │   └── AuthContext.tsx
 ├── pages/              # Page components
-│   ├── admin.tsx       # Admin dashboard
-│   ├── users.tsx       # Employee management
-│   ├── business.tsx    # Business management
-│   ├── services.tsx    # Service management
-│   ├── schedules.tsx   # Schedule management
-│   ├── bookings.tsx    # Booking management
-│   ├── dashboard.tsx   # Client dashboard
-│   ├── home.tsx        # Landing page
-│   ├── login.tsx       # Login page
-│   └── register.tsx    # Registration page
+│   ├── admin.tsx              # Admin dashboard
+│   ├── users.tsx              # Employee management
+│   ├── business.tsx           # Business management
+│   ├── services.tsx           # Service management
+│   ├── schedules.tsx          # Schedule management
+│   ├── bookings.tsx           # Booking management
+│   ├── dashboard.tsx          # Client dashboard
+│   ├── employeeDashboard.tsx  # Employee dashboard
+│   ├── home.tsx               # Landing page
+│   ├── login.tsx              # Login page
+│   └── register.tsx           # Registration page
 ├── services/           # API service layer
 │   ├── apiClient.ts
 │   ├── authService.ts
@@ -100,9 +101,12 @@ src/
 - `/login` - User login
 - `/register` - User registration
 
-### Client Routes (Authenticated)
-- `/dashboard` - Client dashboard
+### Client Routes (CLIENT role required)
+- `/dashboard` - Client dashboard with booking statistics
 - `/bookings` - Manage bookings
+
+### Employee Routes (EMPLOYEE role required)
+- `/dashboard/employee` - Employee dashboard with assigned bookings
 
 ### Admin Routes (ADMIN role required)
 - `/dashboard/admin` - Admin dashboard with metrics

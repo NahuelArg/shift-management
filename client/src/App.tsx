@@ -4,6 +4,7 @@ import Login from "./pages/login";
 import Register from "./pages/register";
 import Home from "./pages/home";
 import Dashboard from "./pages/dashboard";
+import EmployeeDashboard from "./pages/employeeDashboard";
 import Bookings from "./pages/bookings";
 import Admin from "./pages/admin";
 import Users from "./pages/users";
@@ -21,6 +22,7 @@ function App() {
         <Route path="/register" element={<Register />} />
         <Route path="/home" element={<Home />} />
         <Route path="/dashboard" element={<PrivateRoute requiredRole="CLIENT"><Dashboard /></PrivateRoute>} />
+        <Route path="/dashboard/employee" element={<PrivateRoute requiredRole="EMPLOYEE"><EmployeeDashboard /></PrivateRoute>} />
         <Route path="/bookings" element={<PrivateRoute><Bookings /></PrivateRoute>} />
         <Route path="/dashboard/admin" element={<PrivateRoute requiredRole="ADMIN"><Admin /></PrivateRoute>} />
         <Route path="/users" element={<PrivateRoute requiredRole="ADMIN"><Users /></PrivateRoute>} />
