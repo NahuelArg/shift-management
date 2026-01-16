@@ -16,16 +16,33 @@ interface Booking {
     name: string;
     durationMin: number;
   };
-  client: {
+  user: {
     name: string;
     email: string;
   };
+}
+
+interface Service {
+  id: string;
+  name: string;
+  description: string | null;
+  durationMin: number;
+  price: number;
+  businessId: string;
+}
+
+interface UserSearchResult {
+  id: string;
+  name: string;
+  email: string;
+  phone: string | null;
 }
 
 const EmployeeDashboard: React.FC = () => {
   const { user, token } = useAuth();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [updatingStatus, setUpdatingStatus] = useState<string | null>(null);
   const [stats, setStats] = useState({
     today: 0,
@@ -33,6 +50,21 @@ const EmployeeDashboard: React.FC = () => {
     confirmed: 0,
     completed: 0,
   });
+
+  // Modal states
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [services, setServices] = useState<Service[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<UserSearchResult[]>([]);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [selectedClient, setSelectedClient] = useState<UserSearchResult | null>(null);
+  const [formData, setFormData] = useState({
+    serviceId: '',
+    date: '',
+    startTime: '',
+  });
+  const [creating, setCreating] = useState(false);
+  const [createError, setCreateError] = useState<string | null>(null);
 
   useEffect(() => {
     if (user && token) {
@@ -43,7 +75,8 @@ const EmployeeDashboard: React.FC = () => {
   const fetchBookings = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`${API_BASE_URL}/bookings`, {
+      setError(null);
+      const response = await axios.get(`${API_BASE_URL}/bookings/my-assignments`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -59,8 +92,9 @@ const EmployeeDashboard: React.FC = () => {
         completed: bookingsData.filter((b: Booking) => b.status === 'COMPLETED').length,
       };
       setStats(stats);
-    } catch (error) {
-      console.error('Error fetching bookings:', error);
+    } catch (err: any) {
+      console.error('Error fetching bookings:', err);
+      setError(err.response?.data?.message || 'Error al cargar los turnos. Por favor, intenta de nuevo.');
     } finally {
       setLoading(false);
     }
@@ -135,6 +169,133 @@ const EmployeeDashboard: React.FC = () => {
     return a.startTime.localeCompare(b.startTime);
   });
 
+  // Load services when modal opens
+  const loadServices = async () => {
+    try {
+      const response = await axios.get(`${API_BASE_URL}/services/my-business`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setServices(response.data);
+    } catch (error) {
+      console.error('Error loading services:', error);
+      setCreateError('Error al cargar servicios');
+    }
+  };
+
+  // Search users by email
+  const searchUsers = async (email: string) => {
+    if (!email || email.trim().length < 3) {
+      setSearchResults([]);
+      return;
+    }
+
+    try {
+      setSearchLoading(true);
+      const response = await axios.get(`${API_BASE_URL}/users/search`, {
+        params: { email: email.trim() },
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setSearchResults(response.data);
+    } catch (error) {
+      console.error('Error searching users:', error);
+      setSearchResults([]);
+    } finally {
+      setSearchLoading(false);
+    }
+  };
+
+  // Handle search input change
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setSearchQuery(value);
+    searchUsers(value);
+  };
+
+  // Select a client from search results
+  const selectClient = (client: UserSearchResult) => {
+    setSelectedClient(client);
+    setSearchQuery(client.email);
+    setSearchResults([]);
+  };
+
+  // Open modal and load services
+  const openCreateModal = () => {
+    setShowCreateModal(true);
+    setCreateError(null);
+    loadServices();
+  };
+
+  // Close modal and reset form
+  const closeCreateModal = () => {
+    setShowCreateModal(false);
+    setSelectedClient(null);
+    setSearchQuery('');
+    setSearchResults([]);
+    setFormData({ serviceId: '', date: '', startTime: '' });
+    setCreateError(null);
+  };
+
+  // Get selected service details
+  const selectedService = services.find((s) => s.id === formData.serviceId);
+
+  // Calculate end time based on service duration
+  const calculateEndTime = (startTime: string, durationMin: number): string => {
+    if (!startTime) return '';
+    const [hours, minutes] = startTime.split(':').map(Number);
+    const totalMinutes = hours * 60 + minutes + durationMin;
+    const endHours = Math.floor(totalMinutes / 60);
+    const endMinutes = totalMinutes % 60;
+    return `${String(endHours).padStart(2, '0')}:${String(endMinutes).padStart(2, '0')}`;
+  };
+
+  // Submit new booking
+  const handleCreateBooking = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!selectedClient) {
+      setCreateError('Debes seleccionar un cliente');
+      return;
+    }
+
+    if (!formData.serviceId || !formData.date || !formData.startTime) {
+      setCreateError('Todos los campos son requeridos');
+      return;
+    }
+
+    try {
+      setCreating(true);
+      setCreateError(null);
+
+      const endTime = calculateEndTime(formData.startTime, selectedService!.durationMin);
+
+      await axios.post(
+        `${API_BASE_URL}/bookings`,
+        {
+          userId: selectedClient.id,
+          serviceId: formData.serviceId,
+          date: formData.date,
+          startTime: formData.startTime,
+          endTime,
+          timezone: 'America/Argentina/Buenos_Aires',
+        },
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      // Refresh bookings list
+      await fetchBookings();
+      closeCreateModal();
+    } catch (error: any) {
+      console.error('Error creating booking:', error);
+      setCreateError(
+        error.response?.data?.message || 'Error al crear la reserva. Por favor, intenta de nuevo.'
+      );
+    } finally {
+      setCreating(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-purple-50 to-purple-100">
       <NavBar />
@@ -142,12 +303,35 @@ const EmployeeDashboard: React.FC = () => {
         <div className="bg-white rounded-xl shadow-lg p-8">
           {/* Header */}
           <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-800 mb-2">
-              Panel de Empleado - {user?.name}
-            </h1>
-            <p className="text-gray-600">
-              Gestiona y actualiza el estado de las reservas
-            </p>
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+              <div>
+                <h1 className="text-3xl font-bold text-gray-800 mb-2">
+                  Panel de Empleado - {user?.name}
+                </h1>
+                <p className="text-gray-600">
+                  Gestiona y actualiza el estado de las reservas
+                </p>
+              </div>
+              <button
+                onClick={openCreateModal}
+                className="inline-flex items-center justify-center px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-lg transition-colors shadow-md"
+              >
+                <svg
+                  className="w-5 h-5 mr-2"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 4v16m8-8H4"
+                  />
+                </svg>
+                Nueva Reserva
+              </button>
+            </div>
           </div>
 
           {/* Estadísticas */}
@@ -175,6 +359,23 @@ const EmployeeDashboard: React.FC = () => {
             <h2 className="text-2xl font-bold text-gray-800 mb-4">
               Turnos Asignados
             </h2>
+
+            {error && (
+              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4">
+                <div className="flex items-center">
+                  <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                  </svg>
+                  <span>{error}</span>
+                </div>
+                <button
+                  onClick={fetchBookings}
+                  className="mt-2 text-sm underline hover:no-underline"
+                >
+                  Intentar de nuevo
+                </button>
+              </div>
+            )}
 
             {loading ? (
               <div className="text-center py-8">
@@ -251,10 +452,10 @@ const EmployeeDashboard: React.FC = () => {
                                 />
                               </svg>
                               <span className="font-medium">
-                                {booking.client.name}
+                                {booking.user.name}
                               </span>
                               <span className="text-gray-400">
-                                ({booking.client.email})
+                                ({booking.user.email})
                               </span>
                             </p>
                             <p className="flex items-center gap-2">
@@ -344,6 +545,205 @@ const EmployeeDashboard: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Modal para crear reserva */}
+      {showCreateModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+              <h2 className="text-2xl font-bold text-gray-800">Nueva Reserva</h2>
+              <button
+                onClick={closeCreateModal}
+                className="text-gray-500 hover:text-gray-700 transition-colors"
+              >
+                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateBooking} className="p-6 space-y-6">
+              {createError && (
+                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+                  {createError}
+                </div>
+              )}
+
+              {/* Búsqueda de cliente */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Cliente *
+                </label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={handleSearchChange}
+                    placeholder="Buscar por email..."
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    disabled={creating}
+                  />
+                  {searchLoading && (
+                    <div className="absolute right-3 top-3">
+                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-600"></div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Resultados de búsqueda */}
+                {searchResults.length > 0 && (
+                  <div className="mt-2 border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                    {searchResults.map((result) => (
+                      <button
+                        key={result.id}
+                        type="button"
+                        onClick={() => selectClient(result)}
+                        className="w-full px-4 py-3 text-left hover:bg-purple-50 border-b border-gray-100 last:border-b-0 transition-colors"
+                      >
+                        <div className="font-medium text-gray-800">{result.name}</div>
+                        <div className="text-sm text-gray-600">{result.email}</div>
+                        {result.phone && (
+                          <div className="text-sm text-gray-500">{result.phone}</div>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {/* Cliente seleccionado */}
+                {selectedClient && (
+                  <div className="mt-2 bg-purple-50 border border-purple-200 rounded-lg px-4 py-3">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <div className="font-medium text-gray-800">{selectedClient.name}</div>
+                        <div className="text-sm text-gray-600">{selectedClient.email}</div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedClient(null);
+                          setSearchQuery('');
+                        }}
+                        className="text-purple-600 hover:text-purple-700"
+                      >
+                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M6 18L18 6M6 6l12 12"
+                          />
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Selección de servicio */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Servicio *
+                </label>
+                <select
+                  value={formData.serviceId}
+                  onChange={(e) => setFormData({ ...formData, serviceId: e.target.value })}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  disabled={creating || services.length === 0}
+                  required
+                >
+                  <option value="">Seleccionar servicio...</option>
+                  {services.map((service) => (
+                    <option key={service.id} value={service.id}>
+                      {service.name} - ${service.price.toLocaleString()} ({service.durationMin} min)
+                    </option>
+                  ))}
+                </select>
+                {services.length === 0 && (
+                  <p className="mt-2 text-sm text-gray-500">No hay servicios disponibles</p>
+                )}
+              </div>
+
+              {/* Fecha */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Fecha *
+                </label>
+                <input
+                  type="date"
+                  value={formData.date}
+                  onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                  min={new Date().toISOString().split('T')[0]}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  disabled={creating}
+                  required
+                />
+              </div>
+
+              {/* Hora de inicio */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Hora de inicio *
+                </label>
+                <input
+                  type="time"
+                  value={formData.startTime}
+                  onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  disabled={creating}
+                  required
+                />
+              </div>
+
+              {/* Resumen */}
+              {selectedService && formData.startTime && (
+                <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 space-y-2">
+                  <h3 className="font-medium text-gray-800">Resumen de la Reserva</h3>
+                  <div className="text-sm text-gray-600 space-y-1">
+                    <p>
+                      <span className="font-medium">Servicio:</span> {selectedService.name}
+                    </p>
+                    <p>
+                      <span className="font-medium">Duración:</span> {selectedService.durationMin} minutos
+                    </p>
+                    <p>
+                      <span className="font-medium">Hora fin:</span>{' '}
+                      {calculateEndTime(formData.startTime, selectedService.durationMin)}
+                    </p>
+                    <p className="text-lg font-bold text-purple-600 pt-2">
+                      Precio: ${selectedService.price.toLocaleString()}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Botones */}
+              <div className="flex gap-3 pt-4">
+                <button
+                  type="button"
+                  onClick={closeCreateModal}
+                  className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 transition-colors"
+                  disabled={creating}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-lg transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
+                  disabled={creating || !selectedClient || !formData.serviceId || !formData.date || !formData.startTime}
+                >
+                  {creating ? 'Creando...' : 'Crear Reserva'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

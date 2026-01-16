@@ -25,6 +25,7 @@ const Dashboard: React.FC = () => {
   const { user, token } = useAuth();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [stats, setStats] = useState({
     total: 0,
     pending: 0,
@@ -41,7 +42,8 @@ const Dashboard: React.FC = () => {
   const fetchBookings = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`${API_BASE_URL}/bookings`, {
+      setError(null);
+      const response = await axios.get(`${API_BASE_URL}/bookings/my-bookings`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -56,8 +58,9 @@ const Dashboard: React.FC = () => {
         cancelled: bookingsData.filter((b: Booking) => b.status === 'CANCELLED').length,
       };
       setStats(stats);
-    } catch (error) {
-      console.error('Error fetching bookings:', error);
+    } catch (err: any) {
+      console.error('Error fetching bookings:', err);
+      setError(err.response?.data?.message || 'Error al cargar las reservas. Por favor, intenta de nuevo.');
     } finally {
       setLoading(false);
     }
@@ -122,6 +125,23 @@ const Dashboard: React.FC = () => {
             <h2 className="text-2xl font-bold text-gray-800 mb-4">
               Mis Reservas
             </h2>
+
+            {error && (
+              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4">
+                <div className="flex items-center">
+                  <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                  </svg>
+                  <span>{error}</span>
+                </div>
+                <button
+                  onClick={fetchBookings}
+                  className="mt-2 text-sm underline hover:no-underline"
+                >
+                  Intentar de nuevo
+                </button>
+              </div>
+            )}
 
             {loading ? (
               <div className="text-center py-8">

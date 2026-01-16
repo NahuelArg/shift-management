@@ -34,4 +34,27 @@ export class UsersService {
       data: updateUserDto,
     });
   }
+
+  async searchByEmail(email: string): Promise<User[]> {
+    return this.prisma.user.findMany({
+      where: {
+        email: {
+          contains: email,
+          mode: 'insensitive',
+        },
+      },
+      take: 10, // Limit to 10 results
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        phone: true,
+        createdAt: true,
+        updatedAt: true,
+        authProvider: true,
+        businessId: true,
+      },
+    });
+  }
 }

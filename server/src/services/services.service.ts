@@ -46,4 +46,22 @@ export class ServicesService {
       throw new InternalServerErrorException('Error updating service: Unknown error');
     }
   }
+
+  async getServicesByEmployee(employeeId: string): Promise<Service[]> {
+    // First get the employee's business
+    const user = await this.prisma.user.findUnique({
+      where: { id: employeeId },
+      select: { businessId: true },
+    });
+
+    if (!user || !user.businessId) {
+      throw new BadRequestException('Employee is not assigned to any business');
+    }
+
+    // Get all services for that business
+    return this.prisma.service.findMany({
+      where: { businessId: user.businessId },
+      orderBy: { name: 'asc' },
+    });
+  }
 }

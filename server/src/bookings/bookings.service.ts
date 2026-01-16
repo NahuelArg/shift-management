@@ -274,4 +274,59 @@ export class BookingsService {
 
     return null;
   }
+
+  /**
+   * Get all bookings assigned to a specific employee
+   */
+  async getBookingsByEmployee(employeeId: string): Promise<Booking[]> {
+    return this.prisma.booking.findMany({
+      where: {
+        employeeId,
+      },
+      include: {
+        service: true,
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+        business: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
+      orderBy: [
+        { date: 'asc' },
+        { startTime: 'asc' },
+      ],
+    });
+  }
+
+  /**
+   * Get all bookings for a specific user (client)
+   */
+  async getBookingsByUser(userId: string): Promise<Booking[]> {
+    return this.prisma.booking.findMany({
+      where: {
+        userId,
+      },
+      include: {
+        service: true,
+        business: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
+      orderBy: [
+        { date: 'desc' },
+        { startTime: 'desc' },
+      ],
+    });
+  }
 }
