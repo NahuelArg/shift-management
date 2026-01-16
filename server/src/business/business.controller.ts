@@ -24,7 +24,7 @@ import { Roles } from '../decorator/roles.decorator';
 import { CreateBusinessDto } from './dto/Create-Business.dto';
 import { UpdateBusinessDto } from './dto/updateBusiness.dto';
 
-@ApiTags('business')
+@ApiTags('Business')
 @Controller('business')
 export class BusinessController {
   constructor(private readonly businessService: BusinessService) {}

@@ -268,12 +268,10 @@ export class BookingsService {
         },
       });
       if (!hasConflicting) {
-        console.log(`Empleado disponible: ${employee.name} (${employee.id})`);
         return employee.id;
       }
     }
 
-    console.log('No hay empleados disponibles');
     return null;
   }
 }

@@ -24,7 +24,7 @@ import { ScheduleDto } from './dto/schedulesDto.dto';
 import { CreateScheduleDto } from './dto/create-schedule.dto';
 import { UpdateScheduleDto } from './dto/updateSchedules.dto';
 
-@ApiTags('schedules')
+@ApiTags('Schedules')
 @Controller('schedules')
 export class SchedulesController {
   constructor(private readonly schedulesService: SchedulesService) {}

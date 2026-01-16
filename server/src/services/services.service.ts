@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable, BadRequestException, InternalServerErrorException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { Service } from '@prisma/client';
 import { CreateServiceDto } from './dto/create-service.dto';
@@ -41,9 +41,9 @@ export class ServicesService {
       });
     } catch (error) {
       if (error instanceof Error) {
-        throw new Error(`Error updating service: ${error.message}`);
+        throw new InternalServerErrorException(`Error updating service: ${error.message}`);
       }
-      throw new Error('Error updating service: Unknown error');
+      throw new InternalServerErrorException('Error updating service: Unknown error');
     }
   }
 }

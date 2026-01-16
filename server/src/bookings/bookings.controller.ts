@@ -31,7 +31,7 @@ import { Roles } from '../decorator/roles.decorator';
 import { CreateBookingDto } from './dto/createBookingDto.dto';
 import { RequestWithUser } from 'src/types/express-request.interface';
 
-@ApiTags('bookings')
+@ApiTags('Bookings')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('bookings')

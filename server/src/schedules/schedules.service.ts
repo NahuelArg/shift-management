@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'prisma/prisma.service';
 import { Schedule } from '@prisma/client';
 import { CreateScheduleDto } from './dto/create-schedule.dto';
@@ -10,9 +10,9 @@ export class SchedulesService {
   async findAll(): Promise<Schedule[]> {
     const schedules = await this.prisma.schedule.findMany();
     if (!schedules || schedules.length === 0) {
-      throw new Error('No schedules found');
+      throw new NotFoundException('No schedules found');
     }
-    
+
     return schedules;
 
   }
