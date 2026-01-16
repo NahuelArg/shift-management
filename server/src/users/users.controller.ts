@@ -7,6 +7,7 @@ import {
   Param,
   UseGuards,
   Put,
+  Query,
   BadRequestException,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
@@ -42,6 +43,20 @@ export class UsersController {
   async findAll(): Promise<UserDto[]> {
     return this.usersService.findAll();
   }
+
+  @Get('search')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @ApiBearerAuth()
+  @Roles('EMPLOYEE', 'ADMIN')
+  @ApiOperation({ summary: 'Search users by email (EMPLOYEE/ADMIN)' })
+  @ApiResponse({ status: 200, description: 'List of users matching search', type: [UserDto] })
+  async searchUsers(@Query('email') email: string): Promise<UserDto[]> {
+    if (!email || email.trim().length === 0) {
+      throw new BadRequestException('Email query parameter is required');
+    }
+    return this.usersService.searchByEmail(email);
+  }
+
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @ApiBearerAuth()

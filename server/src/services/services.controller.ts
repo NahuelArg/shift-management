@@ -8,6 +8,7 @@ import {
   BadRequestException,
   UseGuards,
   Put,
+  Request,
 } from '@nestjs/common';
 import { ServicesService } from './services.service';
 import {
@@ -23,6 +24,7 @@ import { Roles } from 'src/decorator/roles.decorator';
 import { ServiceDto } from './dto/service.dto';
 import { CreateServiceDto } from './dto/create-service.dto';
 import { UpdateServiceDto } from './dto/updateServices.dto';
+import { RequestWithUser } from 'src/types/express-request.interface';
 
 @ApiTags('Services')
 @Controller('services')
@@ -37,6 +39,16 @@ export class ServicesController {
   @ApiResponse({ status: 200, type: [ServiceDto] })
   async findAll(): Promise<Service[]> {
     return this.servicesService.findAll();
+  }
+
+  @Get('my-business')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('EMPLOYEE')
+  @ApiOperation({ summary: 'Get services from employee\'s business (EMPLOYEE)' })
+  @ApiResponse({ status: 200, type: [ServiceDto] })
+  async getMyBusinessServices(@Request() req: RequestWithUser): Promise<Service[]> {
+    return this.servicesService.getServicesByEmployee(req.user.userId);
   }
 
   @Delete(':id')
