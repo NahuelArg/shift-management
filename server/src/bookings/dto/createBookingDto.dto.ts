@@ -12,7 +12,7 @@ export class CreateBookingDto {
     description: 'Service ID',
     example: 'abc-123-def-456',
   })
-  @IsString()
+  @IsUUID()
   @IsNotEmpty()
   serviceId: string;
 
@@ -20,7 +20,7 @@ export class CreateBookingDto {
     description: 'Business ID',
     example: 'xyz-789-ghi-012',
   })
-  @IsString()
+  @IsUUID()
   @IsNotEmpty()
   businessId: string;
 

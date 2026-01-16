@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString, IsNotEmpty } from 'class-validator';
+import { IsString, IsNotEmpty, IsUUID } from 'class-validator';
 
 export class CreateCashRegisterDto {
   @ApiProperty({
@@ -13,7 +13,7 @@ export class CreateCashRegisterDto {
     description: 'Business ID',
     example: 'b1a2c3d4-e5f6-7g8h-9i0j-k1l2m3n4o5p6',
   })
-  @IsString()
+  @IsUUID()
   @IsNotEmpty()
   businessId: string;
 }

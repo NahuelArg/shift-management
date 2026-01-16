@@ -9,7 +9,6 @@ export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Post('login')
-  @ApiTags('Auth')
   @ApiOperation({
     summary: 'Login user',
     description: 'Authenticate user with email and password',
