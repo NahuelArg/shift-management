@@ -8,6 +8,7 @@ import {
   UseGuards,
   Request,
   Put,
+  Patch,
   Query,
   BadRequestException,
   NotFoundException,
@@ -60,23 +61,52 @@ export class BookingsController {
     return this.bookingsService.findAll();
   }
 
+  // ✅ GET bookings assigned to employee
+  @Get('my-assignments')
+  @Roles('EMPLOYEE')
+  @ApiOperation({ summary: 'Get bookings assigned to current employee (EMPLOYEE)' })
+  @ApiResponse({ status: 200, type: [BookingDto] })
+  async getMyAssignments(@Request() req: RequestWithUser): Promise<Booking[]> {
+    return this.bookingsService.getBookingsByEmployee(req.user.userId);
+  }
+
+  // ✅ GET bookings for current user (CLIENT)
+  @Get('my-bookings')
+  @Roles('CLIENT')
+  @ApiOperation({ summary: 'Get bookings for current user (CLIENT)' })
+  @ApiResponse({ status: 200, type: [BookingDto] })
+  async getMyBookings(@Request() req: RequestWithUser): Promise<Booking[]> {
+    return this.bookingsService.getBookingsByUser(req.user.userId);
+  }
+
   @Post()
-  @Roles('CLIENT', 'ADMIN')
+  @Roles('CLIENT', 'ADMIN', 'EMPLOYEE')
   @UsePipes(new ValidationPipe({ transform: true }))
   @ApiOperation({ summary: 'Create a new booking' })
   @ApiResponse({ status: 201, type: CreateBookingDto })
   async create(
-    @Body() createBookingDto: CreateBookingDto,
+    @Body() createBookingDto: CreateBookingDto & { userId?: string },
     @Request() req: RequestWithUser,
   ): Promise<Booking> {
-    // Omitimos el userId del DTO y lo obtenemos del token
-    const { userId } = req.user;
+    // Si el usuario es EMPLOYEE o ADMIN, puede especificar userId en el body
+    // Si es CLIENT, usa su propio userId del token
+    let targetUserId: string;
 
-    // Crear la reserva con el userId del token
+    if (req.user.role === 'EMPLOYEE' || req.user.role === 'ADMIN') {
+      // EMPLOYEE/ADMIN puede crear booking para cualquier usuario
+      if (!createBookingDto.userId) {
+        throw new BadRequestException('userId is required for EMPLOYEE/ADMIN to create bookings');
+      }
+      targetUserId = createBookingDto.userId;
+    } else {
+      // CLIENT solo puede crear bookings para sí mismo
+      targetUserId = req.user.userId;
+    }
+
     const bookingData = {
       ...createBookingDto,
       timezone: createBookingDto.timezone || 'UTC',
-      userId, // Añadimos el userId del token
+      userId: targetUserId,
     };
 
     return this.bookingsService.create(bookingData);
@@ -101,17 +131,30 @@ export class BookingsController {
     return this.bookingsService.update(id, updateBookingDto);
   }
 
-  // ✅ PUT change the status of a booking
-  @Put(':id/status')
-  @Roles('ADMIN')
-  @ApiOperation({ summary: 'Change the status of a booking' })
+  // ✅ PATCH change the status of a booking
+  @Patch(':id/status')
+  @Roles('ADMIN', 'EMPLOYEE')
+  @ApiOperation({ summary: 'Change the status of a booking (ADMIN/EMPLOYEE)' })
   async updateBookingStatus(
     @Param('id') id: string,
     @Body() body: UpdateBookingDto,
+    @Request() req: RequestWithUser,
   ) {
     if (!body.status) {
       throw new BadRequestException('Booking status is required');
     }
+
+    // Si es EMPLOYEE, verificar que la reserva esté asignada a él
+    if (req.user.role === 'EMPLOYEE') {
+      const booking = await this.bookingsService.findOne(id);
+      if (!booking) {
+        throw new NotFoundException('Booking not found');
+      }
+      if (booking.employeeId !== req.user.userId) {
+        throw new ForbiddenException('Not authorized to update this booking');
+      }
+    }
+
     return this.bookingsService.updateStatus(id, body.status);
   }
 
