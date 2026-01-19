@@ -233,7 +233,7 @@ export class AdminService {
       _sum: { finalPrice: true },
       where: {
         businessId,
-        status: 'CONFIRMED',
+        status: 'COMPLETED',
         date: { gte: startDate, lte: endDate },
       },
     });
@@ -425,8 +425,8 @@ export class AdminService {
       // Incrementar contador
       group.count++;
 
-      // Sumar revenue solo si está confirmado
-      if (booking.status === 'CONFIRMED') {
+      // Sumar revenue solo si está completado (servicio realizado)
+      if (booking.status === 'COMPLETED') {
         group.revenue += booking.finalPrice;
       }
 
