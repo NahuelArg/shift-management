@@ -35,7 +35,7 @@ export class UsersService {
     });
   }
 
-  async searchByEmail(email: string): Promise<User[]> {
+  async searchByEmail(email: string) {
     return this.prisma.user.findMany({
       where: {
         email: {
