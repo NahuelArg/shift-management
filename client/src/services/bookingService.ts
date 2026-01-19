@@ -6,7 +6,6 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 export async function createBooking(bookingData: CreateBookingData) {
   try {
     const token = localStorage.getItem('token');
-    console.log('Token being sent:', token);
     const response = await axios.post(`${API_BASE_URL}/bookings`, bookingData, {
       withCredentials: true,
       headers: {

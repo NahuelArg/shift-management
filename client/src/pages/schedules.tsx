@@ -83,6 +83,7 @@ const Schedules: React.FC = () => {
       const updateData: UpdateScheduleDto = {
         from: formData.from,
         to: formData.to,
+        dayOfWeek: formData.dayOfWeek,
       };
       await scheduleService.update(editingSchedule.id, updateData);
       setSuccess('Horario actualizado exitosamente');

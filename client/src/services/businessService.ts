@@ -95,7 +95,7 @@ export const serviceService = {
     name: string;
     description?: string;
     price?: number;
-    duration?: number;
+    durationMin?: number;
     businessId: string;
   }): Promise<Service> {
     const response = await apiClient.post('/services', data);
@@ -108,7 +108,7 @@ export const serviceService = {
       name?: string;
       description?: string;
       price?: number;
-      duration?: number;
+      durationMin?: number;
     },
   ): Promise<Service> {
     const response = await apiClient.put(`/services/${id}`, data);

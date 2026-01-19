@@ -35,11 +35,11 @@ export class UsersService {
     });
   }
 
-  async searchByEmail(email: string) {
+  async searchByEmail(email: string): Promise<Omit<User, 'password'>[]> {
     return this.prisma.user.findMany({
       where: {
         email: {
-          contains: email,
+          contains: email, 
           mode: 'insensitive',
         },
       },
