@@ -274,12 +274,21 @@ const EmployeeDashboard: React.FC = () => {
       return;
     }
 
+    if (!selectedService.businessId) {
+      setCreateError('El servicio no tiene un negocio asignado');
+      return;
+    }
+
     try {
       setCreating(true);
       setCreateError(null);
 
-      // Combine date and time into ISO DateTime
-      const dateTimeISO = `${formData.date}T${formData.startTime}:00.000Z`;
+      // Create local date time (user's timezone, not UTC)
+      // This interprets the date/time as local time, not UTC
+      const localDateTime = new Date(`${formData.date}T${formData.startTime}:00`);
+
+      // Convert to ISO string (will include proper timezone offset)
+      const dateTimeISO = localDateTime.toISOString();
 
       await axios.post(
         `${API_BASE_URL}/bookings`,
