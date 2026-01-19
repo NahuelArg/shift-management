@@ -299,10 +299,9 @@ export class BookingsService {
           },
         },
       },
-      orderBy: [
-        { date: 'asc' },
-        { startTime: 'asc' },
-      ],
+      orderBy: {
+        date: 'asc',
+      },
     });
   }
 
@@ -323,10 +322,9 @@ export class BookingsService {
           },
         },
       },
-      orderBy: [
-        { date: 'desc' },
-        { startTime: 'desc' },
-      ],
+      orderBy: {
+        date: 'desc',
+      },
     });
   }
 }

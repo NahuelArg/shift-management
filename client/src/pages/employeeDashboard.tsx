@@ -80,16 +80,23 @@ const EmployeeDashboard: React.FC = () => {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      const bookingsData = response.data;
-      setBookings(bookingsData);
+      // Transform backend data to frontend format
+      const transformedBookings = response.data.map((booking: any) => ({
+        ...booking,
+        date: new Date(booking.date).toISOString().split('T')[0],
+        startTime: new Date(booking.date).toTimeString().slice(0, 5),
+        endTime: new Date(booking.endTime).toTimeString().slice(0, 5),
+      }));
+
+      setBookings(transformedBookings);
 
       // Calcular estadísticas
       const today = new Date().toISOString().split('T')[0];
       const stats = {
-        today: bookingsData.filter((b: Booking) => b.date.startsWith(today)).length,
-        pending: bookingsData.filter((b: Booking) => b.status === 'PENDING').length,
-        confirmed: bookingsData.filter((b: Booking) => b.status === 'CONFIRMED').length,
-        completed: bookingsData.filter((b: Booking) => b.status === 'COMPLETED').length,
+        today: transformedBookings.filter((b: Booking) => b.date.startsWith(today)).length,
+        pending: transformedBookings.filter((b: Booking) => b.status === 'PENDING').length,
+        confirmed: transformedBookings.filter((b: Booking) => b.status === 'CONFIRMED').length,
+        completed: transformedBookings.filter((b: Booking) => b.status === 'COMPLETED').length,
       };
       setStats(stats);
     } catch (err: any) {
@@ -262,20 +269,26 @@ const EmployeeDashboard: React.FC = () => {
       return;
     }
 
+    if (!selectedService) {
+      setCreateError('Servicio no encontrado');
+      return;
+    }
+
     try {
       setCreating(true);
       setCreateError(null);
 
-      const endTime = calculateEndTime(formData.startTime, selectedService!.durationMin);
+      // Combine date and time into ISO DateTime
+      const dateTimeISO = `${formData.date}T${formData.startTime}:00.000Z`;
 
       await axios.post(
         `${API_BASE_URL}/bookings`,
         {
           userId: selectedClient.id,
           serviceId: formData.serviceId,
-          date: formData.date,
-          startTime: formData.startTime,
-          endTime,
+          businessId: selectedService.businessId,
+          date: dateTimeISO,
+          finalPrice: selectedService.price,
           timezone: 'America/Argentina/Buenos_Aires',
         },
         {
