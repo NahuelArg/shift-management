@@ -50,7 +50,7 @@ export class UsersController {
   @Roles('EMPLOYEE', 'ADMIN')
   @ApiOperation({ summary: 'Search users by email (EMPLOYEE/ADMIN)' })
   @ApiResponse({ status: 200, description: 'List of users matching search', type: [UserDto] })
-  async searchUsers(@Query('email') email: string): Promise<UserDto[]> {
+  async searchUsers(@Query('email') email: string): Promise<Omit<UserDto, 'password'>[]> {
     if (!email || email.trim().length === 0) {
       throw new BadRequestException('Email query parameter is required');
     }

@@ -47,15 +47,22 @@ const Dashboard: React.FC = () => {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      const bookingsData = response.data;
-      setBookings(bookingsData);
+      // Transform backend data to frontend format
+      const transformedBookings = response.data.map((booking: any) => ({
+        ...booking,
+        date: new Date(booking.date).toISOString().split('T')[0],
+        startTime: new Date(booking.date).toTimeString().slice(0, 5),
+        endTime: new Date(booking.endTime).toTimeString().slice(0, 5),
+      }));
+
+      setBookings(transformedBookings);
 
       // Calcular estadísticas
       const stats = {
-        total: bookingsData.length,
-        pending: bookingsData.filter((b: Booking) => b.status === 'PENDING').length,
-        confirmed: bookingsData.filter((b: Booking) => b.status === 'CONFIRMED').length,
-        cancelled: bookingsData.filter((b: Booking) => b.status === 'CANCELLED').length,
+        total: transformedBookings.length,
+        pending: transformedBookings.filter((b: Booking) => b.status === 'PENDING').length,
+        confirmed: transformedBookings.filter((b: Booking) => b.status === 'CONFIRMED').length,
+        cancelled: transformedBookings.filter((b: Booking) => b.status === 'CANCELLED').length,
       };
       setStats(stats);
     } catch (err: any) {
