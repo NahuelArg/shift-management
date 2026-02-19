@@ -200,6 +200,7 @@ export class AdminService {
         date: true,
         finalPrice: true,
         status: true,
+        timezone: true,
       },
       orderBy: { date: 'asc' },
     });
@@ -246,6 +247,7 @@ export class AdminService {
         date: booking.date.toISOString(),
         finalPrice: booking.finalPrice,
         status: booking.status,
+        timezone: booking.timezone,
       })),
       groupFormat:
         groupByLowerCase === 'day'
