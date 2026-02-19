@@ -3,8 +3,9 @@ generator client {
 }
 
 datasource db {
-  provider = "mysql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 enum Role {
@@ -22,71 +23,174 @@ enum AuthProvider {
 enum BookingStatus {
   PENDING
   CONFIRMED
+  COMPLETED
   CANCELLED
 }
 
-model User {
-  id         String     @id @default(uuid())
-  name       String
-  password   String?  
-  email      String     @unique
-  phone      String?
-  role       Role       @default(CLIENT)
-  authProvider AuthProvider @default(LOCAL)
-  businesses   Business[] @relation("BusinessOwner")
-  business   Business? @relation("BusinessEmployees", fields:[businessId], references:[id])
-  businessId String?
-  bookings   Booking[]
-    // Aquí añadimos el campo de contraseña
-  createdAt  DateTime   @default(now())
+enum PaymentStatus {
+  PENDING
+  PAID
+  REFUNDED
 }
 
-
+model User {
+  id                      String          @id @default(uuid())
+  name                    String
+  password                String?
+  email                   String          @unique
+  phone                   String?
+  role                    Role            @default(CLIENT)
+  authProvider            AuthProvider    @default(LOCAL)
+  createdAt               DateTime        @default(now())
+  updatedAt               DateTime        @updatedAt
+  businesses              Business[]      @relation("BusinessOwner")
+  bookings                Booking[]
+  employeeBookings        Booking[]       @relation("EmployeeBookings")
+  business                Business?       @relation("BusinessEmployees", fields: [businessId], references: [id], onDelete: Cascade)
+  businessId              String?
+  CashRegistersOpened     CashRegister[]  @relation("CashRegisterOpenedBy")
+  CashRegistersClosed     CashRegister[]  @relation("CashRegisterClosedBy")
+  CashMovements           CashMovement[]  @relation("CashMovementCreatedBy")
+  CashClosings            CashClosing[]   @relation("CashClosingClosedBy")
+}
 
 model Business {
-  id         String     @id @default(uuid())
-  name       String
-  owner      User       @relation("BusinessOwner", fields: [ownerId], references: [id])
-  ownerId    String     
-  services   Service[]
-  schedules  Schedule[]
-  bookings   Booking[]
-  employees User[] @relation("BusinessEmployees")
-  createdAt  DateTime   @default(now())
+  id            String         @id @default(uuid())
+  name          String
+  owner         User           @relation("BusinessOwner", fields: [ownerId], references: [id])
+  ownerId       String
+  services      Service[]
+  schedules     Schedule[]
+  bookings      Booking[]
+  employees     User[]         @relation("BusinessEmployees")
+  cashRegisters CashRegister[]
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
 }
 
 model Service {
-  id          String     @id @default(uuid())
+  id          String    @id @default(uuid())
   name        String
   description String?
-  durationMin Int
+  durationMin Int       @default(30)
   price       Float
-  business    Business   @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  business    Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
   businessId  String
   bookings    Booking[]
 }
 
 model Schedule {
-  id         String    @id @default(uuid())
-  dayOfWeek  Int       // 0 = domingo, 6 = sábado
-  from       String    // "09:00"
-  to         String    // "17:00"
-  business   Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  id         String   @id @default(uuid())
+  dayOfWeek  Int // 0 = domingo, 6 = sábado
+  from       String // "09:00"
+  to         String // "17:00"
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
   businessId String
 }
 
 model Booking {
-  id         String        @id @default(uuid())
-  user       User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId     String
-  timezone     String      @default("UTC")
-  service    Service       @relation(fields: [serviceId], references: [id], onDelete: Cascade)
-  serviceId  String
-  business   Business      @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  businessId String
-  date       DateTime    
-  endTime     DateTime     @default(now())
-  finalPrice Float
-  status     BookingStatus @default(PENDING)
-  createdAt  DateTime      @default(now())
+  id            String         @id @default(uuid())
+  user          User?          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId        String?
+  timezone      String         @default("UTC")
+  service       Service        @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  serviceId     String
+  business      Business       @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  businessId    String
+  employee      User?          @relation("EmployeeBookings", fields: [employeeId], references: [id], onDelete: SetNull)
+  employeeId    String?
+  date          DateTime
+  endTime       DateTime
+  finalPrice    Float
+  status        BookingStatus  @default(PENDING)
+  paymentStatus PaymentStatus  @default(PENDING)
+  paymentMethod PaymentMethod?
+  cashMovement  CashMovement[]
+  createdAt     DateTime       @default(now())
+
+  @@index([employeeId])
+  @@index([businessId, date])
+  @@index([paymentStatus])
+}
+
+//Cash Register enums
+
+enum CashRegisterStatus{
+  OPEN
+  CLOSED
+}
+enum CashMovementType{
+  OPENING
+  SALE
+  EXPENSE
+  WITHDRAWAL
+  DEPOSIT
+  CLOSING
+}
+
+enum PaymentMethod{
+  CASH
+  CARD
+  TRANSFER
+  MIXED
+}
+model CashRegister {
+  id             String             @id @default(uuid())
+  name           String
+  business       Business           @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  businessId     String
+  currentBalance Float              @default(0)
+  status         CashRegisterStatus @default(CLOSED)
+  openedAt       DateTime?
+  OpenedBy       User?              @relation("CashRegisterOpenedBy", fields: [openedById], references: [id], onDelete: SetNull)
+  openedById     String?
+  closedAt       DateTime?
+  ClosedBy       User?              @relation("CashRegisterClosedBy", fields: [closedById], references: [id], onDelete: SetNull)
+  closedById     String?
+  movements      CashMovement[]
+  closings       CashClosing[]
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+
+  @@index([businessId, status])
+}
+
+model CashMovement {
+  id              String           @id @default(uuid())
+  cashRegister    CashRegister     @relation(fields: [cashRegisterId], references: [id], onDelete: Cascade)
+  cashRegisterId  String
+  type            CashMovementType
+  amount          Float
+  paymentMethod   PaymentMethod    @default(CASH)
+  booking         Booking?         @relation(fields: [bookingId], references: [id], onDelete: SetNull)
+  bookingId       String?
+  description     String?
+  metadata        Json?
+  CreatedBy       User             @relation("CashMovementCreatedBy", fields: [createdById], references: [id], onDelete: Cascade)
+  createdById     String
+  createdAt       DateTime         @default(now())
+
+  @@index([cashRegisterId, createdAt])
+  @@index([type])
+}
+
+model CashClosing {
+  id              String       @id @default(uuid())
+  cashRegister    CashRegister @relation(fields: [cashRegisterId], references: [id], onDelete: Cascade)
+  cashRegisterId  String
+  openingBalance  Float
+  expectedBalance Float
+  actualBalance   Float
+  difference      Float
+  totalSales      Float
+  totalExpenses   Float
+  totalCash       Float
+  totalCard       Float
+  totalTransfer   Float
+  notes           String?
+  ClosedBy        User         @relation("CashClosingClosedBy", fields: [closedById], references: [id], onDelete: Cascade)
+  closedById      String
+  closedAt        DateTime     @default(now())
+
+  @@index([cashRegisterId, closedAt])
 }

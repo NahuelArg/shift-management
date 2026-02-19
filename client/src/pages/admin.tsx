@@ -1,15 +1,20 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
-import { AuthProvider, useAuth } from "../context/AuthContext";
+import { useAuth } from "../context/AuthContext";
 import { createBooking } from "../services/bookingService";
 import NavBar from "../components/navBar";
 import BookingForm from "../components/bookingManagement/BookingForm";
+import type { Business } from "../services/businessService";
+import type { Employee } from "../services/userService";
+
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+
 
 const Admin: React.FC = () => {
   const { user, token } = useAuth();
-  const [businesses, setBusinesses] = useState<any[]>([]);
+  const [businesses, setBusinesses] = useState<Business[]>([]);
   const [selectedBusiness, setSelectedBusiness] = useState<string>("");
-  const [employees, setEmployees] = useState<any[]>([]);
+  const [employees, setEmployees] = useState<Employee[]>([]);
   const [totalEmployees, setTotalEmployees] = useState(0);
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
@@ -51,7 +56,7 @@ const Admin: React.FC = () => {
     const fetchBusinesses = async () => {
       if (user && token) {
         try {
-          const res = await axios.get(`http://localhost:3000/admin/me`, {
+          const res = await axios.get(`${API_BASE_URL}/admin/me`, {
             headers: { Authorization: `Bearer ${token}` },
           });
           setBusinesses(res.data.businesses || []);
@@ -61,12 +66,14 @@ const Admin: React.FC = () => {
           }
         } catch (err) {
           // handle error
+          console.error("Error fetching businesses:", err);
+          setBusinesses([]);
         }
       }
     };
     fetchBusinesses();
   }, [user, token]);
-
+  // Función para obtener métricas con normalización de fechas
   const fetchMetrics = async (
     businessId: string,
     from: string,
@@ -86,7 +93,7 @@ const Admin: React.FC = () => {
       fromParam = from.slice(0, 7);
       toParam = to.slice(0, 7);
     }
-    const res = await axios.get("http://localhost:3000/admin/metrics", {
+    const res = await axios.get(`${API_BASE_URL}/admin/metrics`, {
       params: {
         businessId,
         userId,
@@ -104,24 +111,27 @@ const Admin: React.FC = () => {
     // Fetch metrics
     fetchMetrics(selectedBusiness, fromDate, toDate, user?.id, groupBy);
   }, [selectedBusiness, token, user?.id, fromDate, toDate, groupBy]);
-
+  const fetchEmployees = async () => {
+    setLoadingEmployees(true);
+    try {
+      const res = await axios.get(`${API_BASE_URL}/admin/employees`, {
+        params: { businessId: selectedBusiness, search, page, limit },
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setEmployees(res.data.employees);
+      setTotalEmployees(res.data.total);
+    } catch (error) {
+      console.error('Error fetching employees:', error);
+    } finally {
+      setLoadingEmployees(false);
+    }
+  };
   useEffect(() => {
-if (!selectedBusiness || !user?.id || !fromDate || !toDate) return;    // Fetch employees solo del negocio seleccionado
-    const fetchEmployees = async () => {
-      setLoadingEmployees(true);
-      try {
-        const res = await axios.get("http://localhost:3000/admin/employees", {
-          params: { businessId: selectedBusiness, search, page, limit, authProvider: AuthProvider },
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        setEmployees(res.data.employees);
-        setTotalEmployees(res.data.total);
-      } finally {
-        setLoadingEmployees(false);
-      }
-    };
+    if (!selectedBusiness) return;
+
+
     fetchEmployees();
-  }, [selectedBusiness, search, page, limit, token, employeeSuccess, editEmployeeSuccess]);
+  }, [selectedBusiness, search, page, limit, token]);
 
   // Crear empleado
   const handleCreateEmployee = async (e: React.FormEvent) => {
@@ -131,7 +141,7 @@ if (!selectedBusiness || !user?.id || !fromDate || !toDate) return;    // Fetch 
     setEmployeeLoading(true);
     try {
       await axios.post(
-        "http://localhost:3000/admin/employee",
+        `${API_BASE_URL}/admin/employee`,
         {
           ...newEmployee,
           role: "EMPLOYEE",
@@ -142,12 +152,15 @@ if (!selectedBusiness || !user?.id || !fromDate || !toDate) return;    // Fetch 
         }
       );
       setEmployeeSuccess("Empleado creado exitosamente.");
-      setNewEmployee({ name: "", email: "", password: "", businessId: businesses[0]?.id || "" });
+      setTimeout(() => setEmployeeSuccess(null), 5000);
+      fetchEmployees();
+      setNewEmployee({ name: "", email: "", password: "", businessId: selectedBusiness });
       setShowEmployeeForm(false);
     } catch (err: any) {
       setEmployeeError(
         err.response?.data?.message || "Error al crear el empleado."
       );
+      setTimeout(() => setEmployeeError(null), 5000);
     } finally {
       setEmployeeLoading(false);
     }
@@ -157,23 +170,24 @@ if (!selectedBusiness || !user?.id || !fromDate || !toDate) return;    // Fetch 
   const handleDeleteEmployee = async (id: string) => {
     if (!window.confirm("¿Seguro que deseas eliminar este empleado?")) return;
     try {
-      await axios.delete(`http://localhost:3000/admin/employees/${id}`, {
+      await axios.delete(`${API_BASE_URL}/admin/employee/${id}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setEmployees(employees.filter(a => a.id !== id));
       setTotalEmployees(totalEmployees - 1);
-    } catch (err) {
-      alert("Error al eliminar empleado");
+    } catch (err: any) {
+      setEmployeeError("Error al eliminar empleado");
+      setTimeout(() => setEmployeeError(null), 5000);
     }
   };
 
   // Editar empleado
-  const handleEditClick = (employee: any) => {
+  const handleEditClick = (employee: Employee) => {
     setEditEmployee({ ...employee, password: "" });
     setEditEmployeeError(null);
     setEditEmployeeSuccess(null);
   };
-
+  // Guardar cambios de empleado
   const handleEditEmployee = async (e: React.FormEvent) => {
     e.preventDefault();
     setEditEmployeeLoading(true);
@@ -181,7 +195,7 @@ if (!selectedBusiness || !user?.id || !fromDate || !toDate) return;    // Fetch 
     setEditEmployeeSuccess(null);
     try {
       await axios.put(
-        `http://localhost:3000/admin/employees/${editEmployee.id}`,
+        `${API_BASE_URL}/admin/employee/${editEmployee.id}`,
         {
           name: editEmployee.name,
           email: editEmployee.email,
@@ -192,34 +206,52 @@ if (!selectedBusiness || !user?.id || !fromDate || !toDate) return;    // Fetch 
         }
       );
       setEditEmployeeSuccess("Empleado actualizado correctamente.");
+      setTimeout(() => setEditEmployeeSuccess(null), 5000);
       setEmployees(employees.map(a => a.id === editEmployee.id ? { ...a, name: editEmployee.name, email: editEmployee.email } : a));
-      setTimeout(() => setEditEmployee(null), 1000);
+      setTimeout(() => setEditEmployee(null), 3000);
     } catch (err: any) {
       setEditEmployeeError(err.response?.data?.message || "Error al actualizar empleado.");
+      setTimeout(() => setEditEmployeeError(null), 5000);
     } finally {
       setEditEmployeeLoading(false);
     }
   };
+  
 
   return (
+    // Contenedor principal con fondo degradado
     <div className="flex flex-col min-h-screen bg-gradient-to-b from-custom-light to-custom-dark">
       <NavBar />
+      //
       <div className="flex flex-col items-center justify-start flex-1 w-full px-4 py-8" style={{ minHeight: "calc(100vh - 48px)" }}>
+        //
         <div className="bg-white/90 rounded-xl shadow-lg p-8 w-full max-w-5xl">
+
           <h2 className="text-3xl font-extrabold text-gray-900 mb-6 text-center">Gestión de Empleados</h2>
-                  {/* Botón para mostrar formulario de reservas*/}
-                  <div className="flex justify-center mb-6">
-                    <button
-                      onClick={() => BookingForm}
-                      className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-6 rounded-lg transition-colors focus:ring-2 focus:ring-blue-400"
-                    >
-                      Crear nueva reserva
-                    </button>
-                    
-                  </div>
+
+          {/* Mensaje de error si no hay negocios */}
+          {businesses.length === 0 && (
+            <div className="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded mb-4 text-center">
+              No tienes negocios asignados. Por favor, crea un negocio primero.
+            </div>
+          )}
+
           {/* Botón para mostrar formulario */}
           {!showEmployeeForm ? (
-            <div className="flex justify-center mb-6">
+
+            <div className="flex flex-col items-center mb-6">
+              {employeeSuccess && (
+
+                <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-2 rounded text-center">
+                  {employeeSuccess};
+                  {setTimeout(() => setEmployeeSuccess(null), 4000)};                </div>
+              )}
+              {employeeError && (
+                <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-2 rounded text-center">
+                  {employeeError}
+                  {setTimeout(() => setEmployeeError(null), 4000)};
+                </div>
+              )}
               <button
                 onClick={() => setShowEmployeeForm(true)}
                 className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-6 rounded-lg transition-colors focus:ring-2 focus:ring-blue-400"
@@ -227,14 +259,15 @@ if (!selectedBusiness || !user?.id || !fromDate || !toDate) return;    // Fetch 
                 Crear nuevo empleado
               </button>
             </div>
-          ) : (
-            <form onSubmit={handleCreateEmployee} className="flex flex-col gap-4 max-w-md mx-auto mb-6">
+          ) :
+          // Formulario de creación de empleado
+          (<form onSubmit={handleCreateEmployee} className="flex flex-col gap-4 max-w-md mx-auto mb-6">
               <select
                 value={newEmployee.businessId}
                 onChange={e => setNewEmployee({ ...newEmployee, businessId: e.target.value })}
                 required
                 className="px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-400"
-              >
+              >              
                 {businesses.map(b => (
                   <option key={b.id} value={b.id}>{b.name}</option>
                 ))}
@@ -279,16 +312,7 @@ if (!selectedBusiness || !user?.id || !fromDate || !toDate) return;    // Fetch 
                   Cancelar
                 </button>
               </div>
-              {employeeError && (
-                <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-2 rounded text-center">
-                  {employeeError}
-                </div>
-              )}
-              {employeeSuccess && (
-                <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-2 rounded text-center">
-                  {employeeSuccess}
-                </div>
-              )}
+
             </form>
           )}
 
@@ -345,7 +369,9 @@ if (!selectedBusiness || !user?.id || !fromDate || !toDate) return;    // Fetch 
             </div>
 
             {metrics && (
+              // Aquí se muestran las métricas obtenidas
               <div className="mb-6">
+                // Métricas generales
                 <div className="flex gap-4 mb-4">
                   <div className="bg-blue-100 rounded-lg p-4 flex-1 text-center">
                     <div className="text-2xl font-bold">{metrics.totalBookings ?? 0}</div>
@@ -405,9 +431,12 @@ if (!selectedBusiness || !user?.id || !fromDate || !toDate) return;    // Fetch 
                         metrics.bookingByService.map((b: any, i: number) => (
                           <tr key={i}>
                             <td className="px-4 py-2">{b.serviceName}</td>
-                            <td className="px-4 py-2">{b.date}</td>
+                            <td className="px-4 py-2">
+                              {new Date(b.date).toLocaleString('es-ES', { timeZone: b.timezone || 'Europe/Madrid' })}
+                            </td>
                             <td className="px-4 py-2">${b.finalPrice?.toLocaleString()}</td>
                             <td className="px-4 py-2">{b.status}</td>
+
                           </tr>
                         ))
                       ) : (
@@ -450,9 +479,12 @@ if (!selectedBusiness || !user?.id || !fromDate || !toDate) return;    // Fetch 
                         businessId: selectedBusiness
                       });
                       setBookingSuccess('Reserva creada exitosamente');
+                      setTimeout(() => setBookingSuccess(null), 5000);
                       setShowBookingForm(false);
-                    } catch (err) {
-                      console.error('Error creating booking:', err);
+                    } catch (err: Error | any) {
+                      setBookingError('Error al crear la reserva');
+                      setTimeout(() => setBookingError(null), 5000);
+
                       if (err instanceof Error) {
                         setBookingError(err.message);
                       } else if (typeof err === 'object' && err !== null && 'response' in err) {
@@ -465,7 +497,7 @@ if (!selectedBusiness || !user?.id || !fromDate || !toDate) return;    // Fetch 
                   }}
                   businessId={selectedBusiness}
                 />
-                
+
                 {bookingError && (
                   <div className="text-red-600 mt-2">{bookingError}</div>
                 )}
@@ -547,9 +579,20 @@ if (!selectedBusiness || !user?.id || !fromDate || !toDate) return;    // Fetch 
       {editEmployee && (
         <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg shadow-lg p-8 w-full max-w-md relative">
+            {editEmployeeError && (
+              <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-2 rounded text-center">
+                {editEmployeeError}
+              </div>
+            )}
+            {editEmployeeSuccess && (
+              <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-2 rounded text-center">
+                {editEmployeeSuccess}
+              </div>
+            )}
             <button
               className="absolute top-2 right-2 text-gray-500 hover:text-gray-700"
               onClick={() => setEditEmployee(null)}
+
             >✕</button>
             <h3 className="text-xl font-bold mb-4 text-center">Editar Empleado</h3>
             <form onSubmit={handleEditEmployee} className="flex flex-col gap-4">
@@ -583,16 +626,7 @@ if (!selectedBusiness || !user?.id || !fromDate || !toDate) return;    // Fetch 
               >
                 {editEmployeeLoading ? "Guardando..." : "Guardar cambios"}
               </button>
-              {editEmployeeError && (
-                <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-2 rounded text-center">
-                  {editEmployeeError}
-                </div>
-              )}
-              {editEmployeeSuccess && (
-                <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-2 rounded text-center">
-                  {editEmployeeSuccess}
-                </div>
-              )}
+
             </form>
           </div>
         </div>

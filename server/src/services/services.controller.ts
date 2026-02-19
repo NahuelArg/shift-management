@@ -1,28 +1,35 @@
-import { Controller, Get, Post, Body, Delete, Param, BadRequestException, UseGuards, Put } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Delete,
+  Param,
+  BadRequestException,
+  UseGuards,
+  Put,
+  Request,
+} from '@nestjs/common';
 import { ServicesService } from './services.service';
-import { ApiOperation, ApiResponse, ApiTags, ApiBearerAuth } from '@nestjs/swagger';
+import {
+  ApiOperation,
+  ApiResponse,
+  ApiTags,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 import { Service } from '@prisma/client';
-import { JwtAuthGuard } from 'src/guard/jwt-auth.guard';
+import { JwtAuthGuard } from 'src/guard/jwt.guard';
 import { RolesGuard } from 'src/guard/roles.guard';
 import { Roles } from 'src/decorator/roles.decorator';
 import { ServiceDto } from './dto/service.dto';
 import { CreateServiceDto } from './dto/create-service.dto';
 import { UpdateServiceDto } from './dto/updateServices.dto';
+import { RequestWithUser } from 'src/types/express-request.interface';
 
-@ApiTags('services')
+@ApiTags('Services')
 @Controller('services')
 export class ServicesController {
   constructor(private readonly servicesService: ServicesService) {}
-
-  @Delete(':id')
-  @ApiBearerAuth()
-  @Roles('ADMIN')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @ApiOperation({ summary: 'Eliminar un servicio por ID' })
-  @ApiResponse({ status: 200, description: 'Servicio eliminado', type: ServiceDto })
-  async delete(@Param('id') id: string): Promise<Service> {
-    return this.servicesService.delete(id);
-  }
 
   @Get()
   @ApiBearerAuth()
@@ -32,6 +39,41 @@ export class ServicesController {
   @ApiResponse({ status: 200, type: [ServiceDto] })
   async findAll(): Promise<Service[]> {
     return this.servicesService.findAll();
+  }
+
+  @Get('my-business')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('EMPLOYEE')
+  @ApiOperation({ summary: 'Get services from employee\'s business (EMPLOYEE)' })
+  @ApiResponse({ status: 200, type: [ServiceDto] })
+  async getMyBusinessServices(@Request() req: RequestWithUser): Promise<Service[]> {
+    return this.servicesService.getServicesByEmployee(req.user.userId);
+  }
+
+  @Delete(':id')
+  @ApiBearerAuth()
+  @Roles('ADMIN')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @ApiOperation({ summary: 'Eliminar un servicio por ID' })
+  @ApiResponse({
+    status: 200,
+    description: 'Servicio eliminado',
+    type: ServiceDto,
+  })
+  async delete(@Param('id') id: string): Promise<Service> {
+    return this.servicesService.delete(id);
+  }
+
+
+  @Get(':businessId')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN', 'CLIENT')
+  @ApiOperation({ summary: 'Get all services' })
+  @ApiResponse({ status: 200, type: [ServiceDto] })
+  async findById(@Param('businessId') businessId: string): Promise<Service[]> {
+    return this.servicesService.findBy(businessId);
   }
 
   @Post()
@@ -44,7 +86,10 @@ export class ServicesController {
     try {
       return this.servicesService.create(body);
     } catch (error) {
-      throw new BadRequestException(error.message);
+      if (error instanceof Error) {
+        throw new BadRequestException(error.message);
+      }
+      throw new BadRequestException('Unknown error occurred');
     }
   }
   @Put(':id')
@@ -53,7 +98,10 @@ export class ServicesController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Update service by ID' })
   @ApiResponse({ status: 200, type: ServiceDto })
-  async update(@Param('id') id: string, @Body() updateServiceDto: UpdateServiceDto): Promise<Service> {
+  async update(
+    @Param('id') id: string,
+    @Body() updateServiceDto: UpdateServiceDto,
+  ): Promise<Service> {
     const service = await this.servicesService.update(id, updateServiceDto);
     if (!service) {
       throw new BadRequestException('Service not found');

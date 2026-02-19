@@ -2,6 +2,8 @@ import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
+
+
 const NavBar: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const { user, logout } = useAuth();
@@ -42,7 +44,13 @@ const NavBar: React.FC = () => {
           <Link to="/dashboard" className="hover:text-gray-600 transition-colors text-lg">Dashboard</Link>
         )}
         {user && user.role === "ADMIN" && (
-          <Link to="/dashboard/admin" className="hover:text-gray-600 transition-colors text-lg">Admin</Link>
+          <>
+            <Link to="/dashboard/admin" className="hover:text-gray-600 transition-colors text-lg">Admin</Link>
+            <Link to={`/users`} className="hover:text-gray-600 transition-colors text-lg">Users</Link>
+            <Link to="/business" className="hover:text-gray-600 transition-colors text-lg">Business</Link>
+            <Link to="/services" className="hover:text-gray-600 transition-colors text-lg">Services</Link>
+            <Link to="/schedules" className="hover:text-gray-600 transition-colors text-lg">Schedules</Link>
+          </>
         )}
         {user && user.role === "CLIENT" && (
           <Link to="/bookings">
@@ -70,7 +78,13 @@ const NavBar: React.FC = () => {
             <Link to="/dashboard" className="py-2 w-full text-center hover:bg-gray-700" onClick={() => setIsOpen(false)}>Dashboard</Link>
           )}
           {user && user.role === "ADMIN" && (
-            <Link to="/dashboard/admin" className="py-2 w-full text-center hover:bg-gray-700" onClick={() => setIsOpen(false)}>Admin</Link>
+            <>
+              <Link to="/dashboard/admin" className="py-2 w-full text-center hover:bg-gray-700" onClick={() => setIsOpen(false)}>Admin</Link>
+              <Link to={`/users`} className="py-2 w-full text-center hover:bg-gray-700" onClick={() => setIsOpen(false)}>Users</Link>
+              <Link to="/business" className="py-2 w-full text-center hover:bg-gray-700" onClick={() => setIsOpen(false)}>Business</Link>
+              <Link to="/services" className="py-2 w-full text-center hover:bg-gray-700" onClick={() => setIsOpen(false)}>Services</Link>
+              <Link to="/schedules" className="py-2 w-full text-center hover:bg-gray-700" onClick={() => setIsOpen(false)}>Schedules</Link>
+            </>
           )}
           {user && user.role === "CLIENT" && (
             <Link to="/bookings" className="py-2 w-full text-center hover:bg-blue-600 text-white font-semibold" onClick={() => setIsOpen(false)}>

@@ -1,6 +1,13 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Role } from '@prisma/client';
-import { IsString, IsOptional, IsEmail, MinLength, IsEnum, IsNotEmpty } from 'class-validator';
+import {
+  IsString,
+  IsOptional,
+  IsEmail,
+  MinLength,
+  IsEnum,
+  IsNotEmpty,
+} from 'class-validator';
 // No es necesario importar AuthProvider de Prisma
 
 export class CreateUserDto {
@@ -25,7 +32,6 @@ export class CreateUserDto {
     example: '123456789',
     required: false,
   })
-
   @ApiPropertyOptional({
     description: 'User phone number (optional)',
     example: '123456789',

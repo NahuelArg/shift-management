@@ -1,16 +1,20 @@
 import axios from 'axios';
 import { type CreateBookingData, type BookingData } from '../components/bookingManagement/BookingForm';
 
-const API_URL = 'http://localhost:3000';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 export async function createBooking(bookingData: CreateBookingData) {
+  const dataWithTimezone = {
+    ...bookingData,
+    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
+  };
   try {
     const token = localStorage.getItem('token');
-    console.log('Token being sent:', token);
-    const response = await axios.post(`${API_URL}/bookings`, bookingData, {
+    const response = await axios.post(`${API_BASE_URL}/bookings`, dataWithTimezone, {
       withCredentials: true,
       headers: {
-        'Authorization': `Bearer ${token}`
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
       }
     });
     return response.data;
@@ -26,7 +30,7 @@ export async function updateBookingStatus(bookingId: string, status: string) {
   try {
     const token = localStorage.getItem('token');
     const response = await axios.patch(
-      `${API_URL}/bookings/${bookingId}/status`,
+      `${API_BASE_URL}/bookings/${bookingId}/status`,
       { status },
       { 
         withCredentials: true,
@@ -48,7 +52,7 @@ export async function updateBooking(bookingId: string, bookingData: Partial<Book
   try {
     const token = localStorage.getItem('token');
     const response = await axios.patch(
-      `${API_URL}/bookings/${bookingId}`,
+      `${API_BASE_URL}/bookings/${bookingId}`,
       bookingData,
       { 
         withCredentials: true,
@@ -69,7 +73,7 @@ export async function updateBooking(bookingId: string, bookingData: Partial<Book
 export async function getBooking(bookingId: string) {
   try {
     const token = localStorage.getItem('token');
-    const response = await axios.get(`${API_URL}/bookings/${bookingId}`, {
+    const response = await axios.get(`${API_BASE_URL}/bookings/${bookingId}`, {
       withCredentials: true,
       headers: {
         'Authorization': `Bearer ${token}`
@@ -91,7 +95,7 @@ export async function getBookings(filters?: {
 }) {
   try {
     const token = localStorage.getItem('token');
-    const response = await axios.get(`${API_URL}/bookings`, {
+    const response = await axios.get(`${API_BASE_URL}/bookings`, {
       params: filters,
       withCredentials: true,
       headers: {

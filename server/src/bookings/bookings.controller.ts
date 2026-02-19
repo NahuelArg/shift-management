@@ -8,6 +8,7 @@ import {
   UseGuards,
   Request,
   Put,
+  Patch,
   Query,
   BadRequestException,
   NotFoundException,
@@ -25,14 +26,13 @@ import {
 } from '@nestjs/swagger';
 import { BookingDto } from './dto/BookingsDto.dto';
 import { UpdateBookingDto } from './dto/updateBookingDto.dto';
-import { JwtAuthGuard } from '../guard/jwt-auth.guard';
+import { JwtAuthGuard } from '../guard/jwt.guard';
 import { RolesGuard } from 'src/guard/roles.guard';
 import { Roles } from '../decorator/roles.decorator';
 import { CreateBookingDto } from './dto/createBookingDto.dto';
-import {zonedTimeToUtc, utcToZonedTime} from 'date-fns-tz';
-import {format} from 'date-fns';
+import { RequestWithUser } from 'src/types/express-request.interface';
 
-@ApiTags('bookings')
+@ApiTags('Bookings')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('bookings')
@@ -61,29 +61,40 @@ export class BookingsController {
     return this.bookingsService.findAll();
   }
 
-@Post()
-@Roles('CLIENT', 'ADMIN')
-@UsePipes(new ValidationPipe({ transform: true }))
-@ApiOperation({ summary: 'Create a new booking' })
-@ApiResponse({ status: 201, type: CreateBookingDto })
-async create(
-  @Body() createBookingDto: CreateBookingDto,
-  @Request() req,
-): Promise<Booking> {
-  // Omitimos el userId del DTO y lo obtenemos del token
-  const { userId } = req.user;
-  
-  // Crear la reserva con el userId del token
-  const bookingData = {
-    ...createBookingDto,
-    timezone: createBookingDto.timezone || 'UTC',
-    userId // Añadimos el userId del token
-  };
-  
-  return this.bookingsService.create(bookingData);
-}
+  // ✅ GET bookings assigned to employee
+  @Get('my-assignments')
+  @Roles('EMPLOYEE')
+  @ApiOperation({ summary: 'Get bookings assigned to current employee (EMPLOYEE)' })
+  @ApiResponse({ status: 200, type: [BookingDto] })
+  async getMyAssignments(@Request() req: RequestWithUser): Promise<Booking[]> {
+    return this.bookingsService.getBookingsByEmployee(req.user.userId);
+  }
 
+  // ✅ GET bookings for current user (CLIENT)
+  @Get('my-bookings')
+  @Roles('CLIENT')
+  @ApiOperation({ summary: 'Get bookings for current user (CLIENT)' })
+  @ApiResponse({ status: 200, type: [BookingDto] })
+  async getMyBookings(@Request() req: RequestWithUser): Promise<Booking[]> {
+    return this.bookingsService.getBookingsByUser(req.user.userId);
+  }
 
+  @Post()
+  @UsePipes(new ValidationPipe({ transform: true }))
+  @ApiOperation({ summary: 'Create a new booking' })
+  @ApiResponse({ status: 201, type: CreateBookingDto })
+  async create(
+    @Body() createBookingDto: CreateBookingDto & { userId?: string },
+    @Request() req: RequestWithUser,
+  ): Promise<Booking> {
+const bookingData = {
+      ...createBookingDto,
+      timezone: createBookingDto.timezone || 'UTC',
+      userId: req.user.role === 'CLIENT' ? req.user.userId : (createBookingDto.userId ?? null),
+    };
+
+    return this.bookingsService.create(bookingData);
+  }
 
 
   // ✅ PUT update a booking (just own or any if ADMIN)
@@ -93,32 +104,56 @@ async create(
   async updateBooking(
     @Param('id') id: string,
     @Body() updateBookingDto: UpdateBookingDto,
-    @Request() req,
+    @Request() req: RequestWithUser,
   ): Promise<Booking> {
     const booking = await this.bookingsService.findOne(id);
     if (!booking) {
       throw new NotFoundException('Booking not found');
     }
     if (req.user.role !== 'ADMIN' && booking.userId !== req.user.userId) {
-      throw new ForbiddenException(
-        'Not authorized to update this booking',
-      );
+      throw new ForbiddenException('Not authorized to update this booking');
     }
     return this.bookingsService.update(id, updateBookingDto);
   }
 
-  // ✅ PUT change the status of a booking
-  @Put(':id/status')
-  @Roles('ADMIN')
-  @ApiOperation({ summary: 'Change the status of a booking' })
+  // ✅ PATCH change the status of a booking
+  @Patch(':id/status')
+  @Roles('ADMIN', 'EMPLOYEE')
+  @ApiOperation({ summary: 'Change the status of a booking (ADMIN/EMPLOYEE)' })
   async updateBookingStatus(
     @Param('id') id: string,
     @Body() body: UpdateBookingDto,
+    @Request() req: RequestWithUser,
   ) {
     if (!body.status) {
       throw new BadRequestException('Booking status is required');
     }
+
+    // Si es EMPLOYEE, verificar que la reserva esté asignada a él
+    if (req.user.role === 'EMPLOYEE') {
+      const booking = await this.bookingsService.findOne(id);
+      if (!booking) {
+        throw new NotFoundException('Booking not found');
+      }
+      if (booking.employeeId !== req.user.userId) {
+        throw new ForbiddenException('Not authorized to update this booking');
+      }
+    }
     return this.bookingsService.updateStatus(id, body.status);
+  }
+
+  @Get('available-employees')
+  @Roles('CLIENT', 'ADMIN', 'EMPLOYEE')
+  @ApiOperation({ summary: 'Get available employees for a specific time slot' })
+  async getAvailableEmployees(
+    @Query('businessId') businessId: string,
+    @Query('date') date: string,
+    @Query('endTime') endTime: string,
+  ) {
+      if (!businessId || !date || !endTime) {
+        throw new BadRequestException('Missing required query parameters');
+      }
+    return this.bookingsService.findAvailableEmployee(businessId, new Date(date), new Date(endTime));
   }
 
   // ✅ DELETE a booking (just own or any if ADMIN)
@@ -126,7 +161,11 @@ async create(
   @Roles('CLIENT', 'ADMIN')
   @ApiOperation({ summary: 'Delete a booking' })
   @ApiResponse({ status: 200, type: BookingDto })
-  async remove(@Param('id') id: string, @Request() req): Promise<BookingDto> {
+  async remove(
+    @Param('id') id: string,
+    @Request() req: RequestWithUser,
+  ): Promise<BookingDto> {
     return this.bookingsService.remove(id, req.user);
   }
 }
+

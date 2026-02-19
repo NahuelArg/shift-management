@@ -1,10 +1,8 @@
-export function convertBigIntToString(obj: any): any {
-  if (Array.isArray(obj)) {
-    return obj.map(convertBigIntToString);
-  } else if (obj && typeof obj === "object") {
-    return Object.fromEntries(
-      Object.entries(obj).map(([k, v]) => [k, typeof v === "bigint" ? Number(v) : convertBigIntToString(v)])
-    );
-  }
-  return obj;
+/* eslint-disable @typescript-eslint/no-unsafe-return */
+export function convertBigIntToString<T = any>(obj: T): T {
+  return JSON.parse(
+    JSON.stringify(obj, (_key, value) =>
+      typeof value === 'number' ? value.toString() : value,
+    ),
+  ) as T;
 }

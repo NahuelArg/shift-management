@@ -1,5 +1,15 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString, IsNotEmpty, IsEmail } from 'class-validator';
+import { IsString, IsNotEmpty, IsEmail, IsEnum, IsUUID } from 'class-validator';
+
+enum Role {
+  EMPLOYEE = 'EMPLOYEE'
+}
+
+enum AuthProvider {
+  LOCAL = 'LOCAL',
+  GOOGLE = 'GOOGLE',
+  APPLE = 'APPLE'
+}
 
 export class CreateEmployeeDto {
   @ApiProperty({ example: 'Juan Perez' })
@@ -17,15 +27,15 @@ export class CreateEmployeeDto {
   password: string;
 
   @ApiProperty({ example: '44898053-404e-4d78-98e3-eb05d2753fce' })
-  @IsString()
+  @IsUUID()
   @IsNotEmpty()
   businessId: string;
 
-  @ApiProperty({ example: 'EMPLOYEE' })
-  @IsString()
-  role: string;
+  @ApiProperty({ example: 'EMPLOYEE', enum: Role })
+  @IsEnum(Role)
+  role: Role;
 
-  @ApiProperty({ example: 'LOCAL' })
-  @IsString()
-  authProvider: string;
+  @ApiProperty({ example: 'LOCAL', enum: AuthProvider })
+  @IsEnum(AuthProvider)
+  authProvider: AuthProvider;
 }

@@ -43,9 +43,17 @@ const Login: React.FC = () => {
       const data = await loginService(email, password);
       login(data.accessToken, data.user);
       // now redirect based on role
-      const dashboardPath = data.user.role === "ADMIN" ? "/dashboard/admin" : "/dashboard";
-      navigate(dashboardPath);
-      
+      const dashboardPath = data.user.role 
+      switch (dashboardPath) {
+        case "ADMIN":
+          navigate("/dashboard/admin");
+          break;
+        case "EMPLOYEE":
+          navigate("/dashboard/employee");
+          break;
+        default:
+          navigate("/dashboard");
+      }
     } catch (error) {
       handleLoginError(error);
     } finally {

@@ -9,7 +9,6 @@ export class BusinessDto extends CreateBusinessDto {
   })
   @IsUUID()
   @IsString()
-
   id: string;
 
   @ApiProperty({

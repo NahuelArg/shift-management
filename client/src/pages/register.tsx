@@ -3,6 +3,8 @@ import React from "react";
 import { useNavigate } from "react-router-dom";
 import NavBar from "../components/navBar";
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+
 const Register: React.FC = () => {
     const navigate = useNavigate();
     const [form, setForm] = React.useState({
@@ -23,7 +25,7 @@ const Register: React.FC = () => {
         setError(null);
         setLoading(true);
         try {
-            await axios.post('http://localhost:3000/auth/register', form);
+            await axios.post(`${API_BASE_URL}/auth/register`, form);
             navigate('/login');
         } catch (error: any) {
             setError(error.response?.data?.message || "Registration failed. Please try again.");

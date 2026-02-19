@@ -11,14 +11,15 @@ interface Booking {
     // Agrega más campos según necesites
 }
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 const Bookings = () => {
-    const [bookings, setBookings] = useState<Booking[]>([]);
+    const [bookings, setBookings] = useState<Booking[]>( []);
     const [loading, setLoading] = useState(true);
 
     const fetchBookings = async () => {
         try {
             const token = localStorage.getItem('token');
-            const response = await axios.get('http://localhost:3000/bookings', {
+            const response = await axios.get(`${API_BASE_URL}/bookings`, {
                 withCredentials: true,
                 headers: {
                     'Authorization': `Bearer ${token}`

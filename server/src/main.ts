@@ -1,19 +1,18 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
-const { initializeApp } = require('firebase-admin/app');
 import { ValidationPipe } from '@nestjs/common';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  app.enableCors(
-    {
-      origin: 'http://localhost:5173', // Adjust this to your client URL
-      credentials: true,
-      allowedHeaders: "Content-Type, Authorization",
-      methods: "GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS",
-    }
-  )
+
+  // Configurar CORS - acepta todos los orígenes
+  app.enableCors({
+    origin: true,
+    credentials: true,
+    allowedHeaders: 'Content-Type, Authorization',
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+  });
   const config = new DocumentBuilder()
     .setTitle('Booking Management API')
     .setDescription('API for managing bookings in businesses')
@@ -29,11 +28,13 @@ async function bootstrap() {
     .build();
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api', app, document);
-  app.useGlobalPipes(new ValidationPipe({
-    transform: true,
-    whitelist: true,
-    forbidNonWhitelisted: true,
-  }));
+  app.useGlobalPipes(
+    new ValidationPipe({
+      transform: true,
+      whitelist: true,
+      forbidNonWhitelisted: true,
+    }),
+  );
   await app.listen(process.env.PORT ?? 3000);
 }
-bootstrap();
+bootstrap().catch(console.error);

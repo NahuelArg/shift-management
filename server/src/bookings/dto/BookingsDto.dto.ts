@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString, IsUUID, IsDate, IsEnum } from 'class-validator';
+import { IsUUID, IsDate, IsEnum } from 'class-validator';
 import { BookingStatus } from '@prisma/client'; // Para el tipo BookingStatus
 
 export class BookingDto {
@@ -14,8 +14,7 @@ export class BookingDto {
     description: 'ID of the user who made the booking',
     example: '1cfc9fb7-238d-4583-9754-6aff4be64b73',
   })
-  @IsUUID()
-  userId: string;
+  userId: string | null;
 
   @ApiProperty({
     description: 'ID of the service being booked',
