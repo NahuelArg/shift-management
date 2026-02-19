@@ -6,14 +6,13 @@ import {
 import { PrismaService } from '../../prisma/prisma.service';
 import { Business, Prisma } from '@prisma/client';
 import { UpdateBusinessDto } from './dto/updateBusiness.dto';
-import { hash } from 'bcrypt';
-
+import {PublicBusinessDto} from "./dto/PublicBusinessDto.dto";
 @Injectable()
 export class BusinessService {
   constructor(private readonly prisma: PrismaService) {}
 
   /**
-   * ✅ NUEVO: Obtener TODOS los negocios del usuario
+   * Obtener TODOS los negocios del usuario
    * Usado por: GET /business (lista todos)
    * Retorna: Business[]
    */
@@ -23,6 +22,29 @@ export class BusinessService {
       include: {
         owner: true,
         services: true,
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+  /**
+   * Obtener todos los negocios de manera pública (sin filtrar por usuario)
+   * Usado por: GET /business/public
+   * Retorna: Business[]
+   * Nota: Este método no filtra por ownerId, retorna todos los negocios disponibles públicamente
+   */
+  async getAllBusinessesPublic(): Promise<PublicBusinessDto[]> {
+    return this.prisma.business.findMany({
+      select: {
+        id: true,
+        name: true,
+        services:{
+          select: {
+            id: true,
+            name: true,
+            price: true,
+            durationMin: true,
+          },
+        },
       },
       orderBy: { createdAt: 'desc' },
     });
@@ -105,7 +127,7 @@ export class BusinessService {
   }
 
   /**
-   * ✅ NUEVO: Actualizar con validación de ownership
+   *  Actualizar con validación de ownership
    * Verifica que el usuario es propietario antes de actualizar
    */
   async updateWithOwnershipCheck(
@@ -139,34 +161,9 @@ export class BusinessService {
     });
   }
 
-  /**
-   * Actualizar (sin validación de ownership)
-   * Mantén este método si lo usas en otros lugares
-   */
-  async update(
-    id: string,
-    updateBusinessDto: UpdateBusinessDto,
-  ): Promise<Business> {
-    try {
-      return await this.prisma.business.update({
-        where: { id },
-        data: updateBusinessDto,
-        include: {
-          owner: true,
-        },
-      });
-    } catch (error: unknown) {
-      if (error instanceof Prisma.PrismaClientKnownRequestError) {
-        if (error.code === 'P2025') {
-          throw new NotFoundException(`Negocio con id ${id} no encontrado`);
-        }
-      }
-      throw error;
-    }
-  }
 
   /**
-   * ✅ NUEVO: Eliminar con validación de ownership
+   *  Eliminar con validación de ownership
    * Verifica que el usuario es propietario antes de eliminar
    */
   async deleteWithOwnershipCheck(
@@ -190,19 +187,6 @@ export class BusinessService {
     }
 
     // Elimina
-    return this.prisma.business.delete({
-      where: { id },
-      include: {
-        owner: true,
-      },
-    });
-  }
-
-  /**
-   * Eliminar (sin validación de ownership)
-   * Mantén este método si lo usas en otros lugares
-   */
-  async delete(id: string): Promise<Business> {
     return this.prisma.business.delete({
       where: { id },
       include: {

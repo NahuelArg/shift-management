@@ -80,7 +80,6 @@ export class BookingsController {
   }
 
   @Post()
-  @Roles('CLIENT', 'ADMIN', 'EMPLOYEE')
   @UsePipes(new ValidationPipe({ transform: true }))
   @ApiOperation({ summary: 'Create a new booking' })
   @ApiResponse({ status: 201, type: CreateBookingDto })
@@ -88,29 +87,15 @@ export class BookingsController {
     @Body() createBookingDto: CreateBookingDto & { userId?: string },
     @Request() req: RequestWithUser,
   ): Promise<Booking> {
-    // Si el usuario es EMPLOYEE o ADMIN, puede especificar userId en el body
-    // Si es CLIENT, usa su propio userId del token
-    let targetUserId: string;
-
-    if (req.user.role === 'EMPLOYEE' || req.user.role === 'ADMIN') {
-      // EMPLOYEE/ADMIN puede crear booking para cualquier usuario
-      if (!createBookingDto.userId) {
-        throw new BadRequestException('userId is required for EMPLOYEE/ADMIN to create bookings');
-      }
-      targetUserId = createBookingDto.userId;
-    } else {
-      // CLIENT solo puede crear bookings para sí mismo
-      targetUserId = req.user.userId;
-    }
-
-    const bookingData = {
+const bookingData = {
       ...createBookingDto,
       timezone: createBookingDto.timezone || 'UTC',
-      userId: targetUserId,
+      userId: req.user.role === 'CLIENT' ? req.user.userId : (createBookingDto.userId ?? null),
     };
 
     return this.bookingsService.create(bookingData);
   }
+
 
   // ✅ PUT update a booking (just own or any if ADMIN)
   @Put(':id')
@@ -154,8 +139,21 @@ export class BookingsController {
         throw new ForbiddenException('Not authorized to update this booking');
       }
     }
-
     return this.bookingsService.updateStatus(id, body.status);
+  }
+
+  @Get('available-employees')
+  @Roles('CLIENT', 'ADMIN', 'EMPLOYEE')
+  @ApiOperation({ summary: 'Get available employees for a specific time slot' })
+  async getAvailableEmployees(
+    @Query('businessId') businessId: string,
+    @Query('date') date: string,
+    @Query('endTime') endTime: string,
+  ) {
+      if (!businessId || !date || !endTime) {
+        throw new BadRequestException('Missing required query parameters');
+      }
+    return this.bookingsService.findAvailableEmployee(businessId, new Date(date), new Date(endTime));
   }
 
   // ✅ DELETE a booking (just own or any if ADMIN)
@@ -170,3 +168,4 @@ export class BookingsController {
     return this.bookingsService.remove(id, req.user);
   }
 }
+

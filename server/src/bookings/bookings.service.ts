@@ -22,7 +22,7 @@ export class BookingsService {
   async findAll(): Promise<Booking[]> {
     return this.prisma.booking.findMany();
   }
-  async create(data: CreateBookingDto & { userId: string }): Promise<Booking> {
+  async create(data: CreateBookingDto & { userId: string | null }): Promise<Booking> {
     const {
       serviceId,
       businessId,
@@ -99,16 +99,13 @@ export class BookingsService {
 
     let finalEmployeeId: string | null = employeeId || null; // ✅ Correcto
     if (!finalEmployeeId) {
-      finalEmployeeId = await this.findAvailableEmployee(
-        businessId,
-        dateUtc,
-        endTime,
-      );
-      if (!finalEmployeeId) {
+      const available = await this.findAvailableEmployee(businessId, dateUtc, endTime);
+      if (!available || available.length === 0) {
         throw new BadRequestException(
           'No available employees for the selected time slot',
         );
       }
+      finalEmployeeId = available[0].id; 
     } else {
       const employee = await this.prisma.user.findFirst({
         where: {
@@ -240,11 +237,18 @@ export class BookingsService {
       data: { status },
     });
   }
-  private async findAvailableEmployee(
+  /**
+   * Encuentra un empleado disponible para el negocio y horario dado
+   * @param businessId 
+   * @param startTime 
+   * @param endTime 
+   * @returns 
+   */
+  async findAvailableEmployee(
     businessId: string,
     startTime: Date,
     endTime: Date,
-  ): Promise<string | null> {
+  ): Promise<{ id: string; name: string }[]> {
     const employees = await this.prisma.user.findMany({
       where: {
         businessId,
@@ -256,10 +260,11 @@ export class BookingsService {
       },
     });
     if (employees.length === 0) {
-      return null;
+      return []; // No hay empleados en el negocio
     }
+    const availableEmployees: { id: string; name: string }[] = [];
     for (const employee of employees) {
-      const hasConflicting = await this.prisma.booking.findFirst({
+      const conflict = await this.prisma.booking.findFirst({
         where: {
           employeeId: employee.id,
           status: { not: 'CANCELLED' },
@@ -267,13 +272,15 @@ export class BookingsService {
           endTime: { gt: startTime },
         },
       });
-      if (!hasConflicting) {
-        return employee.id;
+      if (!conflict){
+        availableEmployees.push(employee);
       }
+
     }
 
-    return null;
+    return availableEmployees;
   }
+
 
   /**
    * Get all bookings assigned to a specific employee

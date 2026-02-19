@@ -23,6 +23,7 @@ import { RolesGuard } from '../guard/roles.guard';
 import { Roles } from '../decorator/roles.decorator';
 import { CreateBusinessDto } from './dto/Create-Business.dto';
 import { UpdateBusinessDto } from './dto/updateBusiness.dto';
+import {PublicBusinessDto} from "./dto/PublicBusinessDto.dto";
 
 @ApiTags('Business')
 @Controller('business')
@@ -30,7 +31,7 @@ export class BusinessController {
   constructor(private readonly businessService: BusinessService) {}
 
   /**
-   * ✅ CORREGIDO: Obtener todos los negocios del usuario autenticado
+   * Obtener todos los negocios del usuario autenticado
    * GET /business
    * Retorna: BusinessDto[]
    */
@@ -48,6 +49,26 @@ export class BusinessController {
     const userId = req.user.userId;
     // ✅ Ahora llama al método correcto que retorna array
     return this.businessService.getBusinessesByUserId(userId);
+  }
+  /**
+   *Obtener todos los negocios de manera publica (sin autenticación)
+   * GET /business/public
+   * Retorna: BusinessDto[]
+   */
+  @Get('public')
+  @ApiOperation({ summary: 'Get all businesses (public)' })
+  @ApiResponse({
+    status: 200,
+    description: 'List of businesses retrieved successfully',
+    type: [PublicBusinessDto],
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'Internal server error',
+  })
+  async findAllPublic(): Promise<PublicBusinessDto[]> {
+    // ✅ Retorna todos los negocios sin filtrar por usuario
+    return this.businessService.getAllBusinessesPublic();
   }
 
   /**
@@ -121,7 +142,6 @@ export class BusinessController {
     @Req() req: RequestWithUser,
     @Body() body: CreateBusinessDto,
   ): Promise<BusinessDto> {
-    // ✅ El userId viene del token JWT
     return this.businessService.create({
       owner: {
         role: req.user.role,
@@ -163,7 +183,6 @@ export class BusinessController {
     @Req() req: RequestWithUser,
   ): Promise<BusinessDto> {
     const userId = req.user.userId;
-    // ✅ Verifica que el usuario es propietario antes de actualizar
     return this.businessService.updateWithOwnershipCheck(
       id,
       updateBusinessDto,
@@ -199,7 +218,6 @@ export class BusinessController {
     @Req() req: RequestWithUser,
   ): Promise<BusinessDto> {
     const userId = req.user.userId;
-    // ✅ Verifica que el usuario es propietario antes de eliminar
     return this.businessService.deleteWithOwnershipCheck(id, userId);
   }
 }
