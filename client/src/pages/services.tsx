@@ -1,7 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef} from 'react';
 import { serviceService, type Service, type CreateServiceDto, type UpdateServiceDto } from '../services/serviceService';
 import { businessService, type Business } from '../services/businessService';
 import NavBar from '../components/navBar';
+
 
 const Services: React.FC = () => {
   const [services, setServices] = useState<Service[]>([]);
@@ -19,6 +20,8 @@ const Services: React.FC = () => {
     price: 0,
     businessId: '',
   });
+  
+  const formRef = useRef<HTMLFormElement>(null);
 
   useEffect(() => {
     fetchServices();
@@ -33,6 +36,7 @@ const Services: React.FC = () => {
       setServices(data);
     } catch (err: any) {
       setError(err.response?.data?.message || 'Error al cargar servicios');
+      setTimeout(() => setError(null), 5000);
     } finally {
       setLoading(false);
     }
@@ -54,14 +58,18 @@ const Services: React.FC = () => {
     e.preventDefault();
     setError(null);
     setSuccess(null);
+    setTimeout(() => setError(null), 5000);
+      setTimeout(() => setSuccess(null), 5000);
     try {
       await serviceService.create(formData);
       setSuccess('Servicio creado exitosamente');
+      setTimeout(() => setSuccess(null), 5000);
       setShowCreateForm(false);
       setFormData({ name: '', description: '', durationMin: 30, price: 0, businessId: businesses[0]?.id || '' });
       fetchServices();
     } catch (err: any) {
       setError(err.response?.data?.message || 'Error al crear servicio');
+      setTimeout(() => setError(null), 5000);
     }
   };
 
@@ -70,6 +78,9 @@ const Services: React.FC = () => {
     if (!editingService) return;
     setError(null);
     setSuccess(null);
+    setTimeout(() => setError(null), 5000);
+    setTimeout(() => setSuccess(null), 5000);
+
     try {
       const updateData: UpdateServiceDto = {
         businessId: formData.businessId,
@@ -80,11 +91,14 @@ const Services: React.FC = () => {
       };
       await serviceService.update(editingService.id, updateData);
       setSuccess('Servicio actualizado exitosamente');
+      setTimeout(() => setSuccess(null), 5000);
       setEditingService(null);
       setFormData({ name: '', description: '', durationMin:30, price: 0, businessId: businesses[0]?.id || '' });
       fetchServices();
     } catch (err: any) {
       setError(err.response?.data?.message || 'Error al actualizar servicio');
+          setTimeout(() => setError(null), 5000);
+
     }
   };
 
@@ -95,9 +109,11 @@ const Services: React.FC = () => {
     try {
       await serviceService.delete(id);
       setSuccess('Servicio eliminado exitosamente');
+      setTimeout(() => setSuccess(null), 5000);
       fetchServices();
     } catch (err: any) {
       setError(err.response?.data?.message || 'Error al eliminar servicio');
+      setTimeout(() => setError(null), 5000);
     }
   };
 
@@ -111,6 +127,9 @@ const Services: React.FC = () => {
       businessId: service.businessId,
     });
     setShowCreateForm(false);
+    setTimeout(() => {
+      formRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }, 0);
   };
 
   const handleCancelEdit = () => {
@@ -152,7 +171,7 @@ const Services: React.FC = () => {
           )}
 
           {(showCreateForm || editingService) && (
-            <form onSubmit={editingService ? handleUpdate : handleCreate} className="mb-8 bg-gray-50 p-6 rounded-lg">
+            <form ref={formRef} onSubmit={editingService ? handleUpdate : handleCreate} className="mb-8 bg-gray-50 p-6 rounded-lg">
               <h2 className="text-xl font-semibold mb-4">
                 {editingService ? 'Editar Servicio' : 'Crear Servicio'}
               </h2>

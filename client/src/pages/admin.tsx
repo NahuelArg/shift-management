@@ -66,12 +66,14 @@ const Admin: React.FC = () => {
           }
         } catch (err) {
           // handle error
+          console.error("Error fetching businesses:", err);
+          setBusinesses([]);
         }
       }
     };
     fetchBusinesses();
   }, [user, token]);
-
+  // Función para obtener métricas con normalización de fechas
   const fetchMetrics = async (
     businessId: string,
     from: string,
@@ -109,25 +111,25 @@ const Admin: React.FC = () => {
     // Fetch metrics
     fetchMetrics(selectedBusiness, fromDate, toDate, user?.id, groupBy);
   }, [selectedBusiness, token, user?.id, fromDate, toDate, groupBy]);
-
+  const fetchEmployees = async () => {
+    setLoadingEmployees(true);
+    try {
+      const res = await axios.get(`${API_BASE_URL}/admin/employees`, {
+        params: { businessId: selectedBusiness, search, page, limit },
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setEmployees(res.data.employees);
+      setTotalEmployees(res.data.total);
+    } catch (error) {
+      console.error('Error fetching employees:', error);
+    } finally {
+      setLoadingEmployees(false);
+    }
+  };
   useEffect(() => {
     if (!selectedBusiness) return;
 
-    const fetchEmployees = async () => {
-      setLoadingEmployees(true);
-      try {
-        const res = await axios.get(`${API_BASE_URL}/admin/employees`, {
-          params: { businessId: selectedBusiness, search, page, limit},
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        setEmployees(res.data.employees);
-        setTotalEmployees(res.data.total);
-      } catch (error) {
-        console.error('Error fetching employees:', error);
-      } finally {
-        setLoadingEmployees(false);
-      }
-    };
+
     fetchEmployees();
   }, [selectedBusiness, search, page, limit, token]);
 
@@ -150,12 +152,15 @@ const Admin: React.FC = () => {
         }
       );
       setEmployeeSuccess("Empleado creado exitosamente.");
+      setTimeout(() => setEmployeeSuccess(null), 5000);
+      fetchEmployees();
       setNewEmployee({ name: "", email: "", password: "", businessId: selectedBusiness });
       setShowEmployeeForm(false);
     } catch (err: any) {
       setEmployeeError(
         err.response?.data?.message || "Error al crear el empleado."
       );
+      setTimeout(() => setEmployeeError(null), 5000);
     } finally {
       setEmployeeLoading(false);
     }
@@ -170,8 +175,9 @@ const Admin: React.FC = () => {
       });
       setEmployees(employees.filter(a => a.id !== id));
       setTotalEmployees(totalEmployees - 1);
-    } catch (err) {
-      alert("Error al eliminar empleado");
+    } catch (err: any) {
+      setEmployeeError("Error al eliminar empleado");
+      setTimeout(() => setEmployeeError(null), 5000);
     }
   };
 
@@ -181,7 +187,7 @@ const Admin: React.FC = () => {
     setEditEmployeeError(null);
     setEditEmployeeSuccess(null);
   };
-
+  // Guardar cambios de empleado
   const handleEditEmployee = async (e: React.FormEvent) => {
     e.preventDefault();
     setEditEmployeeLoading(true);
@@ -200,20 +206,27 @@ const Admin: React.FC = () => {
         }
       );
       setEditEmployeeSuccess("Empleado actualizado correctamente.");
+      setTimeout(() => setEditEmployeeSuccess(null), 5000);
       setEmployees(employees.map(a => a.id === editEmployee.id ? { ...a, name: editEmployee.name, email: editEmployee.email } : a));
       setTimeout(() => setEditEmployee(null), 3000);
     } catch (err: any) {
       setEditEmployeeError(err.response?.data?.message || "Error al actualizar empleado.");
+      setTimeout(() => setEditEmployeeError(null), 5000);
     } finally {
       setEditEmployeeLoading(false);
     }
   };
+  
 
   return (
+    // Contenedor principal con fondo degradado
     <div className="flex flex-col min-h-screen bg-gradient-to-b from-custom-light to-custom-dark">
       <NavBar />
+      //
       <div className="flex flex-col items-center justify-start flex-1 w-full px-4 py-8" style={{ minHeight: "calc(100vh - 48px)" }}>
+        //
         <div className="bg-white/90 rounded-xl shadow-lg p-8 w-full max-w-5xl">
+
           <h2 className="text-3xl font-extrabold text-gray-900 mb-6 text-center">Gestión de Empleados</h2>
 
           {/* Mensaje de error si no hay negocios */}
@@ -225,7 +238,20 @@ const Admin: React.FC = () => {
 
           {/* Botón para mostrar formulario */}
           {!showEmployeeForm ? (
-            <div className="flex justify-center mb-6">
+
+            <div className="flex flex-col items-center mb-6">
+              {employeeSuccess && (
+
+                <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-2 rounded text-center">
+                  {employeeSuccess};
+                  {setTimeout(() => setEmployeeSuccess(null), 4000)};                </div>
+              )}
+              {employeeError && (
+                <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-2 rounded text-center">
+                  {employeeError}
+                  {setTimeout(() => setEmployeeError(null), 4000)};
+                </div>
+              )}
               <button
                 onClick={() => setShowEmployeeForm(true)}
                 className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-6 rounded-lg transition-colors focus:ring-2 focus:ring-blue-400"
@@ -233,14 +259,15 @@ const Admin: React.FC = () => {
                 Crear nuevo empleado
               </button>
             </div>
-          ) : (
-            <form onSubmit={handleCreateEmployee} className="flex flex-col gap-4 max-w-md mx-auto mb-6">
+          ) :
+          // Formulario de creación de empleado
+          (<form onSubmit={handleCreateEmployee} className="flex flex-col gap-4 max-w-md mx-auto mb-6">
               <select
                 value={newEmployee.businessId}
                 onChange={e => setNewEmployee({ ...newEmployee, businessId: e.target.value })}
                 required
                 className="px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-400"
-              >
+              >              
                 {businesses.map(b => (
                   <option key={b.id} value={b.id}>{b.name}</option>
                 ))}
@@ -285,16 +312,7 @@ const Admin: React.FC = () => {
                   Cancelar
                 </button>
               </div>
-              {employeeError && (
-                <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-2 rounded text-center">
-                  {employeeError}
-                </div>
-              )}
-              {employeeSuccess && (
-                <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-2 rounded text-center">
-                  {employeeSuccess}
-                </div>
-              )}
+
             </form>
           )}
 
@@ -351,7 +369,9 @@ const Admin: React.FC = () => {
             </div>
 
             {metrics && (
+              // Aquí se muestran las métricas obtenidas
               <div className="mb-6">
+                // Métricas generales
                 <div className="flex gap-4 mb-4">
                   <div className="bg-blue-100 rounded-lg p-4 flex-1 text-center">
                     <div className="text-2xl font-bold">{metrics.totalBookings ?? 0}</div>
@@ -411,9 +431,12 @@ const Admin: React.FC = () => {
                         metrics.bookingByService.map((b: any, i: number) => (
                           <tr key={i}>
                             <td className="px-4 py-2">{b.serviceName}</td>
-                            <td className="px-4 py-2">{b.date}</td>
+                            <td className="px-4 py-2">
+                              {new Date(b.date).toLocaleString('es-ES', { timeZone: b.timezone || 'Europe/Madrid' })}
+                            </td>
                             <td className="px-4 py-2">${b.finalPrice?.toLocaleString()}</td>
                             <td className="px-4 py-2">{b.status}</td>
+
                           </tr>
                         ))
                       ) : (
@@ -456,9 +479,12 @@ const Admin: React.FC = () => {
                         businessId: selectedBusiness
                       });
                       setBookingSuccess('Reserva creada exitosamente');
+                      setTimeout(() => setBookingSuccess(null), 5000);
                       setShowBookingForm(false);
-                    } catch (err) {
-                      console.error('Error creating booking:', err);
+                    } catch (err: Error | any) {
+                      setBookingError('Error al crear la reserva');
+                      setTimeout(() => setBookingError(null), 5000);
+
                       if (err instanceof Error) {
                         setBookingError(err.message);
                       } else if (typeof err === 'object' && err !== null && 'response' in err) {
@@ -471,7 +497,7 @@ const Admin: React.FC = () => {
                   }}
                   businessId={selectedBusiness}
                 />
-                
+
                 {bookingError && (
                   <div className="text-red-600 mt-2">{bookingError}</div>
                 )}
@@ -553,9 +579,20 @@ const Admin: React.FC = () => {
       {editEmployee && (
         <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg shadow-lg p-8 w-full max-w-md relative">
+            {editEmployeeError && (
+              <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-2 rounded text-center">
+                {editEmployeeError}
+              </div>
+            )}
+            {editEmployeeSuccess && (
+              <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-2 rounded text-center">
+                {editEmployeeSuccess}
+              </div>
+            )}
             <button
               className="absolute top-2 right-2 text-gray-500 hover:text-gray-700"
               onClick={() => setEditEmployee(null)}
+
             >✕</button>
             <h3 className="text-xl font-bold mb-4 text-center">Editar Empleado</h3>
             <form onSubmit={handleEditEmployee} className="flex flex-col gap-4">
@@ -589,16 +626,7 @@ const Admin: React.FC = () => {
               >
                 {editEmployeeLoading ? "Guardando..." : "Guardar cambios"}
               </button>
-              {editEmployeeError && (
-                <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-2 rounded text-center">
-                  {editEmployeeError}
-                </div>
-              )}
-              {editEmployeeSuccess && (
-                <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-2 rounded text-center">
-                  {editEmployeeSuccess}
-                </div>
-              )}
+
             </form>
           </div>
         </div>

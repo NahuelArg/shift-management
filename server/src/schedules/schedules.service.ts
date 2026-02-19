@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'prisma/prisma.service';
 import { Schedule } from '@prisma/client';
 import { CreateScheduleDto } from './dto/create-schedule.dto';
@@ -18,6 +18,9 @@ export class SchedulesService {
   }
 
   async create(data: CreateScheduleDto): Promise<Schedule> {
+    if(data.from >= data.to) {
+      throw new BadRequestException('start time must be before end time');
+    }
     return this.prisma.schedule.create({
       data,
     });
@@ -31,7 +34,10 @@ export class SchedulesService {
     id: string,
     updateScheduleDto: UpdateScheduleDto,
   ): Promise<Schedule> {
-    return this.prisma.schedule.update({
+   if (updateScheduleDto.from && updateScheduleDto.to && updateScheduleDto.from >= updateScheduleDto.to) {
+  throw new BadRequestException('start time must be before end time');
+}
+return this.prisma.schedule.update({
       where: { id },
       data: updateScheduleDto,
     });

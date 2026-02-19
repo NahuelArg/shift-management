@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+  import React, { useEffect, useState, useRef } from 'react';
 import { scheduleService, type Schedule, type CreateScheduleDto,  type UpdateScheduleDto } from '../services/scheduleService';
 import { businessService, type Business } from '../services/businessService';
 import NavBar from '../components/navBar';
@@ -28,6 +28,7 @@ const Schedules: React.FC = () => {
     to: '18:00',
     businessId: '',
   });
+  const formRef = useRef<HTMLFormElement>(null);
 
   useEffect(() => {
     fetchSchedules();
@@ -42,6 +43,7 @@ const Schedules: React.FC = () => {
       setSchedules(data);
     } catch (err: any) {
       setError(err.response?.data?.message || 'Error al cargar horarios');
+      setTimeout(() => setError(null), 5000);
     } finally {
       setLoading(false);
     }
@@ -59,18 +61,29 @@ const Schedules: React.FC = () => {
     }
   };
 
+  
+
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setSuccess(null);
+    if(formData.from >= formData.to) {
+      setError('start time must be before end time');
+      setTimeout(() => setError(null), 5000);
+      return;
+    }
     try {
+      
       await scheduleService.create(formData);
       setSuccess('Horario creado exitosamente');
+      setTimeout(() => setSuccess(null), 5000);
       setShowCreateForm(false);
+      
       setFormData({ dayOfWeek: 1, from: '09:00', to: '18:00', businessId: businesses[0]?.id || '' });
       fetchSchedules();
     } catch (err: any) {
       setError(err.response?.data?.message || 'Error al crear horario');
+      setTimeout(() => setError(null), 5000);
     }
   };
 
@@ -79,6 +92,11 @@ const Schedules: React.FC = () => {
     if (!editingSchedule) return;
     setError(null);
     setSuccess(null);
+    if(formData.from >= formData.to) {
+      setError('start time must be before end time');
+      setTimeout(() => setError(null), 5000);
+      return;
+    }
     try {
       const updateData: UpdateScheduleDto = {
         from: formData.from,
@@ -87,11 +105,13 @@ const Schedules: React.FC = () => {
       };
       await scheduleService.update(editingSchedule.id, updateData);
       setSuccess('Horario actualizado exitosamente');
+        setTimeout(() => setSuccess(null), 5000);
       setEditingSchedule(null);
       setFormData({ dayOfWeek: 1, from: '09:00', to: '18:00', businessId: businesses[0]?.id || '' });
       fetchSchedules();
     } catch (err: any) {
       setError(err.response?.data?.message || 'Error al actualizar horario');
+      setTimeout(() => setError(null), 5000);
     }
   };
 
@@ -102,9 +122,11 @@ const Schedules: React.FC = () => {
     try {
       await scheduleService.delete(id);
       setSuccess('Horario eliminado exitosamente');
+      setTimeout(() => setSuccess(null), 5000);
       fetchSchedules();
     } catch (err: any) {
       setError(err.response?.data?.message || 'Error al eliminar horario');
+      setTimeout(() => setError(null), 5000);
     }
   };
 
@@ -117,6 +139,9 @@ const Schedules: React.FC = () => {
       businessId: schedule.businessId,
     });
     setShowCreateForm(false);
+    setTimeout(() => {
+      formRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }, 0);
   };
 
   const handleCancelEdit = () => {
@@ -158,7 +183,7 @@ const Schedules: React.FC = () => {
           )}
 
           {(showCreateForm || editingSchedule) && (
-            <form onSubmit={editingSchedule ? handleUpdate : handleCreate} className="mb-8 bg-gray-50 p-6 rounded-lg">
+            <form ref={formRef} onSubmit={editingSchedule ? handleUpdate : handleCreate} className="mb-8 bg-gray-50 p-6 rounded-lg">
               <h2 className="text-xl font-semibold mb-4">
                 {editingSchedule ? 'Editar Horario' : 'Crear Horario'}
               </h2>

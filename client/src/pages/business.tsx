@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import {
   businessService,
   serviceService,
@@ -40,6 +40,7 @@ const BusinessPage: React.FC = () => {
     price: '',
     durationMin: '',
   });
+   const formRef = useRef<HTMLFormElement>(null);
 
   // Cargar negocios al montar
   useEffect(() => {
@@ -58,12 +59,13 @@ useEffect(() => {
 
   const fetchBusinesses = async () => {
     setLoading(true);
-    setError(null);
+    setTimeout(() => setError(null), 5000);
     try {
       const data = await businessService.getAll();
       setBusinesses(data);
     } catch (err: any) {
       setError(err.response?.data?.message || 'Error al cargar negocios');
+      setTimeout(() => setError(null), 5000);
     } finally {
       setLoading(false);
     }
@@ -73,23 +75,27 @@ useEffect(() => {
     e.preventDefault();
     if (!formData.ownerId) {
     setError('Debes seleccionar un propietario');
+    setTimeout(() => setError(null), 5000);
     return;
   }
   if (!formData.name.trim()) {
     setError('El nombre del negocio es obligatorio');
+    setTimeout(() => setError(null), 5000);
     return;
   }
-    setError(null);
-    setSuccess(null);
 
     try {
       await businessService.create(formData);
       setSuccess('Negocio creado exitosamente');
+          setTimeout(() => setSuccess(null), 5000);
+
       setShowCreateForm(false);
       setFormData({ name: '', ownerId: user?.id || '' });
       fetchBusinesses();
     } catch (err: any) {
       setError(err.response?.data?.message || 'Error al crear negocio');
+          setTimeout(() => setError(null), 5000);
+
     }
   };
 
@@ -98,10 +104,12 @@ useEffect(() => {
 
    if (!editingBusiness) {
     setError('No hay negocio en edición');
+    setTimeout(() => setError(null), 5000);
     return;
   }
   if (!formData.name.trim()) {
     setError('El nombre del negocio es obligatorio');
+    setTimeout(() => setError(null), 5000);
     return;
   }
     setError(null);
@@ -118,6 +126,7 @@ useEffect(() => {
       fetchBusinesses();
     } catch (err: any) {
       setError(err.response?.data?.message || 'Error al actualizar negocio');
+      setTimeout(() => setError(null), 5000);
     }
   };
 
@@ -126,13 +135,17 @@ useEffect(() => {
 
     setError(null);
     setSuccess(null);
+    setTimeout(() => setSuccess(null), 5000);
+    setTimeout(() => setError(null), 5000);
 
     try {
       await businessService.delete(id);
       setSuccess('Negocio eliminado exitosamente');
+        setTimeout(() => setSuccess(null), 5000);
       fetchBusinesses();
     } catch (err: any) {
       setError(err.response?.data?.message || 'Error al eliminar negocio');
+      setTimeout(() => setError(null), 5000);
     }
   };
 
@@ -143,6 +156,10 @@ useEffect(() => {
       ownerId: business.ownerId,
     });
     setShowCreateForm(false);
+    setTimeout(()=>{
+      formRef.current?.scrollIntoView({ behavior: 'smooth' });
+    },0)
+    
   };
 
   const handleCancelEdit = () => {
@@ -159,6 +176,7 @@ useEffect(() => {
       setSelectedBusinessServices(services);
     } catch (err: any) {
       setError(err.response?.data?.message || 'Error al cargar servicios');
+      setTimeout(() => setError(null), 5000);
     }
   };
 
@@ -174,7 +192,8 @@ useEffect(() => {
 
     setError(null);
     setSuccess(null);
-
+    setTimeout(() => setError(null), 5000);
+    setTimeout(() => setSuccess(null), 5000);
     try {
       await serviceService.create({
         name: serviceFormData.name,
@@ -185,6 +204,7 @@ useEffect(() => {
       });
 
       setSuccess('Servicio creado exitosamente');
+        setTimeout(() => setSuccess(null), 5000);
       setServiceFormData({ name: '', description: '', price: '', durationMin: '' });
       setShowServiceForm(false);
       
@@ -192,6 +212,7 @@ useEffect(() => {
       fetchServices(selectedBusinessForServices.id);
     } catch (err: any) {
       setError(err.response?.data?.message || 'Error al crear servicio');
+      setTimeout(() => setError(null), 5000);
     }
   };
 
@@ -200,16 +221,20 @@ useEffect(() => {
 
     setError(null);
     setSuccess(null);
+    setTimeout(() => setError(null), 5000);
+    setTimeout(() => setSuccess(null), 5000);
 
     try {
       await serviceService.delete(serviceId);
       setSuccess('Servicio eliminado exitosamente');
+      setTimeout(() => setSuccess(null), 5000);
       
       if (selectedBusinessForServices) {
         fetchServices(selectedBusinessForServices.id);
       }
     } catch (err: any) {
       setError(err.response?.data?.message || 'Error al eliminar servicio');
+      setTimeout(() => setError(null), 5000);
     }
   };
 
@@ -244,7 +269,7 @@ useEffect(() => {
 
           {/* Formulario crear/editar negocio */}
           {(showCreateForm || editingBusiness) && (
-            <form
+            <form ref={formRef}
               onSubmit={editingBusiness ? handleUpdateBusiness : handleCreateBusiness}
               className="mb-8 bg-gray-50 p-6 rounded-lg"
             >
@@ -362,7 +387,7 @@ useEffect(() => {
             )}
 
             {showServiceForm && (
-              <form onSubmit={handleCreateService} className="mb-6 bg-gray-50 p-4 rounded-lg">
+              <form ref={formRef} onSubmit={handleCreateService} className="mb-6 bg-gray-50 p-4 rounded-lg">
                 <h3 className="font-semibold mb-4">Nuevo Servicio</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <input
