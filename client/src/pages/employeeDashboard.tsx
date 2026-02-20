@@ -499,11 +499,13 @@ const EmployeeDashboard: React.FC = () => {
                                 />
                               </svg>
                               <span className="font-medium">
-                                {booking.user.name}
+                                {booking.user?.name || 'Cliente Anónimo'}
                               </span>
-                              <span className="text-gray-400">
-                                ({booking.user.email})
-                              </span>
+                              {booking.user?.email && (
+                                <span className="text-gray-400">
+                                  ({booking.user.email})
+                                </span>
+                              )}
                             </p>
                             <p className="flex items-center gap-2">
                               <svg
