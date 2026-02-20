@@ -37,7 +37,6 @@ export interface BookingData extends CreateBookingData {
   finalPrice: number;
   status: BookingStatus;
   createdAt: Date;
-  notes?: string;
 }
 interface Employee {
   id: string;
@@ -59,7 +58,6 @@ const BookingForm: React.FC<BookingFormProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [selectedService, setSelectedService] = useState<Service | null>(null);
   const [startTime, setStartTime] = useState('');
-  const [notes, setNotes] = useState('');
   const [selectedBusiness, setSelectedBusiness] = useState<{ id: string; name: string; services: Service[] } | null>(null);
   const [availableEmployees, setAvailableEmployees] = useState<Employee[]>([]);
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string | null>(null);
