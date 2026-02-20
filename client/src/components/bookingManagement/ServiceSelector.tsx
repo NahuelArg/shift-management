@@ -36,7 +36,7 @@ const ServiceSelector: React.FC<ServiceSelectorProps> = ({
       
       setLoading(true);
       try {
-        const response = await axios.get(`${API_BASE_URL}/services?businessId=${businessId}`, {
+        const response = await axios.get(`${API_BASE_URL}/services/${businessId}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         setServices(response.data);

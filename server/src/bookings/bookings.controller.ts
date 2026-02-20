@@ -52,14 +52,6 @@ export class BookingsController {
     return this.bookingsService.getBookingByQuery({ status, date, userId });
   }
 
-  // ✅ GET all bookings
-  @Get('all')
-  @Roles('ADMIN')
-  @ApiOperation({ summary: 'Get all bookings (ADMIN)' })
-  @ApiResponse({ status: 200, type: [BookingDto] })
-  async findAll(): Promise<Booking[]> {
-    return this.bookingsService.findAll();
-  }
 
   // ✅ GET bookings assigned to employee
   @Get('my-assignments')

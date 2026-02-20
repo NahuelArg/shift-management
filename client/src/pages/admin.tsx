@@ -470,7 +470,8 @@ const Admin: React.FC = () => {
                   onClick={() => setShowBookingForm(false)}
                 >✕</button>
                 <h3 className="text-xl font-bold mb-4 text-center">Crear Reserva</h3>
-                <BookingForm
+                <BookingForm 
+                  role="ADMIN"
                   onSubmit={async (bookingData) => {
                     try {
                       // Usamos el servicio en lugar de axios directamente
