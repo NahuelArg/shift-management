@@ -9,7 +9,7 @@ import BookingStatusButton from '../components/bookingManagement/BookingStatusBu
 interface Booking {
     id: string;
     status: string;
-    date: string;
+    startTime: string;
     endTime: string;
     finalPrice: number;
 }
@@ -91,8 +91,8 @@ const Bookings = () => {
                                 >
                                     <div className="flex justify-between items-center">
                                         <div>
-                                            <p>Fecha: {new Date(booking.date).toLocaleDateString('es-AR')}</p>
-                                            <p>Hora: {new Date(booking.date).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })} - {new Date(booking.endTime).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })}</p>
+                                            <p>Fecha: {new Date(booking.startTime).toLocaleDateString('es-ES')}</p>
+                                            <p>Hora: {new Date(booking.startTime).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })} - {new Date(booking.endTime).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}</p>
                                             <p>Precio: ${booking.finalPrice}</p>
                                         </div>
                                         <BookingStatusButton
