@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+
 import { useAuth } from '../context/AuthContext';
 import NavBar from '../components/navBar';
 import axios from 'axios';
@@ -39,6 +40,7 @@ interface UserSearchResult {
 }
 
 const EmployeeDashboard: React.FC = () => {
+
   const { user, token } = useAuth();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
@@ -50,7 +52,7 @@ const EmployeeDashboard: React.FC = () => {
     confirmed: 0,
     completed: 0,
   });
-
+  const [isWalkin, setIsWalkin] = useState(false);
   // Modal states
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [services, setServices] = useState<Service[]>([]);
@@ -65,6 +67,8 @@ const EmployeeDashboard: React.FC = () => {
   });
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
+  const [availableEmps, setAvailableEmps] = useState<{ id: string; name: string }[]>([]);
+  const [selectedEmpId, setSelectedEmpId] = useState('');
 
   useEffect(() => {
     if (user && token) {
@@ -240,10 +244,37 @@ const EmployeeDashboard: React.FC = () => {
     setSearchResults([]);
     setFormData({ serviceId: '', date: '', startTime: '' });
     setCreateError(null);
+    setIsWalkin(false);
+    setSelectedEmpId('');
+    setAvailableEmps([]);
   };
 
   // Get selected service details
   const selectedService = services.find((s) => s.id === formData.serviceId);
+
+  // Fetch available employees when service + date + time are set
+  useEffect(() => {
+    const svc = services.find((s) => s.id === formData.serviceId);
+    if (!svc || !formData.date || !formData.startTime) {
+      setAvailableEmps([]);
+      return;
+    }
+    const [year, month, day] = formData.date.split('-').map(Number);
+    const [hours, minutes] = formData.startTime.split(':').map(Number);
+    const startDateTime = new Date(year, month - 1, day, hours, minutes);
+    const endDateTime = new Date(startDateTime.getTime() + svc.durationMin * 60000);
+    const params = new URLSearchParams({
+      businessId: svc.businessId,
+      date: startDateTime.toISOString(),
+      endTime: endDateTime.toISOString(),
+    });
+    axios
+      .get(`${API_BASE_URL}/bookings/available-employees?${params}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      .then((res) => setAvailableEmps(res.data))
+      .catch(() => setAvailableEmps([]));
+  }, [formData.serviceId, formData.date, formData.startTime, services, token]);
 
   // Calculate end time based on service duration
   const calculateEndTime = (startTime: string, durationMin: number): string => {
@@ -258,12 +289,6 @@ const EmployeeDashboard: React.FC = () => {
   // Submit new booking
   const handleCreateBooking = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    if (!selectedClient) {
-      setCreateError('Debes seleccionar un cliente');
-      return;
-    }
-
     if (!formData.serviceId || !formData.date || !formData.startTime) {
       setCreateError('Todos los campos son requeridos');
       return;
@@ -293,12 +318,13 @@ const EmployeeDashboard: React.FC = () => {
       await axios.post(
         `${API_BASE_URL}/bookings`,
         {
-          userId: selectedClient.id,
+          ...(selectedClient && { userId: selectedClient.id }),
           serviceId: formData.serviceId,
           businessId: selectedService.businessId,
           date: dateTimeISO,
           finalPrice: selectedService.price,
-          timezone: 'America/Argentina/Buenos_Aires',
+          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+          ...(selectedEmpId && { employeeId: selectedEmpId }),
         },
         {
           headers: { Authorization: `Bearer ${token}` },
@@ -431,11 +457,10 @@ const EmployeeDashboard: React.FC = () => {
                 {sortedBookings.map((booking) => (
                   <div
                     key={booking.id}
-                    className={`border rounded-lg p-6 hover:shadow-md transition-shadow ${
-                      isToday(booking.date)
+                    className={`border rounded-lg p-6 hover:shadow-md transition-shadow ${isToday(booking.date)
                         ? 'border-purple-300 bg-purple-50'
                         : 'border-gray-200'
-                    }`}
+                      }`}
                   >
                     <div className="flex flex-col space-y-4">
                       {/* Header */}
@@ -536,8 +561,8 @@ const EmployeeDashboard: React.FC = () => {
                             {updatingStatus === booking.id
                               ? 'Actualizando...'
                               : booking.status === 'CONFIRMED'
-                              ? '✓ Confirmado'
-                              : 'Confirmar'}
+                                ? '✓ Confirmado'
+                                : 'Confirmar'}
                           </button>
                           <button
                             onClick={() => updateBookingStatus(booking.id, 'COMPLETED')}
@@ -598,72 +623,92 @@ const EmployeeDashboard: React.FC = () => {
 
               {/* Búsqueda de cliente */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Cliente *
-                </label>
-                <div className="relative">
-                  <input
-                    type="text"
-                    value={searchQuery}
-                    onChange={handleSearchChange}
-                    placeholder="Buscar por email..."
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    disabled={creating}
-                  />
-                  {searchLoading && (
-                    <div className="absolute right-3 top-3">
-                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-600"></div>
-                    </div>
-                  )}
+                <div className="flex items-center justify-between mb-2">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Cliente
+                  </label>
+                  <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={isWalkin}
+                      onChange={(e) => {
+                        setIsWalkin(e.target.checked);
+                        setSelectedClient(null);
+                        setSearchQuery('');
+                      }}
+                      className="rounded"
+                    />
+                    Walk-in (sin cuenta)
+                  </label>
                 </div>
 
-                {/* Resultados de búsqueda */}
-                {searchResults.length > 0 && (
-                  <div className="mt-2 border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
-                    {searchResults.map((result) => (
-                      <button
-                        key={result.id}
-                        type="button"
-                        onClick={() => selectClient(result)}
-                        className="w-full px-4 py-3 text-left hover:bg-purple-50 border-b border-gray-100 last:border-b-0 transition-colors"
-                      >
-                        <div className="font-medium text-gray-800">{result.name}</div>
-                        <div className="text-sm text-gray-600">{result.email}</div>
-                        {result.phone && (
-                          <div className="text-sm text-gray-500">{result.phone}</div>
-                        )}
-                      </button>
-                    ))}
-                  </div>
-                )}
-
-                {/* Cliente seleccionado */}
-                {selectedClient && (
-                  <div className="mt-2 bg-purple-50 border border-purple-200 rounded-lg px-4 py-3">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <div className="font-medium text-gray-800">{selectedClient.name}</div>
-                        <div className="text-sm text-gray-600">{selectedClient.email}</div>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setSelectedClient(null);
-                          setSearchQuery('');
-                        }}
-                        className="text-purple-600 hover:text-purple-700"
-                      >
-                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M6 18L18 6M6 6l12 12"
-                          />
-                        </svg>
-                      </button>
+                {!isWalkin && (
+                  <>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        value={searchQuery}
+                        onChange={handleSearchChange}
+                        placeholder="Buscar por email..."
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        disabled={creating}
+                      />
+                      {searchLoading && (
+                        <div className="absolute right-3 top-3">
+                          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-600"></div>
+                        </div>
+                      )}
                     </div>
-                  </div>
+
+                    {/* Resultados de búsqueda */}
+                    {searchResults.length > 0 && (
+                      <div className="mt-2 border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                        {searchResults.map((result) => (
+                          <button
+                            key={result.id}
+                            type="button"
+                            onClick={() => selectClient(result)}
+                            className="w-full px-4 py-3 text-left hover:bg-purple-50 border-b border-gray-100 last:border-b-0 transition-colors"
+                          >
+                            <div className="font-medium text-gray-800">{result.name}</div>
+                            <div className="text-sm text-gray-600">{result.email}</div>
+                            {result.phone && (
+                              <div className="text-sm text-gray-500">{result.phone}</div>
+                            )}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Cliente seleccionado */}
+                    {selectedClient && (
+                      <div className="mt-2 bg-purple-50 border border-purple-200 rounded-lg px-4 py-3">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <div className="font-medium text-gray-800">{selectedClient.name}</div>
+                            <div className="text-sm text-gray-600">{selectedClient.email}</div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSelectedClient(null);
+                              setSearchQuery('');
+                            }}
+                            className="text-purple-600 hover:text-purple-700"
+                          >
+                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M6 18L18 6M6 6l12 12"
+                              />
+                            </svg>
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
 
@@ -722,6 +767,24 @@ const EmployeeDashboard: React.FC = () => {
                 />
               </div>
 
+              {/* Empleado */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Empleado
+                </label>
+                <select
+                  value={selectedEmpId}
+                  onChange={(e) => setSelectedEmpId(e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  disabled={creating || !formData.serviceId || !formData.date || !formData.startTime}
+                >
+                  <option value="">Yo mismo</option>
+                  {availableEmps.map((emp) => (
+                    <option key={emp.id} value={emp.id}>{emp.name}</option>
+                  ))}
+                </select>
+              </div>
+
               {/* Resumen */}
               {selectedService && formData.startTime && (
                 <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 space-y-2">
@@ -757,7 +820,7 @@ const EmployeeDashboard: React.FC = () => {
                 <button
                   type="submit"
                   className="flex-1 px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-lg transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
-                  disabled={creating || !selectedClient || !formData.serviceId || !formData.date || !formData.startTime}
+                  disabled={creating || (!isWalkin && !selectedClient) || !formData.serviceId || !formData.date || !formData.startTime}
                 >
                   {creating ? 'Creando...' : 'Crear Reserva'}
                 </button>
