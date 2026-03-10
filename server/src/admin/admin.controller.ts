@@ -15,7 +15,7 @@ import { GetAllEmployeesQueryDto } from './DTO/getAllEmployeesQuery.dto';
 import { RequestWithUser } from 'src/types/express-request.interface';
 import { Roles } from '../decorator/roles.decorator';
 import { RolesGuard } from '../guard/roles.guard';
-import {JwtAuthGuard} from 'src/guard/jwt.guard';
+import { JwtAuthGuard } from 'src/guard/jwt.guard';
 import {
   ApiBearerAuth,
   ApiTags,
@@ -35,11 +35,11 @@ import { UpdateEmployeeDto } from './DTO/updateEmployeeDto.dto';
 @Controller('admin')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class AdminController {
-  constructor(private readonly adminService: AdminService) {}
+  constructor(private readonly adminService: AdminService) { }
 
   @Get('me')
-  @Roles('ADMIN')
   @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get admin by ID' })
   @ApiResponse({
@@ -57,23 +57,23 @@ export class AdminController {
   }
 
   @Get('business/:businessId/employees')
-@Roles('ADMIN')
-@UseGuards(JwtAuthGuard, RolesGuard)
-@ApiBearerAuth()
-@ApiOperation({ summary: 'Get all employees for a business' })
-async getEmployeesByBusiness(
-  @Request() req: RequestWithUser,
-  @Param('businessId') businessId: string,
-) {
-  return this.adminService.getEmployeesByBusiness(
-    businessId,
-    req.user.userId,
-  );
-}
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get all employees for a business' })
+  async getEmployeesByBusiness(
+    @Request() req: RequestWithUser,
+    @Param('businessId') businessId: string,
+  ) {
+    return this.adminService.getEmployeesByBusiness(
+      businessId,
+      req.user.userId,
+    );
+  }
 
   @Delete('employee/:employeeId')
-  @Roles('ADMIN')
   @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Delete employee by ID' })
   @ApiResponse({
@@ -164,7 +164,8 @@ async getEmployeesByBusiness(
     return admin;
   }
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
   @Get('employees')
   async getEmployees(
     @Request() req: RequestWithUser,
@@ -174,7 +175,8 @@ async getEmployeesByBusiness(
     return this.adminService.getAllEmployees(adminId, query);
   }
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
   @Post('employee')
   async createEmployee(
     @Request() req: RequestWithUser,
@@ -182,8 +184,9 @@ async getEmployeesByBusiness(
   ) {
     return this.adminService.createEmployee(dto, req.user.userId);
   }
-  
-  @UseGuards(JwtAuthGuard)
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
   @Put('employee/:employeeId')
   async updateEmployee(
     @Request() req: RequestWithUser,
