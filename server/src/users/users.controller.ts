@@ -25,6 +25,9 @@ import { UpdateUserDto } from './dto/updateUser.dto';
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
   @Delete(':id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @ApiBearerAuth()
+  @Roles('ADMIN')
   @ApiOperation({ summary: 'Delete a user by ID' })
   @ApiResponse({
     status: 200,
