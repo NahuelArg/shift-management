@@ -2,11 +2,17 @@ import { PrismaClient, Role, AuthProvider, BookingStatus, PaymentStatus } from '
 import * as bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
-
 async function main() {
+if (process.env.NODE_ENV === 'production') {
+  console.error('❌ Seed cannot be run in production environment');
+  process.exit(1);
+}
+
+
+
   console.log('🌱 Starting seed...');
 
-  // Limpiar datos existentes (opcional, comenta si no quieres borrar)
+  
   await prisma.booking.deleteMany();
   await prisma.schedule.deleteMany();
   await prisma.service.deleteMany();
@@ -15,13 +21,13 @@ async function main() {
 
   console.log('✅ Cleared existing data');
 
-  // Hashear contraseña para todos los usuarios
+
   const hashedPassword = await bcrypt.hash('password123', 10);
 
-  // 1. CREAR USUARIOS
+
   console.log('👥 Creating users...');
 
-  // Admins
+
   const admin1 = await prisma.user.create({
     data: {
       name: 'Admin Principal',
@@ -44,7 +50,7 @@ async function main() {
     },
   });
 
-  // Clients
+
   const client1 = await prisma.user.create({
     data: {
       name: 'Juan Pérez',
@@ -80,7 +86,7 @@ async function main() {
 
   console.log(`✅ Created ${5} users`);
 
-  // 2. CREAR NEGOCIOS
+ 
   console.log('🏢 Creating businesses...');
 
   const barberia = await prisma.business.create({
@@ -106,7 +112,7 @@ async function main() {
 
   console.log(`✅ Created ${3} businesses`);
 
-  // 3. CREAR EMPLEADOS (asociados a negocios)
+
   console.log('👨‍💼 Creating employees...');
 
   const employee1 = await prisma.user.create({
@@ -147,10 +153,9 @@ async function main() {
 
   console.log(`✅ Created ${3} employees`);
 
-  // 4. CREAR SERVICIOS
+
   console.log('💇 Creating services...');
 
-  // Servicios de Barbería
   const corteCabello = await prisma.service.create({
     data: {
       name: 'Corte de Cabello',
@@ -181,7 +186,7 @@ async function main() {
     },
   });
 
-  // Servicios de Spa
+ 
   const masajeRelax = await prisma.service.create({
     data: {
       name: 'Masaje Relajante',
@@ -212,7 +217,7 @@ async function main() {
     },
   });
 
-  // Servicios de Salón
+
   const manicura = await prisma.service.create({
     data: {
       name: 'Manicura Completa',
@@ -245,10 +250,10 @@ async function main() {
 
   console.log(`✅ Created ${9} services`);
 
-  // 5. CREAR HORARIOS
+
   console.log('📅 Creating schedules...');
 
-  // Horarios para Barbería (Lunes a Viernes)
+
   for (let day = 1; day <= 5; day++) {
     await prisma.schedule.create({
       data: {
@@ -260,7 +265,7 @@ async function main() {
     });
   }
 
-  // Sábado para Barbería
+
   await prisma.schedule.create({
     data: {
       dayOfWeek: 6,
@@ -270,7 +275,7 @@ async function main() {
     },
   });
 
-  // Horarios para Spa (Lunes a Sábado)
+
   for (let day = 1; day <= 6; day++) {
     await prisma.schedule.create({
       data: {
@@ -282,7 +287,7 @@ async function main() {
     });
   }
 
-  // Horarios para Salón (Martes a Sábado)
+ 
   for (let day = 2; day <= 6; day++) {
     await prisma.schedule.create({
       data: {
@@ -296,12 +301,10 @@ async function main() {
 
   console.log(`✅ Created schedules`);
 
-  // 6. CREAR RESERVAS
   console.log('📝 Creating bookings...');
 
   const now = new Date();
 
-  // Reservas PASADAS (mes pasado) - COMPLETED
   const lastMonth = new Date(now);
   lastMonth.setMonth(lastMonth.getMonth() - 1);
 
@@ -380,7 +383,7 @@ async function main() {
     },
   });
 
-  // Reservas de ESTA SEMANA - CONFIRMED
+
   const today = new Date();
   const tomorrow = new Date(today);
   tomorrow.setDate(tomorrow.getDate() + 1);
@@ -432,7 +435,6 @@ async function main() {
     },
   });
 
-  // Reservas FUTURAS - PENDING
   const nextWeek = new Date(today);
   nextWeek.setDate(nextWeek.getDate() + 7);
 
@@ -478,7 +480,6 @@ async function main() {
     },
   });
 
-  // Reservas CANCELADAS
   await prisma.booking.create({
     data: {
       userId: client3.id,
