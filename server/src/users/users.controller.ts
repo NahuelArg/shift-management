@@ -20,6 +20,7 @@ import { ApiBearerAuth } from '@nestjs/swagger';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { UpdateUserDto } from './dto/updateUser.dto';
 
+
 @ApiTags('Users')
 @Controller('users')
 export class UsersController {
@@ -70,14 +71,10 @@ export class UsersController {
     description: 'User successfully created',
     type: UserDto,
   })
-  async createUser(@Body() body: CreateUserDto): Promise<UserDto> {
-    // Ensure 'phone' is undefined if null to match service signature
-    const data = {
-      ...body,
-      phone: body.phone === null ? undefined : body.phone,
-    };
-    return this.usersService.createUser(data);
-  }
+  async createUser(@Body() body: CreateUserDto): Promise<UserDto>{
+    return this.usersService.createUser(body) }
+
+  
   @Put(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @ApiBearerAuth()

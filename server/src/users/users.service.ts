@@ -1,27 +1,48 @@
-import { Injectable } from '@nestjs/common';
+import { ConflictException, Injectable, BadRequestException} from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { User } from '@prisma/client';
 import { UpdateUserDto } from './dto/updateUser.dto';
-
+import { CreateUserDto } from './dto/CreateUserDto.dto';
+import * as bcrypt from 'bcrypt'
 @Injectable()
 export class UsersService {
   constructor(private prisma: PrismaService) {}
-  async findAll(): Promise<User[]> {
-    return this.prisma.user.findMany();
+  async findAll(): Promise<Omit<User, 'password'>[]> {
+  return this.prisma.user.findMany({
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      phone: true,
+      role: true,
+      authProvider: true,
+      businessId: true,
+      createdAt: true,
+      bookings: true,
+      updatedAt: true
+    },
+  });
   }
 
-  async createUser(data: {
-    name: string;
-    email: string;
-    phone?: string;
-  }): Promise<User> {
+  async createUser(body: CreateUserDto): Promise<User> {
+    const existing = await this.prisma.user.findUnique({
+      where:{email:body.email}
+    })
+    if(existing) throw new ConflictException('Email already in use')
+    if (body.authProvider === 'LOCAL' && !body.password) {
+    throw new BadRequestException('Password is required for local authentication');
+  }
+    const hashedPassword = body.password
+    ? await bcrypt.hash(body.password, 10)
+    : undefined
     return this.prisma.user.create({
-      data: {
-        name: data.name,
-        email: data.email,
-        phone: data.phone,
-      },
-    });
+      data:{
+        ...body,
+        password: hashedPassword,
+        phone: body.phone?? undefined
+      }
+    }
+    );
   }
   async deleteUser(id: string): Promise<User> {
     return this.prisma.user.delete({
