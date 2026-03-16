@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
+import { jwtDecode } from 'jwt-decode'
 
-interface User{
+interface User {
     id: string;
     email: string;
     name: string;
@@ -10,26 +11,37 @@ interface User{
 interface AuthContextType {
     user: User | null;
     token: string | null;
-    login: (token: string, user:User) => Promise<void>;
+    login: (token: string, user: User) => Promise<void>;
     logout: () => Promise<void>;
 }
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
-
-export const AuthProvider: React.FC<{children:React.ReactNode}> = ({children})=>{
-    const [user, setUser] = useState< User | null>(null);
+const isTokenExpired = (token: string): boolean => {
+    try {
+        const { exp } = jwtDecode<{ exp: number }>(token);
+        return Date.now() >= exp * 1000
+    } catch {
+        return true
+    }
+}
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+    const [user, setUser] = useState<User | null>(null);
     const [token, setToken] = useState<string | null>(null);
-    
+
 
     useEffect(() => {
         const storedToken = localStorage.getItem('token');
         const storedUser = localStorage.getItem('user');
-        if(storedToken && storedUser && storedUser != 'undefined') {
+
+        if (storedToken && !isTokenExpired(storedToken)) {
             setToken(storedToken);
-            setUser(JSON.parse(storedUser));
+            if (storedUser) setUser(JSON.parse(storedUser));
+        } else {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
         }
     }, []);
 
-    const login = async (token:string, user:User) => {
+    const login = async (token: string, user: User) => {
         setToken(token);
         setUser(user);
         localStorage.setItem('token', token);
