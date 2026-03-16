@@ -5,7 +5,7 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { PrismaService } from 'prisma/prisma.service';
-import { Booking } from '@prisma/client';
+import { Booking, Prisma } from '@prisma/client';
 import { BookingDto } from './dto/BookingsDto.dto';
 import { UpdateBookingDto } from './dto/updateBookingDto.dto';
 import { BookingStatus } from '@prisma/client';
@@ -194,7 +194,13 @@ export class BookingsService {
         data: updateBookingDto,
       });
     } catch (error: unknown) {
-      throw new NotFoundException(error, 'Booking not found');
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2025'
+      ) {
+        throw new NotFoundException('Booking not found');
+      }
+      throw error;
     }
   }
   async findOne(id: string): Promise<Booking> {
@@ -279,8 +285,6 @@ export class BookingsService {
 
     return availableEmployees;
   }
-
-
   /**
    * Get all bookings assigned to a specific employee
    */
@@ -310,7 +314,6 @@ export class BookingsService {
       },
     });
   }
-
   /**
    * Get all bookings for a specific user (client)
    */
