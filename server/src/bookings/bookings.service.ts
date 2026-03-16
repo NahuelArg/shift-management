@@ -16,7 +16,6 @@ import { format } from 'date-fns';
 export class BookingsService {
   constructor(
     private prisma: PrismaService,
-    private readonly service: PrismaService,
   ) {}
 
   async findAll(): Promise<Booking[]> {
