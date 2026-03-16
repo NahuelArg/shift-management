@@ -7,6 +7,7 @@ import {
   MinLength,
   IsEnum,
   IsNotEmpty,
+  IsNumber,
 } from 'class-validator';
 // No es necesario importar AuthProvider de Prisma
 
@@ -36,6 +37,7 @@ export class CreateUserDto {
     description: 'User phone number (optional)',
     example: '123456789',
   })
+  @IsOptional()
   @IsString()
   phone?: string | null;
 
@@ -62,7 +64,8 @@ export class CreateUserDto {
     description: 'User password (minimum 6 characters)',
     example: 'my_secure_password',
   })
+  @IsOptional()
   @IsString()
   @MinLength(6)
-  password: string | null;
+  password: string | undefined;
 }

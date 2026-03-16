@@ -86,6 +86,7 @@ model Schedule {
   to         String // "17:00"
   business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
   businessId String
+  @@index([businessId, dayOfWeek])
 }
 
 model Booking {

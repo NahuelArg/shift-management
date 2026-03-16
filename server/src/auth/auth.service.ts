@@ -84,7 +84,6 @@ export class AuthService {
       createdAt: user.createdAt,
       bookings: user.bookings || [],
       authProvider: user.authProvider,
-      password: null,
     };
   }
 
