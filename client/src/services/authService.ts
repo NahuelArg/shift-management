@@ -6,7 +6,6 @@ export interface LoginResponse {
     id: string;
     name: string;
     role: 'ADMIN' | 'CLIENT' | 'EMPLOYEE';
-    password: string;
     email: string;
   };
 }
