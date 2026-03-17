@@ -20,7 +20,6 @@ const Admin: React.FC = () => {
   const [page, setPage] = useState(1);
   const [limit] = useState(10);
   const [loadingEmployees, setLoadingEmployees] = useState(false);
-  const [metrics, setMetrics] = useState<any>(null);
   const [groupBy, setGroupBy] = useState<"day" | "month" | "year">("month");
 
   // Crear empleado
@@ -41,7 +40,9 @@ const Admin: React.FC = () => {
   const [bookingError, setBookingError] = useState<string | null>(null);
   const [bookingSuccess, setBookingSuccess] = useState<string | null>(null);
 
-  // Fechas para métricas
+  // Estados para métricas
+  const [metrics, setMetrics] = useState<any>(null);
+  const [metricsError, setMetricsError] = useState<string | null>(null);
   const [fromDate, setFromDate] = useState(() => {
     const today = new Date();
     return new Date(today.getFullYear(), today.getMonth(), 1).toISOString().slice(0, 10);
@@ -52,17 +53,17 @@ const Admin: React.FC = () => {
   });
 
   // Limpiar mensaje de éxito después de 4 segundos
-  useEffect(()=>{
-    if(employeeSuccess){
-      const timer = setTimeout(()=>setEmployeeSuccess(null), 4000);
+  useEffect(() => {
+    if (employeeSuccess) {
+      const timer = setTimeout(() => setEmployeeSuccess(null), 4000);
       return () => clearTimeout(timer)
     }
   }, [employeeSuccess])
 
   // Limpiar mensaje de error después de 4 segundos
-  useEffect(()=>{
-    if(employeeError){
-      const timer = setTimeout(()=>setEmployeeError(null), 4000);
+  useEffect(() => {
+    if (employeeError) {
+      const timer = setTimeout(() => setEmployeeError(null), 4000);
       return () => clearTimeout(timer)
     }
   }, [employeeError])
@@ -109,17 +110,22 @@ const Admin: React.FC = () => {
       fromParam = from.slice(0, 7);
       toParam = to.slice(0, 7);
     }
-    const res = await axios.get(`${API_BASE_URL}/admin/metrics`, {
-      params: {
-        businessId,
-        userId,
-        from: fromParam,
-        to: toParam,
-        groupBy
-      },
-      headers: { Authorization: `Bearer ${token}` }
-    });
-    setMetrics(res.data);
+    try {
+      const res = await axios.get(`${API_BASE_URL}/admin/metrics`, {
+        params: {
+          businessId,
+          userId,
+          from: fromParam,
+          to: toParam,
+          groupBy
+        },
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setMetrics(res.data);
+    } catch (error: any) {
+      setMetricsError(error.response?.data?.message || 'Error al cargar las metricas')
+    }
+
   };
   // Cuando cambia el negocio seleccionado, actualiza métricas y empleados
   useEffect(() => {
@@ -232,7 +238,7 @@ const Admin: React.FC = () => {
       setEditEmployeeLoading(false);
     }
   };
-  
+
 
   return (
     // Contenedor principal con fondo degradado
@@ -259,14 +265,14 @@ const Admin: React.FC = () => {
               </button>
             </div>
           ) :
-          // Formulario de creación de empleado
-          (<form onSubmit={handleCreateEmployee} className="flex flex-col gap-4 max-w-md mx-auto mb-6">
+            // Formulario de creación de empleado
+            (<form onSubmit={handleCreateEmployee} className="flex flex-col gap-4 max-w-md mx-auto mb-6">
               <select
                 value={newEmployee.businessId}
                 onChange={e => setNewEmployee({ ...newEmployee, businessId: e.target.value })}
                 required
                 className="px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-400"
-              >              
+              >
                 {businesses.map(b => (
                   <option key={b.id} value={b.id}>{b.name}</option>
                 ))}
@@ -313,7 +319,7 @@ const Admin: React.FC = () => {
               </div>
 
             </form>
-          )}
+            )}
 
           {/* Selector de negocio y métricas */}
           <div className="mb-6">
@@ -449,6 +455,13 @@ const Admin: React.FC = () => {
               </div>
             )}
           </div>
+          {metricsError && (
+            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-2 rounded text-center">
+              {metricsError}
+            </div>
+          )}
+
+
 
           {/* Botón crear reserva y formulario */}
           <div className="mb-6">
@@ -469,7 +482,7 @@ const Admin: React.FC = () => {
                   onClick={() => setShowBookingForm(false)}
                 >✕</button>
                 <h3 className="text-xl font-bold mb-4 text-center">Crear Reserva</h3>
-                <BookingForm 
+                <BookingForm
                   role="ADMIN"
                   onSubmit={async (bookingData) => {
                     try {
