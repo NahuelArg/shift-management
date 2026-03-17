@@ -6,8 +6,7 @@ import{
     BadRequestException,
 } from '@nestjs/common';
 import { Observable } from 'rxjs';
-import {RequestWithUser} from 'src/types/express-request.interface';
-import { parseArgs } from 'util';
+import {RequestWithUser} from '../types/express-request.interface';
 
 @Injectable()
 export class OwnershipGuard implements CanActivate {

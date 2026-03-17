@@ -11,7 +11,7 @@ import * as bcrypt from 'bcrypt';
 import { UpdateAdminDto } from './DTO/updateAdmin.dto';
 import { User, Role, AuthProvider } from '@prisma/client';
 import MetricsResponse from './DTO/metricsDto.dto';
-import { convertBigIntToString } from 'src/utils/convertBigIntToString';
+import { convertBigIntToString } from '../utils/convertBigIntToString';
 import { CreateAdminDto } from './DTO/createAdminDto.dto';
 import { CreateEmployeeDto } from './DTO/createEmployeeDto.dto';
 import { UpdateEmployeeDto } from './DTO/updateEmployeeDto.dto';

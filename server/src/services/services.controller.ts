@@ -18,13 +18,13 @@ import {
   ApiBearerAuth,
 } from '@nestjs/swagger';
 import { Service } from '@prisma/client';
-import { JwtAuthGuard } from 'src/guard/jwt.guard';
-import { RolesGuard } from 'src/guard/roles.guard';
-import { Roles } from 'src/decorator/roles.decorator';
+import { JwtAuthGuard } from '../guard/jwt.guard';
+import { RolesGuard } from '../guard/roles.guard';
+import { Roles } from '../decorator/roles.decorator';
 import { ServiceDto } from './dto/service.dto';
 import { CreateServiceDto } from './dto/create-service.dto';
 import { UpdateServiceDto } from './dto/updateServices.dto';
-import { RequestWithUser } from 'src/types/express-request.interface';
+import { RequestWithUser } from '../types/express-request.interface';
 
 @ApiTags('Services')
 @Controller('services')
