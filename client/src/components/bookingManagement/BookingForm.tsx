@@ -68,7 +68,7 @@ const BookingForm: React.FC<BookingFormProps> = ({
     serviceId: '',
     businessId: '',
     date: new Date().toISOString().split('T')[0], // Just the date part initially
-    timezone: "España/Madrid",
+    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
     finalPrice: 0
   });
   const [businesses, setBusinesses] = useState<{ id: string; name: string; services: Service[] }[]>([]);

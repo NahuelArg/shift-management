@@ -27,7 +27,7 @@ export class BookingsService {
       businessId,
       employeeId,
       date: dateInput,
-      timezone = 'Europe/Madrid',
+      timezone = 'Europe/Madrid', 
       userId,
     } = data;
 
