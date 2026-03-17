@@ -27,7 +27,7 @@ export class BookingsService {
       businessId,
       employeeId,
       date: dateInput,
-      timezone = 'Europe/Madrid', // TODO: make timezone required in DTO and send from frontend (see issue #XX)
+      timezone = 'Europe/Madrid', 
       userId,
     } = data;
 
