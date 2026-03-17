@@ -31,7 +31,7 @@ export class SchedulesController {
 
   @Delete(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('ADMIN', 'CLIENT')
+  @Roles('ADMIN')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Delete a schedule by ID' })
   @ApiResponse({
@@ -59,7 +59,7 @@ export class SchedulesController {
 
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('ADMIN', 'CLIENT')
+  @Roles('ADMIN')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Create a new schedule' })
   @ApiResponse({
@@ -80,7 +80,7 @@ export class SchedulesController {
   }
   @Put(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('ADMIN', 'CLIENT')
+  @Roles('ADMIN')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Update a schedule by ID' })
   @ApiResponse({
