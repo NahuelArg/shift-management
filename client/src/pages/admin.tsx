@@ -142,8 +142,8 @@ const Admin: React.FC = () => {
       });
       setEmployees(res.data.employees);
       setTotalEmployees(res.data.total);
-    } catch (error) {
-      console.error('Error fetching employees:', error);
+    } catch (error: any) {
+      setEmployeeError(error.response?.data?.message || 'Error fetching employees:');
     } finally {
       setLoadingEmployees(false);
     }
@@ -544,6 +544,11 @@ const Admin: React.FC = () => {
               >Siguiente</button>
             </div>
           </div>
+          {employeeError && (
+            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-2 rounded text-center">
+              {employeeError}
+            </div>
+          )}
           <table className="min-w-full bg-white rounded-lg shadow mb-8">
             <thead>
               <tr>
@@ -583,6 +588,7 @@ const Admin: React.FC = () => {
                   </td>
                 </tr>
               ))}
+
             </tbody>
           </table>
         </div>
