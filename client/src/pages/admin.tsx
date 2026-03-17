@@ -222,13 +222,9 @@ const Admin: React.FC = () => {
     // Contenedor principal con fondo degradado
     <div className="flex flex-col min-h-screen bg-gradient-to-b from-custom-light to-custom-dark">
       <NavBar />
-      //
       <div className="flex flex-col items-center justify-start flex-1 w-full px-4 py-8" style={{ minHeight: "calc(100vh - 48px)" }}>
-        //
         <div className="bg-white/90 rounded-xl shadow-lg p-8 w-full max-w-5xl">
-
           <h2 className="text-3xl font-extrabold text-gray-900 mb-6 text-center">Gestión de Empleados</h2>
-
           {/* Mensaje de error si no hay negocios */}
           {businesses.length === 0 && (
             <div className="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded mb-4 text-center">
