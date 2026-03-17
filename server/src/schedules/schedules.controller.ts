@@ -18,7 +18,7 @@ import {
 } from '@nestjs/swagger';
 import { Schedule } from '@prisma/client';
 import { JwtAuthGuard } from '../guard/jwt.guard';
-import { RolesGuard } from 'src/guard/roles.guard';
+import { RolesGuard } from '../guard/roles.guard';
 import { Roles } from '../decorator/roles.decorator';
 import { ScheduleDto } from './dto/schedulesDto.dto';
 import { CreateScheduleDto } from './dto/create-schedule.dto';

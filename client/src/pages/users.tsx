@@ -1,6 +1,5 @@
-// src/components/Users.tsx
 import React, { useEffect, useState } from 'react';
-import { useAuth } from '../context/AuthContext'; // Asume que tienes esto
+import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
 import NavBar from '../components/navBar';
 import type { Business } from '../services/businessService';

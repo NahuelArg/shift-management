@@ -9,7 +9,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { hash, compare } from 'bcrypt';
 import { RegisterDto } from './dto/RegisterDto.dto'; // Cambié CreateUserDto a RegisterDto
 import { LoginDto } from './dto/LoginDto.dto';
-import { UserDto } from 'src/users/dto/UserDto.dto';
+import { UserDto } from '../users/dto/UserDto.dto';
 import { Role } from '@prisma/client';
 
 @Injectable()

@@ -9,7 +9,7 @@ import {
   Put,
   Req,
 } from '@nestjs/common';
-import { RequestWithUser } from 'src/types/express-request.interface';
+import { RequestWithUser } from '../types/express-request.interface';
 import { BusinessService } from './business.service';
 import {
   ApiBearerAuth,

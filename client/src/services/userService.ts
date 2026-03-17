@@ -1,6 +1,5 @@
 import apiClient from './apiClient';
 
-// src/services/employeeService.ts
 
 export interface Employee {
   id: string;

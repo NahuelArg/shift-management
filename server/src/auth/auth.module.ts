@@ -5,11 +5,11 @@ import { AuthService } from './auth.service';
 import { GoogleStrategy } from '../strategies/google.strategy';
 //import { AppleStrategy } from "./strategies/apple.strategy";
 import { PrismaService } from 'prisma/prisma.service';
-import { UsersModule } from 'src/users/users.module';
+import { UsersModule } from '../users/users.module';
 import { PassportModule } from '@nestjs/passport';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import {JwtAuthGuard } from 'src/guard/jwt.guard';
-import { JwtStrategy } from 'src/strategies/jwt.strategy';
+import {JwtAuthGuard } from '../guard/jwt.guard';
+import { JwtStrategy } from '../strategies/jwt.strategy';
 
 @Module({
   imports: [
