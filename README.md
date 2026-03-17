@@ -1,226 +1,132 @@
 # Shift Management
 
-A modern, full-stack appointment management system built with React, NestJS, and Prisma. This application allows businesses to manage their appointments, employees, and client bookings efficiently.
+A full-stack appointment management system built with React, NestJS, and Prisma. Businesses can manage services, schedules, employees, and bookings through a role-based dashboard.
 
 ![MIT License](https://img.shields.io/badge/License-MIT-green.svg)
-![TypeScript](https://img.shields.io/badge/TypeScript-4.9.5-blue.svg)
-![React](https://img.shields.io/badge/React-18.x-blue.svg)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue.svg)
+![React](https://img.shields.io/badge/React-19.x-blue.svg)
 ![NestJS](https://img.shields.io/badge/NestJS-10.x-red.svg)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-blue.svg)
 
-## 📚 Documentación Adicional
+## 🌐 Live Demo
 
-- **[📑 Índice de Documentación](./INDICE-DOCUMENTACION.md)** - Guía de navegación de toda la documentación disponible
-- **[🏗️ Análisis Arquitectónico Completo](./ANALISIS-ARQUITECTURA.md)** - Análisis detallado de arquitectura, problemas, mejoras y plan de migración (en Español)
-- **[⚡ Guía de Validación Rápida](./VALIDACION-RAPIDA.md)** - Comandos esenciales para validación y troubleshooting
-- **[📊 Resumen de Entregables](./RESUMEN-ENTREGABLES.md)** - Resumen ejecutivo del análisis realizado
+**[https://shift-management-livid.vercel.app](https://shift-management-livid.vercel.app)**
+
+| Role     | Email                  | Password    |
+|----------|------------------------|-------------|
+| Admin    | admin1@test.com        | password123 |
+| Client   | client1@test.com       | password123 |
+| Employee | employee1@test.com     | password123 |
 
 ## 🚀 Features
 
-- **User Authentication & Authorization**
-  - JWT-based authentication
-  - Role-based access control (Admin/Employee/Client)
-  - Secure registration and login system
+- **Authentication** — JWT-based auth with role-based access control (Admin / Employee / Client)
+- **Admin Dashboard** — Business metrics, employee management, schedule configuration
+- **Booking System** — Availability checking, conflict detection, automatic employee assignment
+- **REST API** — Fully documented with Swagger at `/api`
 
-- **Admin Dashboard**
-  - Employee management
-  - Business metrics and analytics
-  - Appointment oversight
-  - Schedule management
+## 🛡️ Security & Code Quality
 
-- **Booking System**
-  - Interactive appointment scheduling
-  - Real-time availability checking
-  - Appointment status tracking
-  - Automatic end time calculation
+This project went through a full security and quality audit resolving **24 issues** across 4 severity levels:
 
-- **Modern UI/UX**
-  - Responsive design
-  - Tailwind CSS styling
-  - Mobile-friendly interface
-  - Intuitive navigation
+- 🔴 **5 Critical** — Unauthenticated endpoints, open CORS, JWT secret validation, seed protection
+- 🟠 **6 High** — N+1 queries, BigInt serialization, JWT expiration check, error propagation
+- 🟡 **8 Medium** — Password exposure in responses, duplicate providers, JSX side effects
+- 🟢 **5 Low** — Unit tests with Jest, unused dependencies, absolute imports
+
+All issues tracked and resolved via GitHub Issues → PR → merge to main.
 
 ## 🛠️ Tech Stack
 
 ### Frontend
-- React 19.1.1
-- TypeScript
-- Vite
-- Tailwind CSS
-- React Router DOM
-- Context API for state management
+- React 19 · TypeScript · Vite · Tailwind CSS · React Router v7
 
 ### Backend
-- NestJS
-- Prisma ORM
-- PostgreSQL (MySQL also supported)
-- JWT Authentication
-- REST API
-- Swagger/OpenAPI Documentation
+- NestJS · Prisma ORM · PostgreSQL · JWT · Swagger/OpenAPI · Jest
 
 ## 📋 Prerequisites
 
-- Node.js (v22.18 or higher)
-- npm or yarn
-- PostgreSQL 16+ (or MySQL 8+)
-- Git
+- Node.js v18+
+- npm
+- PostgreSQL 16+
 
 ## 🔧 Installation
 
-1. Clone the repository
 ```bash
 git clone https://github.com/NahuelArg/shift-management.git
 cd shift-management
 ```
 
-2. Install dependencies for both frontend and backend
 ```bash
-# Install frontend dependencies
-cd client
+# Backend
+cd server
 npm install
+cp .env.example .env   # configure DATABASE_URL and JWT_SECRET
 
-# Install backend dependencies
-cd ../server
+# Frontend
+cd ../client
 npm install
+cp .env.example .env   # configure VITE_API_URL
 ```
 
-3. Set up environment variables
 ```bash
-# In the server directory
-cp .env.example .env
-# Configure your database and JWT settings in .env
-
-# In the client directory
-cp .env.example .env
-# Configure your API URL and other frontend settings
-```
-
-4. Set up the database
-```bash
-# In the server directory
+# Run migrations and seed
+cd server
 npx prisma migrate dev
+npx prisma db seed
 ```
 
-## 🚀 Running the Application
+## 🚀 Running
 
-### Development Mode
-
-1. Start the backend server
 ```bash
-# In the server directory
-npm run start:dev
+# Backend (server/)
+npm run start:dev      # http://localhost:3000
+                       # Swagger: http://localhost:3000/api
+
+# Frontend (client/)
+npm run dev            # http://localhost:5173
 ```
-
-2. Start the frontend development server
-```bash
-# In the client directory
-npm run dev
-```
-
-The application will be available at:
-- Frontend: http://localhost:5173
-- Backend API: http://localhost:3000
-- API Documentation: http://localhost:3000/api
-
-## 📝 API Documentation
-
-API documentation is available through Swagger UI at `/api` when running the backend server.
 
 ## 🔒 Environment Variables
 
-### Backend (.env)
+### Backend (`server/.env`)
 ```bash
-# Database - PostgreSQL (Recommended)
 DATABASE_URL="postgresql://user:password@localhost:5432/shift_management"
-
-# Or MySQL
-# DATABASE_URL="mysql://user:password@localhost:3306/shift_management"
-
-# JWT Secret (use a strong random string)
-JWT_SECRET="your-super-secret-jwt-key-change-this"
-
-# Server Port
+DIRECT_URL="postgresql://user:password@localhost:5432/shift_management"
+JWT_SECRET="your-secret-key"
+JWT_EXPIRATION_TIME=1d
 PORT=3000
-
-# Node Environment
 NODE_ENV=development
-
-# CORS (optional, defaults to allow all in development)
-# ALLOWED_ORIGINS=http://localhost:5173,https://your-frontend.vercel.app
+ALLOWED_ORIGINS=http://localhost:5173
 ```
 
-### Frontend (.env)
+### Frontend (`client/.env`)
 ```bash
-# Development
 VITE_API_URL=http://localhost:3000
-
-# Production
-# VITE_API_URL=https://your-backend-api.com
 ```
 
 ## 🚢 Deployment
 
-### Frontend (Vercel - Recommended)
+| Service  | Platform                                      |
+|----------|-----------------------------------------------|
+| Frontend | [Vercel](https://vercel.com) — root: `client` |
+| Backend  | [Render](https://render.com) — root: `server` |
+| Database | [Supabase](https://supabase.com) — PostgreSQL |
 
-1. Push your code to GitHub
-2. Import project to [Vercel](https://vercel.com)
-3. Configure build settings:
-   - **Framework Preset:** Vite
-   - **Root Directory:** `client`
-   - **Build Command:** `npm run build`
-   - **Output Directory:** `dist`
-4. Add environment variable:
-   - `VITE_API_URL` = `https://your-backend-url.com`
-5. Deploy
+## 🎯 Roadmap
 
-### Backend (Render - Recommended)
-
-1. Push your code to GitHub
-2. Create new Web Service on [Render](https://render.com)
-3. Configure service:
-   - **Root Directory:** `server`
-   - **Build Command:** `npm install && npx prisma generate && npm run build`
-   - **Start Command:** `npm run start:prod`
-4. Add environment variables:
-   - `DATABASE_URL` (from Render PostgreSQL or external DB)
-   - `JWT_SECRET`
-   - `PORT=3000`
-   - `NODE_ENV=production`
-5. Deploy
-
-### Database
-
-**Option 1: Supabase (Recommended)**
-- Free PostgreSQL database
-- Automatic backups
-- Connection pooling
-
-**Option 2: Render PostgreSQL**
-- Integrated with Render services
-- Easy setup
-
-## 🎯 Future Features
-
-- [ ] Email notifications for appointments
-- [ ] Service categories and pricing
+- [ ] Timezone per business (currently uses browser timezone)
+- [ ] Email notifications for bookings
+- [ ] Google / Apple OAuth login
 - [ ] Online payment integration
-- [ ] Multiple business locations
-- [ ] Calendar integration
-- [ ] Mobile app version
-
-## 🤝 Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+- [ ] BookingsService unit tests + integration tests
 
 ## 👤 Author
 
-Nahuel Argañaraz
+**Nahuel Argañaraz**
 - GitHub: [@NahuelArg](https://github.com/NahuelArg)
 - LinkedIn: [Nahuel Argañaraz](https://www.linkedin.com/in/nahuel-arga%C3%B1araz/)
 
 ---
 
-⭐️ If you find this project useful, please consider giving it a star!
+⭐ If you find this project useful, please give it a star!
