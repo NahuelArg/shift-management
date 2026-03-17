@@ -45,7 +45,6 @@ export class BookingsService {
         'Service duration must be a positive number and greater than zero',
       );
     }
-
     const durationMin = service.durationMin;
 
     let parsedDate: Date;
@@ -65,6 +64,7 @@ export class BookingsService {
     const localDate = new Date(
       dateUtc.toLocaleString('en-US', { timeZone: timezone }),
     );
+    
     const dayOfWeek = localDate.getDay();
     const timeStr = format(localDate, 'HH:mm');
 
@@ -77,20 +77,25 @@ export class BookingsService {
       },
     });
 
+    const endTime = new Date(dateUtc.getTime() + durationMin * 60000);
+    const localEndTime = new Date(
+      endTime.toLocaleString('en-US', { timeZone: timezone }),
+    );
+
     if (!schedule) {
       throw new BadRequestException(
         `El negocio no atiende el día ${dayOfWeek} a las ${timeStr} (hora local).`,
       );
     }
-
-    const endTime = new Date(dateUtc.getTime() + durationMin * 60000);
-
-    const localEndTime = new Date(
-      endTime.toLocaleString('en-US', { timeZone: timezone }),
-    );
+  
     const endTimeStr = format(localEndTime, 'HH:mm');
 
-    if (endTimeStr > schedule.to) {
+    const toMinutes = (h: number, m: number) => h*60 + m;
+    const endMinutes =toMinutes(localEndTime.getHours(), localEndTime.getMinutes())
+    const [closeH, closeM] = schedule.to.split(':').map(Number)
+    const closeMinutes = toMinutes(closeH, closeM)
+
+    if (endMinutes > closeMinutes) {
       throw new BadRequestException(
         `Service would end at ${endTimeStr}, after business closing time (${schedule.to}). Please choose an earlier time.`,
       );
@@ -269,7 +274,7 @@ export class BookingsService {
     }
     const employeeIds = employees.map(e => e.id)
   
-      const conflictingBookings = await this.prisma.booking.findMany({
+    const conflictingBookings = await this.prisma.booking.findMany({
         where: {
           employeeId: {in:employeeIds},
           status: { not: 'CANCELLED' },
