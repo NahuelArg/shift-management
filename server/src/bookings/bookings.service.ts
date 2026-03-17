@@ -267,23 +267,18 @@ export class BookingsService {
     if (employees.length === 0) {
       return []; // No hay empleados en el negocio
     }
-    const availableEmployees: { id: string; name: string }[] = [];
-    for (const employee of employees) {
-      const conflict = await this.prisma.booking.findFirst({
+    const employeeIds = employees.map(e => e.id)
+  
+      const conflictingBookings = await this.prisma.booking.findMany({
         where: {
-          employeeId: employee.id,
+          employeeId: {in:employeeIds},
           status: { not: 'CANCELLED' },
           date: { lt: endTime },
           endTime: { gt: startTime },
         },
-      });
-      if (!conflict){
-        availableEmployees.push(employee);
-      }
-
-    }
-
-    return availableEmployees;
+      })
+      const busyIds = new Set(conflictingBookings.map(b=>b.employeeId))
+      return employees.filter(e=> !busyIds.has(e.id))
   }
   /**
    * Get all bookings assigned to a specific employee
