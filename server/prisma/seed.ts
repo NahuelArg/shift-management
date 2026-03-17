@@ -319,7 +319,7 @@ if (process.env.NODE_ENV === 'production') {
       finalPrice: 5000,
       status: BookingStatus.CONFIRMED,
       paymentStatus: PaymentStatus.PAID,
-      timezone: 'America/Argentina/Buenos_Aires',
+      timezone: 'Europe/Madrid',
     },
   });
 
@@ -334,7 +334,7 @@ if (process.env.NODE_ENV === 'production') {
       finalPrice: 12000,
       status: BookingStatus.CONFIRMED,
       paymentStatus: PaymentStatus.PAID,
-      timezone: 'America/Argentina/Buenos_Aires',
+      timezone: 'Europe/Madrid',
     },
   });
 
@@ -349,7 +349,7 @@ if (process.env.NODE_ENV === 'production') {
       finalPrice: 4500,
       status: BookingStatus.CONFIRMED,
       paymentStatus: PaymentStatus.PAID,
-      timezone: 'America/Argentina/Buenos_Aires',
+      timezone: 'Europe/Madrid',
     },
   });
 
@@ -364,7 +364,7 @@ if (process.env.NODE_ENV === 'production') {
       finalPrice: 3000,
       status: BookingStatus.CONFIRMED,
       paymentStatus: PaymentStatus.PAID,
-      timezone: 'America/Argentina/Buenos_Aires',
+      timezone: 'Europe/Madrid',
     },
   });
 
@@ -379,7 +379,7 @@ if (process.env.NODE_ENV === 'production') {
       finalPrice: 7000,
       status: BookingStatus.CONFIRMED,
       paymentStatus: PaymentStatus.PAID,
-      timezone: 'America/Argentina/Buenos_Aires',
+      timezone: 'Europe/Madrid',
     },
   });
 
@@ -401,7 +401,7 @@ if (process.env.NODE_ENV === 'production') {
       finalPrice: 8000,
       status: BookingStatus.CONFIRMED,
       paymentStatus: PaymentStatus.PENDING,
-      timezone: 'America/Argentina/Buenos_Aires',
+      timezone: 'Europe/Madrid',
     },
   });
 
@@ -416,7 +416,7 @@ if (process.env.NODE_ENV === 'production') {
       finalPrice: 15000,
       status: BookingStatus.CONFIRMED,
       paymentStatus: PaymentStatus.PENDING,
-      timezone: 'America/Argentina/Buenos_Aires',
+      timezone: 'Europe/Madrid',
     },
   });
 
@@ -431,7 +431,7 @@ if (process.env.NODE_ENV === 'production') {
       finalPrice: 6000,
       status: BookingStatus.CONFIRMED,
       paymentStatus: PaymentStatus.PENDING,
-      timezone: 'America/Argentina/Buenos_Aires',
+      timezone: 'Europe/Madrid',
     },
   });
 
@@ -448,7 +448,7 @@ if (process.env.NODE_ENV === 'production') {
       finalPrice: 5000,
       status: BookingStatus.PENDING,
       paymentStatus: PaymentStatus.PENDING,
-      timezone: 'America/Argentina/Buenos_Aires',
+      timezone: 'Europe/Madrid',
     },
   });
 
@@ -462,7 +462,7 @@ if (process.env.NODE_ENV === 'production') {
       finalPrice: 5500,
       status: BookingStatus.PENDING,
       paymentStatus: PaymentStatus.PENDING,
-      timezone: 'America/Argentina/Buenos_Aires',
+      timezone: 'Europe/Madrid',
     },
   });
 
@@ -476,7 +476,7 @@ if (process.env.NODE_ENV === 'production') {
       finalPrice: 12000,
       status: BookingStatus.PENDING,
       paymentStatus: PaymentStatus.PENDING,
-      timezone: 'America/Argentina/Buenos_Aires',
+      timezone: 'Europe/Madrid',
     },
   });
 
@@ -490,7 +490,7 @@ if (process.env.NODE_ENV === 'production') {
       finalPrice: 3000,
       status: BookingStatus.CANCELLED,
       paymentStatus: PaymentStatus.REFUNDED,
-      timezone: 'America/Argentina/Buenos_Aires',
+      timezone: 'Europe/Madrid',
     },
   });
 
@@ -504,7 +504,7 @@ if (process.env.NODE_ENV === 'production') {
       finalPrice: 4500,
       status: BookingStatus.CANCELLED,
       paymentStatus: PaymentStatus.PENDING,
-      timezone: 'America/Argentina/Buenos_Aires',
+      timezone: 'Europe/Madrid',
     },
   });
 
