@@ -1,8 +1,12 @@
+<div align="center">
+
 # Shift Management
 
-> Sistema completo de gestión de turnos para negocios: reservas, empleados, servicios y métricas en un solo lugar.
+**Sistema completo de gestión de turnos para negocios**
 
-<p align="left">
+Reservas · Empleados · Servicios · Métricas — todo en un solo lugar
+
+<p>
   <img src="https://img.shields.io/badge/License-MIT-green.svg" alt="MIT License" />
   <img src="https://img.shields.io/badge/TypeScript-5.x-3178C6.svg?logo=typescript&logoColor=white" alt="TypeScript" />
   <img src="https://img.shields.io/badge/React-19.x-61DAFB.svg?logo=react&logoColor=black" alt="React" />
@@ -11,6 +15,32 @@
   <img src="https://img.shields.io/badge/Prisma-6.x-2D3748.svg?logo=prisma&logoColor=white" alt="Prisma" />
   <img src="https://img.shields.io/badge/deploy-Vercel-black.svg?logo=vercel" alt="Deploy Vercel" />
 </p>
+
+🇬🇧 [English version](./README.en.md)
+
+**[Ver demo en vivo →](https://shift-management-livid.vercel.app)**
+
+</div>
+
+---
+
+## Tabla de contenidos
+
+- [Demo en vivo](#demo-en-vivo)
+- [Screenshots](#screenshots)
+- [Features](#features)
+- [Tech Stack](#tech-stack)
+- [Decisiones técnicas](#decisiones-técnicas)
+- [Arquitectura](#arquitectura)
+- [Modelo de datos](#modelo-de-datos)
+- [API Overview](#api-overview)
+- [Setup local](#setup-local)
+- [Variables de entorno](#variables-de-entorno)
+- [Testing](#testing)
+- [Seguridad](#seguridad)
+- [Deployment](#deployment)
+- [Roadmap](#roadmap)
+- [Autor](#autor)
 
 ---
 
@@ -59,6 +89,19 @@
 | **Documentación** | Swagger / OpenAPI |
 | **Testing** | Jest 29, ts-jest, Supertest |
 | **Deploy** | Vercel (frontend), Render (backend), Supabase (DB) |
+
+---
+
+## Decisiones técnicas
+
+| Decisión | Razón |
+|----------|-------|
+| **NestJS** sobre Express | Estructura modular con DI nativa, Swagger integrado y soporte TypeScript de primera clase facilita el escalado y mantenimiento |
+| **Prisma** como ORM | Type-safety en queries, migraciones con historial y modelo de datos declarativo en un solo schema |
+| **JWT stateless** | Permite escalar horizontalmente sin sesiones compartidas; el rol viaja en el token para reducir queries por request |
+| **RBAC con Guards** | JwtAuthGuard + RolesGuard + `@Roles()` decorator desacoplan la lógica de autorización de los controllers |
+| **UTC en base de datos** | Los turnos se almacenan en UTC y se convierten al timezone del browser; evita bugs de horario de verano y facilita consultas globales |
+| **React Context** para auth | Suficiente para la escala actual; el token se persiste en localStorage y se valida en cada request |
 
 ---
 
@@ -290,19 +333,6 @@ Los tests cubren servicios y controladores de todos los módulos usando Jest con
 
 ---
 
-## Decisiones técnicas
-
-| Decisión | Razón |
-|----------|-------|
-| **NestJS** sobre Express | Estructura modular con DI nativa, Swagger integrado y soporte TypeScript de primera clase facilita el escalado y mantenimiento |
-| **Prisma** como ORM | Type-safety en queries, migraciones con historial y modelo de datos declarativo en un solo schema |
-| **JWT stateless** | Permite escalar horizontalmente sin sesiones compartidas; el rol viaja en el token para reducir queries por request |
-| **RBAC con Guards** | JwtAuthGuard + RolesGuard + `@Roles()` decorator desacoplan la lógica de autorización de los controllers |
-| **UTC en base de datos** | Los turnos se almacenan en UTC y se convierten al timezone del browser; evita bugs de horario de verano y facilita consultas globales |
-| **React Context** para auth | Suficiente para la escala actual; el token se persiste en localStorage y se valida en cada request |
-
----
-
 ## Seguridad
 
 El proyecto pasó por una auditoría completa resolviendo **24 issues** en 4 niveles de severidad:
@@ -346,4 +376,8 @@ Todos los issues fueron trackeados vía GitHub Issues → PR → merge a main.
 
 ---
 
+<div align="center">
+
 _Si el proyecto te resulta útil, dejá una estrella_ ⭐
+
+</div>
