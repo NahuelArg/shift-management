@@ -5,7 +5,7 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { PrismaService } from 'prisma/prisma.service';
-import { Booking, Prisma } from '@prisma/client';
+import { Booking, Prisma, User } from '@prisma/client';
 import { BookingDto } from './dto/BookingsDto.dto';
 import { UpdateBookingDto } from './dto/updateBookingDto.dto';
 import { BookingStatus } from '@prisma/client';
@@ -176,18 +176,31 @@ export class BookingsService {
     user: { userId: string; role: string },
   ): Promise<BookingDto> {
     const booking = await this.prisma.booking.findUnique({ where: { id } });
-
     if (!booking) {
       throw new NotFoundException('Booking not found');
     }
-
-    // If the user is CLIENT, can only delete their own booking
+    const bookingUser = await this.prisma.user.findUnique({
+      where: { id: user.userId || undefined },
+    });
+    const userBusinessId = bookingUser?.businessId;
     if (user.role === 'CLIENT' && booking.userId !== user.userId) {
-      throw new ForbiddenException('Not authorized to delete this booking');
+      throw new ForbiddenException('Clients can only delete their own bookings');
     }
-
+    if (['EMPLOYEE', 'ADMIN'].includes(user.role) && userBusinessId !== booking.businessId) {
+      throw new ForbiddenException('Employees can only delete bookings of their business');
+    }
     const deleted = await this.prisma.booking.delete({ where: { id } });
-    return deleted;
+    return {
+      id: deleted.id,
+      userId: deleted.userId,
+      serviceId: deleted.serviceId,
+      businessId: deleted.businessId,
+      date: deleted.date,
+      status: deleted.status,
+      createdAt: deleted.createdAt,
+    };
+
+
   }
   async update(
     id: string,

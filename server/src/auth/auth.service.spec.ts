@@ -2,7 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { AuthService } from './auth.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { JwtService } from '@nestjs/jwt';
-import { BadRequestException, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, ConflictException, ForbiddenException, NotFoundException, UnauthorizedException } from '@nestjs/common';
 
 
 
@@ -40,13 +40,18 @@ describe('AuthService', () => {
     prisma = module.get<any>(PrismaService)
     service = module.get<AuthService>(AuthService);
   });
+  
+  it('should be defined', () => {
+    expect(service).toBeDefined();
+  });
+
   describe('register', () => {
-    it('should throw UnauthorizedException if email already exists', async () => {
+    it('should throw ConflictException if email already exists', async () => {
       prisma.user.findUnique.mockResolvedValue({ id: 1, email: 'test@test.com' })
       await expect(() => service.register({
         name: 'JhonDoe',
         email: 'email@test.com'
-      })).rejects.toThrow(UnauthorizedException)
+      })).rejects.toThrow(ConflictException)
     })
     it('should throw BadRequestException if AuthProvider is LOCAL and password is null', async () => {
       prisma.user.findUnique.mockResolvedValue(null)
@@ -95,7 +100,7 @@ describe('AuthService', () => {
     })
   })
   describe('login', () => {
-    it('should throw UnauthorizedException if email is not valid', async () => {
+    it('should throw Unauthorized Exception if email is not valid', async () => {
       prisma.user.findUnique.mockResolvedValue({ id: 1, email: 'test@test.com', password: '123456789', authProvider: 'LOCAL' })
       await expect(() => service.login({
         password: '1234567789',
@@ -110,7 +115,7 @@ describe('AuthService', () => {
       })).rejects.toThrow(NotFoundException)
     })
     it('should throw UnauthorizedException if user is not local', async () => {
-      prisma.user.findUnique.mockResolvedValue({ id: 1, email: 'test@test.com', password: '123456789', authProvider: 'LOCAL' })
+      prisma.user.findUnique.mockResolvedValue({ id: 1, email: 'test@test.com', password: '123456789', authProvider: 'GOOGLE' })
       await expect(() => service.login({
         password: '123456789',
         email: 'email@test.com',
