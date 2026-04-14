@@ -14,14 +14,7 @@ app.enableCors({
   methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
 });
 
-
-  app.enableCors({
-    origin: allowedOrigins,
-    credentials: true,
-    allowedHeaders: 'Content-Type, Authorization',
-    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
-  });
-  const config = new DocumentBuilder()
+const config = new DocumentBuilder()
     .setTitle('Booking Management API')
     .setDescription('API for managing bookings in businesses')
     .setVersion('1.0')
@@ -34,15 +27,18 @@ app.enableCors({
     .addBearerAuth()
 
     .build();
-  const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api', app, document);
-  app.useGlobalPipes(
+
+app.useGlobalPipes(
     new ValidationPipe({
       transform: true,
       whitelist: true,
       forbidNonWhitelisted: true,
     }),
   );
+
+  
+  const document = SwaggerModule.createDocument(app, config);
+  SwaggerModule.setup('api', app, document);
   await app.listen(process.env.PORT ?? 3000);
 }
 bootstrap().catch(console.error);
