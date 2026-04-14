@@ -28,7 +28,7 @@ import { BookingDto } from './dto/BookingsDto.dto';
 import { UpdateBookingDto } from './dto/updateBookingDto.dto';
 import { JwtAuthGuard } from '../guard/jwt.guard';
 import { RolesGuard } from '../guard/roles.guard';
-import { Roles } from '../decorator/roles.decorator';
+import { Roles } from '../decorators/roles.decorator';
 import { CreateBookingDto } from './dto/createBookingDto.dto';
 import { RequestWithUser } from '../types/express-request.interface';
 

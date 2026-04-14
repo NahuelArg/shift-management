@@ -14,7 +14,7 @@ import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/CreateUserDto.dto';
 import { UserDto } from './dto/UserDto.dto';
 import { JwtAuthGuard } from '../guard/jwt.guard';
-import { Roles } from '../decorator/roles.decorator';
+import { Roles } from '../decorators/roles.decorator';
 import { RolesGuard } from '../guard/roles.guard';
 import { ApiBearerAuth } from '@nestjs/swagger';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';

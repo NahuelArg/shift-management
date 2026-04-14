@@ -16,9 +16,10 @@ import { CreateAdminDto } from './DTO/createAdminDto.dto';
 import { CreateEmployeeDto } from './DTO/createEmployeeDto.dto';
 import { UpdateEmployeeDto } from './DTO/updateEmployeeDto.dto';
 
+
 @Injectable()
 export class AdminService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) { }
   private readonly logger = new Logger(AdminService.name);
   async createAdmin(dto: CreateAdminDto) {
     const { email, password, name, authProvider, role } = dto;
@@ -35,7 +36,7 @@ export class AdminService {
       throw new ConflictException('Email already exists');
     }
 
-    // Validación condicional de password
+    
     let hashedPassword: string | null = null;
 
     if (authProvider === 'LOCAL') {
@@ -47,8 +48,7 @@ export class AdminService {
 
       hashedPassword = await bcrypt.hash(password, 10);
     }
-    
-    // Crear admin SIN business asignado
+
     const user = await this.prisma.user.create({
       data: {
         email,
@@ -56,10 +56,8 @@ export class AdminService {
         name,
         authProvider: authProvider || AuthProvider.LOCAL,
         role,
-        // NO businessId aquí - el admin lo crea después
       },
     });
-
     return user;
   }
   async updateAdmin(id: string, updateAdminDto: UpdateAdminDto): Promise<User> {
@@ -69,27 +67,27 @@ export class AdminService {
     });
   }
   async getEmployeesByBusiness(businessId: string, userId: string) {
-  // Verificar que el business pertenece al admin (ownerId)
-  const business = await this.prisma.business.findFirst({
-    where: { 
-      id: businessId, 
-      ownerId: userId  // Aquí verificamos que es propietario
-    },
-  });
+    // Verificar que el business pertenece al admin (ownerId)
+    const business = await this.prisma.business.findFirst({
+      where: {
+        id: businessId,
+        ownerId: userId  // Aquí verificamos que es propietario
+      },
+    });
 
-  if (!business) {
-    throw new ForbiddenException(
-      'You do not have permission to access this business employees.',
-    );
+    if (!business) {
+      throw new ForbiddenException(
+        'You do not have permission to access this business employees.',
+      );
+    }
+
+    // Obtener todos los employees del business
+    return this.prisma.user.findMany({
+      where: { businessId },
+      orderBy: { createdAt: 'desc' },
+    });
   }
-
-  // Obtener todos los employees del business
-  return this.prisma.user.findMany({
-    where: { businessId },
-    orderBy: { createdAt: 'desc' },
-  });
-}
-  async getDashboard(userId: string) {
+  async getDashboard(userId: string){
     // 1. Obtener los negocios del admin
     const userWithBusinesses = await this.prisma.user.findUnique({
       where: { id: userId },
@@ -134,14 +132,13 @@ export class AdminService {
    * @param to End date (YYYY-MM-DD).
    * @param groupBy Grouping period: 'day', 'month', or 'year'.
    */
-
   async getAllMetrics(
     businessId: string,
     userId: string,
     from: string,
     to: string,
     groupBy: string,
-  ): Promise<MetricsResponse> {
+    ): Promise<MetricsResponse> {
     if (!businessId || !userId || !from || !to || !groupBy) {
       throw new BadRequestException(
         'Missing required parameters: businessId, userId, from, to, groupBy',
@@ -161,31 +158,24 @@ export class AdminService {
         'Invalid groupBy value. Use "day", "month", or "year".',
       );
     }
-
-    const UserWithBusiness = await this.prisma.user.findUnique({
+    const userWithBusiness = await this.prisma.user.findUnique({
       where: { id: userId },
       include: {
         businesses: true,
       },
     });
-    this.logger.debug(`User with Business: ${JSON.stringify(UserWithBusiness)}`);
-    if (!UserWithBusiness) {
+    this.logger.debug(`User with Business: ${JSON.stringify(userWithBusiness)}`);
+    if (!userWithBusiness) {
       throw new ForbiddenException(
         'Business not found or you do not have access to it.',
       );
     }
-    const isOwner = UserWithBusiness.businesses.some(
+    const isOwner = userWithBusiness.businesses.some(
       (business) => business.id === businessId,
     );
     if (!isOwner) {
       throw new ForbiddenException(
         'You do not have permission to access this business metrics.',
-      );
-    }
-
-    if (!validGroupByValues.includes(groupBy.trim().toLowerCase())) {
-      throw new ForbiddenException(
-        'Invalid groupBy value. Use "day", "month", or "year".',
       );
     }
     const allBookings = await this.prisma.booking.findMany({
@@ -208,8 +198,6 @@ export class AdminService {
       allBookings,
       groupByLowerCase as 'day' | 'month' | 'year',
     );
-
-    //Bookings by service
     const bookingByService = await this.prisma.booking.findMany({
       where: {
         businessId,
@@ -222,8 +210,6 @@ export class AdminService {
         service: true,
       },
     });
-
-    // Total bookings and revenue
     const totalBookings = await this.prisma.booking.count({
       where: {
         businessId,
@@ -256,19 +242,21 @@ export class AdminService {
             ? 'YYYY-MM'
             : 'YYYY',
     };
-        return convertBigIntToString(result);
+    return convertBigIntToString(result);
   }
   async getAdminById(userId: string) {
     if (!userId) throw new BadRequestException('User ID is required');
 
-    return this.prisma.user.findUnique({
+    const user = await this.prisma.user.findUnique({
       where: { id: userId },
       include: {
         businesses: true,
       }
     }
-  );
-  
+    );
+    if (!user) throw new NotFoundException('Admin not found');
+
+    return user;
   }
   async getAllEmployees(
     userId: string,
@@ -300,11 +288,11 @@ export class AdminService {
       businessId: { in: businessIds },
       ...(search
         ? {
-            OR: [
-              { name: { contains: search } },
-              { email: { contains: search } },
-            ],
-          }
+          OR: [
+            { name: { contains: search } },
+            { email: { contains: search } },
+          ],
+        }
         : {}),
     };
     const page = Number(params.page) || 1;
@@ -337,7 +325,6 @@ export class AdminService {
   async deleteEmployee(employeeId: string, adminId: string) {
     if (!employeeId) throw new BadRequestException('Employee ID is required');
 
-    // Verificar que el empleado pertenece a un negocio del admin
     const employee = await this.prisma.user.findFirst({
       where: {
         id: employeeId,
@@ -358,13 +345,11 @@ export class AdminService {
   }
   async createEmployee(dto: CreateEmployeeDto, adminId: string) {
     const { name, email, password, businessId } = dto;
-    // Validar que el negocio pertenece al admin
     const business = await this.prisma.business.findFirst({
       where: { id: businessId, ownerId: adminId },
     });
     if (!business) throw new ForbiddenException('No puedes crear empleados en este negocio');
 
-    // Validar que el email no exista
     const existingUser = await this.prisma.user.findUnique({
       where: { email },
     });
@@ -464,7 +449,6 @@ export class AdminService {
       throw new ForbiddenException('No puedes actualizar este empleado');
     }
 
-    // Validar que el email no exista en otro usuario (solo si se está actualizando)
     if (dto.email) {
       const existingUser = await this.prisma.user.findFirst({
         where: { email: dto.email, NOT: { id: employeeId } },
