@@ -20,7 +20,7 @@ import {
 import { BusinessDto } from './dto/BusinessDto.dto';
 import { JwtAuthGuard } from '../guard/jwt.guard';
 import { RolesGuard } from '../guard/roles.guard';
-import { Roles } from '../decorator/roles.decorator';
+import { Roles } from '../decorators/roles.decorator';
 import { CreateBusinessDto } from './dto/Create-Business.dto';
 import { UpdateBusinessDto } from './dto/updateBusiness.dto';
 import {PublicBusinessDto} from "./dto/PublicBusinessDto.dto";
@@ -47,7 +47,6 @@ export class BusinessController {
   })
   async findAll(@Req() req: RequestWithUser): Promise<BusinessDto[]> {
     const userId = req.user.userId;
-    // ✅ Ahora llama al método correcto que retorna array
     return this.businessService.getBusinessesByUserId(userId);
   }
   /**
@@ -95,12 +94,11 @@ export class BusinessController {
     description: 'Business not found',
   })
   async getById(
-    @Param('id') id: string,
+    @Param('id') businessId: string,
     @Req() req: RequestWithUser,
   ): Promise<BusinessDto> {
     const userId = req.user.userId;
-    // ✅ Ahora retorna un objeto específico
-    return this.businessService.getBusinessById(id, userId);
+    return this.businessService.getBusinessById(businessId, userId);
   }
 
   /**
@@ -143,10 +141,8 @@ export class BusinessController {
     @Body() body: CreateBusinessDto,
   ): Promise<BusinessDto> {
     return this.businessService.create({
-      owner: {
-        role: req.user.role,
-      },
-      ...body,
+      name: body.name,
+      ownerId: req.user.userId,
     });
   }
 
@@ -183,7 +179,7 @@ export class BusinessController {
     @Req() req: RequestWithUser,
   ): Promise<BusinessDto> {
     const userId = req.user.userId;
-    return this.businessService.updateWithOwnershipCheck(
+    return this.businessService.update(
       id,
       updateBusinessDto,
       userId,
@@ -218,6 +214,6 @@ export class BusinessController {
     @Req() req: RequestWithUser,
   ): Promise<BusinessDto> {
     const userId = req.user.userId;
-    return this.businessService.deleteWithOwnershipCheck(id, userId);
+    return this.businessService.delete(id, userId);
   }
 }

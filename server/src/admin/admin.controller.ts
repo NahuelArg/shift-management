@@ -13,7 +13,7 @@ import {
 } from '@nestjs/common';
 import { GetAllEmployeesQueryDto } from './DTO/getAllEmployeesQuery.dto';
 import { RequestWithUser } from '../types/express-request.interface';
-import { Roles } from '../decorator/roles.decorator';
+import { Roles } from '../decorators/roles.decorator';
 import { RolesGuard } from '../guard/roles.guard';
 import { JwtAuthGuard } from '../guard/jwt.guard';
 import {
