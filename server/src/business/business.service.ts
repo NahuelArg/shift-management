@@ -1,43 +1,54 @@
 import {
+  BadRequestException,
   ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { Business, Prisma } from '@prisma/client';
+import { Business, } from '@prisma/client';
 import { UpdateBusinessDto } from './dto/updateBusiness.dto';
-import {PublicBusinessDto} from "./dto/PublicBusinessDto.dto";
+import { PublicBusinessDto } from "./dto/PublicBusinessDto.dto";
+
+const PUBLIC_OWNER_SELECT = {
+  select: {
+    id: true,
+    name: true,
+    email: true,
+    role: true,
+  },
+} as const
 @Injectable()
 export class BusinessService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) { }
 
   /**
    * Obtener TODOS los negocios del usuario
    * Usado por: GET /business (lista todos)
-   * Retorna: Business[]
+   * Return: Business[]
    */
   async getBusinessesByUserId(userId: string): Promise<Business[]> {
-    return this.prisma.business.findMany({
-      where: { ownerId: userId }, // ← Filtro automático por propietario
-      include: {
-        owner: true,
-        services: true,
-      },
+    if (!userId) {
+      throw new BadRequestException('User Id is required');
+    }
+    const businesses = await this.prisma.business.findMany({
+      where: { ownerId: userId },
+      include: { services: true, },
       orderBy: { createdAt: 'desc' },
     });
+    return businesses;
   }
   /**
-   * Obtener todos los negocios de manera pública (sin filtrar por usuario)
-   * Usado por: GET /business/public
-   * Retorna: Business[]
-   * Nota: Este método no filtra por ownerId, retorna todos los negocios disponibles públicamente
+   * Get all business on public way (Not filter by user)
+   * Used by: GET /business/public
+   * Return: Business[]
+   * Note: This method not filter by ownerId, return all business for clients. (Public)
    */
   async getAllBusinessesPublic(): Promise<PublicBusinessDto[]> {
-    return this.prisma.business.findMany({
+    const businesses = await this.prisma.business.findMany({
       select: {
         id: true,
         name: true,
-        services:{
+        services: {
           select: {
             id: true,
             name: true,
@@ -46,33 +57,42 @@ export class BusinessService {
           },
         },
       },
+      take: 50,
+      skip: 0,
       orderBy: { createdAt: 'desc' },
     });
+    if (businesses.length === 0) {
+      throw new NotFoundException('Businesses not found');
+    }
+    return businesses
   }
 
   /**
-   * Obtener UN negocio específico por ID
-   * Usado por: GET /business/:id
-   * Retorna: Business
-   * Validación: Verifica ownership si userId se proporciona
+   * Get a business by id
+   * Used by : GET /business/:id
+   * Return: Business
+   * Validation: Verify ownership if userId is on the params
    */
-  async getBusinessById(businessId: string, userId?: string): Promise<Business> {
+  // TODO: Optimize with _count and lazy-load services. See issue #47
+  async getBusinessById(businessId: string, userId: string): Promise<Business> {
+    if (!businessId || !userId) {
+      throw new BadRequestException('Business ID required');
+    }
+
     const business = await this.prisma.business.findUnique({
       where: { id: businessId },
       include: {
-        owner: true,
-        services: true,
+        owner: PUBLIC_OWNER_SELECT,
       },
     });
 
     if (!business) {
-      throw new NotFoundException('Negocio no encontrado');
+      throw new NotFoundException('Business not found');
     }
 
-    // Validación adicional si se proporciona userId
-    if (userId && business.ownerId !== userId) {
+    if (business.ownerId !== userId) {
       throw new ForbiddenException(
-        'No tienes permiso para acceder a este negocio',
+        'You do not have access to this business',
       );
     }
 
@@ -80,117 +100,100 @@ export class BusinessService {
   }
 
   /**
-   * Crear un negocio
-   * Usado por: POST /business
-   * Retorna: Business
-   */
+    * Create a business with role validation and owner existence check
+    * Use by POST /business
+    * Return: Business
+    */
   async create(data: {
     name: string;
     ownerId: string;
-    owner:{
-      role: string;
-    }
   }): Promise<Business> {
-    // ✅ Validación: CLIENT no puede crear negocios
-    if (data.owner.role === 'CLIENT') {
-      throw new ForbiddenException(
-        'Los clientes no pueden crear negocios',
-      );
-    }
-
-    // Verifica que el owner existe y no es CLIENT
     const owner = await this.prisma.user.findUnique({
       where: { id: data.ownerId },
       select: { role: true },
     });
 
     if (!owner) {
-      throw new NotFoundException('Usuario propietario no encontrado');
+      throw new NotFoundException('Owner user not found');
     }
 
-    if (owner.role === 'CLIENT') {
+    if (owner.role !== 'ADMIN') {
       throw new ForbiddenException(
-        'No se puede asignar un negocio a un usuario con rol CLIENT',
+        'Only users with ADMIN role can create a business',
       );
     }
 
-    // Crea el negocio
     return this.prisma.business.create({
       data: {
         name: data.name,
         ownerId: data.ownerId,
       },
       include: {
-        owner: true,
+        owner: PUBLIC_OWNER_SELECT,
       },
     });
   }
-
   /**
-   *  Actualizar con validación de ownership
-   * Verifica que el usuario es propietario antes de actualizar
+   *  Update business
+   * Verify that the user is the owner before allowing update
+   * Use by PUT /business/:id
+   * Return: Business 
    */
-  async updateWithOwnershipCheck(
-    id: string,
+  async update(
+    businessId: string,
     updateData: UpdateBusinessDto,
     userId: string,
   ): Promise<Business> {
-    // Verifica que el negocio existe
     const business = await this.prisma.business.findUnique({
-      where: { id },
+      where: { id: businessId },
     });
 
     if (!business) {
-      throw new NotFoundException(`Negocio con id ${id} no encontrado`);
+      throw new NotFoundException(`Business  ${businessId} not found`);
     }
 
-    // ✅ Valida que el usuario es el propietario
     if (business.ownerId !== userId) {
       throw new ForbiddenException(
-        'No tienes permiso para actualizar este negocio',
+        'You do not have permission to update this business',
       );
     }
 
-    // Actualiza
     return this.prisma.business.update({
-      where: { id },
+      where: { id:businessId },
       data: updateData,
       include: {
-        owner: true,
-      },
+        owner: PUBLIC_OWNER_SELECT
+      }
     });
   }
 
 
   /**
-   *  Eliminar con validación de ownership
-   * Verifica que el usuario es propietario antes de eliminar
-   */
-  async deleteWithOwnershipCheck(
-    id: string,
+  *  Delete with ownership validation
+  * Verify before to delete the user is owner of the business
+  */
+  async delete(
+    businessId: string,
     userId: string,
   ): Promise<Business> {
-    // Obtiene el negocio
     const business = await this.prisma.business.findUnique({
-      where: { id },
+      where: { id:businessId },
     });
 
     if (!business) {
-      throw new NotFoundException(`Negocio con id ${id} no encontrado`);
+      throw new NotFoundException(`Business not found`);
     }
 
-    // ✅ Valida que el usuario es el propietario
     if (business.ownerId !== userId) {
       throw new ForbiddenException(
-        'No tienes permiso para eliminar este negocio',
+        'You do not have permission to delete this business',
       );
     }
 
-    // Elimina
     return this.prisma.business.delete({
-      where: { id },
+      where: { id: businessId },
       include: {
-        owner: true,
+        owner: PUBLIC_OWNER_SELECT,
       },
     });
   }
