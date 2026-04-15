@@ -36,7 +36,7 @@ export class AdminService {
       throw new ConflictException('Email already exists');
     }
 
-    
+
     let hashedPassword: string | null = null;
 
     if (authProvider === 'LOCAL') {
@@ -67,11 +67,10 @@ export class AdminService {
     });
   }
   async getEmployeesByBusiness(businessId: string, userId: string) {
-    // Verificar que el business pertenece al admin (ownerId)
     const business = await this.prisma.business.findFirst({
       where: {
         id: businessId,
-        ownerId: userId  // Aquí verificamos que es propietario
+        ownerId: userId
       },
     });
 
@@ -81,14 +80,12 @@ export class AdminService {
       );
     }
 
-    // Obtener todos los employees del business
     return this.prisma.user.findMany({
       where: { businessId },
       orderBy: { createdAt: 'desc' },
     });
   }
-  async getDashboard(userId: string){
-    // 1. Obtener los negocios del admin
+  async getDashboard(userId: string) {
     const userWithBusinesses = await this.prisma.user.findUnique({
       where: { id: userId },
       include: { businesses: true },
@@ -97,31 +94,27 @@ export class AdminService {
 
     const businessIds = userWithBusinesses.businesses.map((b) => b.id);
 
-    // 2. Contar solo los datos relacionados a esos negocios
-    const totalUser = await this.prisma.user.count({
-      where: {
-        businesses: {
-          some: { id: { in: businessIds } },
-        },
-      },
-    });
-    const totalSchedules = await this.prisma.schedule.count({
-      where: { businessId: { in: businessIds } },
-    });
-    const totalBookings = await this.prisma.booking.count({
-      where: { businessId: { in: businessIds } },
-    });
-    const totalServices = await this.prisma.service.count({
-      where: { businessId: { in: businessIds } },
-    });
-    const totalBusiness = businessIds.length;
+    const [totalUser, totalSchedules, totalBookings, totalServices] = await Promise.all([
+      this.prisma.user.count({
+        where: { businesses: { some: { id: { in: businessIds } } } },
+      }),
+      this.prisma.schedule.count({
+        where: { businessId: { in: businessIds } },
+      }),
+      this.prisma.booking.count({
+        where: { businessId: { in: businessIds } },
+      }),
+      this.prisma.service.count({
+        where: { businessId: { in: businessIds } },
+      }),
+    ])
 
     return {
       totalUser,
       totalSchedules,
       totalBookings,
       totalServices,
-      totalBusiness,
+      totalBusiness: businessIds.length
     };
   }
   /**
@@ -138,7 +131,7 @@ export class AdminService {
     from: string,
     to: string,
     groupBy: string,
-    ): Promise<MetricsResponse> {
+  ): Promise<MetricsResponse> {
     if (!businessId || !userId || !from || !to || !groupBy) {
       throw new BadRequestException(
         'Missing required parameters: businessId, userId, from, to, groupBy',
@@ -179,18 +172,13 @@ export class AdminService {
       );
     }
     const allBookings = await this.prisma.booking.findMany({
-      where: {
-        businessId,
-        date: {
-          gte: startDate,
-          lte: endDate,
-        },
-      },
+      where: { businessId, date: { gte: startDate, lte: endDate } },
       select: {
         date: true,
         finalPrice: true,
         status: true,
         timezone: true,
+        service: { select: { name: true } },
       },
       orderBy: { date: 'asc' },
     });
@@ -198,24 +186,20 @@ export class AdminService {
       allBookings,
       groupByLowerCase as 'day' | 'month' | 'year',
     );
-    const bookingByService = await this.prisma.booking.findMany({
-      where: {
-        businessId,
-        date: {
-          gte: startDate,
-          lte: endDate,
-        },
-      },
-      include: {
-        service: true,
-      },
-    });
+
     const totalBookings = await this.prisma.booking.count({
       where: {
         businessId,
         date: { gte: startDate, lte: endDate },
       },
     });
+    const bookingByService = allBookings.map((b) => ({
+      serviceName: b.service.name,
+      date: b.date.toISOString(),
+      finalPrice: b.finalPrice,
+      status: b.status,
+      timezone: b.timezone,
+    }));
     const totalRevenue = await this.prisma.booking.aggregate({
       _sum: { finalPrice: true },
       where: {
@@ -228,13 +212,7 @@ export class AdminService {
       totalBookings,
       totalRevenue: totalRevenue._sum.finalPrice || 0,
       bookingsByGroup,
-      bookingByService: bookingByService.map((booking) => ({
-        serviceName: booking.service.name,
-        date: booking.date.toISOString(),
-        finalPrice: booking.finalPrice,
-        status: booking.status,
-        timezone: booking.timezone,
-      })),
+      bookingByService,
       groupFormat:
         groupByLowerCase === 'day'
           ? 'YYYY-MM-DD'
