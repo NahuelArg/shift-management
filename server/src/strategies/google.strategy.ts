@@ -13,6 +13,7 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
   constructor() {
     const clientID = process.env.GOOGLE_CLIENT_ID;
     const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+    const callBack = process.env.GOOGLE_CALLBACK_URL
 
     if (!clientID || !clientSecret) {
       throw new Error('Google OAuth credentials not configured');
@@ -22,7 +23,7 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
     super({
       clientID,
       clientSecret,
-      callbackURL: 'http://localhost:3000/auth/google/callback',
+      callbackURL: callBack,
       scope: ['email', 'profile'],
     });
   }
