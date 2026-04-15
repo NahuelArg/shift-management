@@ -1,22 +1,12 @@
-import axios from 'axios';
+import apiClient from './apiClient';
 import { type CreateBookingData, type BookingData } from '../components/bookingManagement/BookingForm';
-
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-
 export async function createBooking(bookingData: CreateBookingData) {
   const dataWithTimezone = {
     ...bookingData,
     timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
   };
   try {
-    const token = localStorage.getItem('token');
-    const response = await axios.post(`${API_BASE_URL}/bookings`, dataWithTimezone, {
-      withCredentials: true,
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      }
-    });
+    const response = await apiClient.post('/bookings', dataWithTimezone)
     return response.data;
   } catch (error: any) {
     if (error.response) {
@@ -28,16 +18,9 @@ export async function createBooking(bookingData: CreateBookingData) {
 
 export async function updateBookingStatus(bookingId: string, status: string) {
   try {
-    const token = localStorage.getItem('token');
-    const response = await axios.patch(
-      `${API_BASE_URL}/bookings/${bookingId}/status`,
+    const response = await apiClient.patch(
+      `/bookings/${bookingId}/status`,
       { status },
-      { 
-        withCredentials: true,
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      }
     );
     return response.data;
   } catch (error: any) {
@@ -50,16 +33,10 @@ export async function updateBookingStatus(bookingId: string, status: string) {
 
 export async function updateBooking(bookingId: string, bookingData: Partial<BookingData>) {
   try {
-    const token = localStorage.getItem('token');
-    const response = await axios.patch(
-      `${API_BASE_URL}/bookings/${bookingId}`,
+
+    const response = await apiClient.patch(
+      `/bookings/${bookingId}`,
       bookingData,
-      { 
-        withCredentials: true,
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      }
     );
     return response.data;
   } catch (error: any) {
@@ -72,12 +49,8 @@ export async function updateBooking(bookingId: string, bookingData: Partial<Book
 
 export async function getBooking(bookingId: string) {
   try {
-    const token = localStorage.getItem('token');
-    const response = await axios.get(`${API_BASE_URL}/bookings/${bookingId}`, {
-      withCredentials: true,
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
+    const response = await apiClient.get(`/bookings/${bookingId}`, {
+
     });
     return response.data;
   } catch (error: any) {
@@ -94,13 +67,9 @@ export async function getBookings(filters?: {
   endTime?: string;
 }) {
   try {
-    const token = localStorage.getItem('token');
-    const response = await axios.get(`${API_BASE_URL}/bookings`, {
+    const response = await apiClient.get(`/bookings`, {
       params: filters,
-      withCredentials: true,
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
+
     });
     return response.data;
   } catch (error: any) {
