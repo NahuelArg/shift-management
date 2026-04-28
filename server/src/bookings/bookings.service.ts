@@ -11,6 +11,7 @@ import { UpdateBookingDto } from './dto/updateBookingDto.dto';
 import { BookingStatus } from '@prisma/client';
 import { CreateBookingDto } from './dto/createBookingDto.dto';
 import { format } from 'date-fns';
+import { toMinutes } from '../utils/toMinutes';
 
 @Injectable()
 export class BookingsService {
@@ -89,11 +90,8 @@ export class BookingsService {
     }
   
     const endTimeStr = format(localEndTime, 'HH:mm');
-
-    const toMinutes = (h: number, m: number) => h*60 + m;
-    const endMinutes =toMinutes(localEndTime.getHours(), localEndTime.getMinutes())
-    const [closeH, closeM] = schedule.to.split(':').map(Number)
-    const closeMinutes = toMinutes(closeH, closeM)
+    const endMinutes = toMinutes(endTimeStr)
+    const closeMinutes = toMinutes(schedule.to)
 
     if (endMinutes > closeMinutes) {
       throw new BadRequestException(
@@ -171,24 +169,34 @@ export class BookingsService {
       },
     });
   }
-  async remove(
+  async delete(
     id: string,
-    user: { userId: string; role: string },
+    user: { 
+      userId: string,
+      role: string },
   ): Promise<BookingDto> {
-    const booking = await this.prisma.booking.findUnique({ where: { id } });
+    if(!id || !user ) throw new BadRequestException('Bad Request')
+    const booking = await this.prisma.booking.findUnique({ where: {
+      id,
+      userId: user.userId } });
     if (!booking) {
       throw new NotFoundException('Booking not found');
     }
     const bookingUser = await this.prisma.user.findUnique({
-      where: { id: user.userId || undefined },
+      where: { id: user.userId},
     });
-    const userBusinessId = bookingUser?.businessId;
-    if (user.role === 'CLIENT' && booking.userId !== user.userId) {
-      throw new ForbiddenException('Clients can only delete their own bookings');
+    if(!bookingUser) throw new NotFoundException('Not found')
+    const userBusinessId = bookingUser.businessId;
+  if(user.role === 'CLIENT'){
+    if (booking.userId !== user.userId) {
+      throw new ForbiddenException('Forbidden');
     }
-    if (['EMPLOYEE', 'ADMIN'].includes(user.role) && userBusinessId !== booking.businessId) {
-      throw new ForbiddenException('Employees can only delete bookings of their business');
+  }
+  if(user.role === 'EMPLOYEE' || user.role === 'ADMIN'){
+    if (userBusinessId !== booking.businessId) {
+      throw new ForbiddenException('Forbidden');
     }
+  }
     const deleted = await this.prisma.booking.delete({ where: { id } });
     return {
       id: deleted.id,
