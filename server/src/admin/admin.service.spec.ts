@@ -58,7 +58,7 @@ describe('AdminService', () => {
       ],
     }).compile();
     prisma = module.get<DeepMockProxy<PrismaService>>(PrismaService);
-    service = module.get<DeepMockProxy<AdminService>>(AdminService);
+    service = module.get<AdminService>(AdminService);
   });
   afterEach(async () => {
     await module.close();
@@ -251,14 +251,22 @@ describe('AdminService', () => {
         businesses: [{ id: businessId }]
       } as any);
 
-      prisma.booking.findMany
-        .mockResolvedValueOnce([
-          { date: new Date('2023-01-01T10:00:00Z'), finalPrice: 100, status: 'COMPLETED', timezone: 'UTC' },
-          { date: new Date('2023-01-02T10:00:00Z'), finalPrice: 150, status: 'COMPLETED', timezone: 'UTC' },
-        ] as any)
-        .mockResolvedValueOnce([
-          { service: { name: 'Service 1' }, date: new Date('2023-01-01'), finalPrice: 100, status: 'COMPLETED', timezone: 'UTC' },
-        ] as any);
+      prisma.booking.findMany.mockResolvedValue([
+        {
+          date: new Date('2023-01-01T10:00:00Z'),
+          finalPrice: 100,
+          status: 'COMPLETED',
+          timezone: 'UTC',
+          service: { name: 'Service 1' }
+        },
+        {
+          date: new Date('2023-02-02T10:00:00Z'),
+          finalPrice: 150,
+          status: 'COMPLETED',
+          timezone: 'UTC',
+          service: { name: 'Service 2' }
+        },
+      ] as any);
       prisma.booking.count.mockResolvedValue(5);
       prisma.booking.aggregate.mockResolvedValue({ _sum: { finalPrice: 250 } } as any);
 
@@ -268,7 +276,15 @@ describe('AdminService', () => {
         totalRevenue: 250,
         groupFormat: 'YYYY-MM-DD',
         bookingByService: expect.arrayContaining([
-          expect.objectContaining({ serviceName: 'Service 1', }),
+          expect.objectContaining({
+            serviceName: 'Service 1',
+            date: '2023-01-01T10:00:00.000Z',
+            finalPrice: 100,
+            status: 'COMPLETED',
+            timezone: 'UTC',
+          },
+          
+        ),
         ]),
       }));
     })
@@ -277,14 +293,22 @@ describe('AdminService', () => {
         id: userId,
         businesses: [{ id: businessId }]
       } as any);
-      prisma.booking.findMany
-        .mockResolvedValueOnce([
-          { date: new Date('2023-01-01T10:00:00Z'), finalPrice: 100, status: 'COMPLETED', timezone: 'UTC' },
-          { date: new Date('2023-01-02T10:00:00Z'), finalPrice: 150, status: 'COMPLETED', timezone: 'UTC' },
-        ] as any)
-        .mockResolvedValueOnce([
-          { service: { name: 'Service 1' }, date: new Date('2023-01-01'), finalPrice: 100, status: 'COMPLETED', timezone: 'UTC' },
-        ] as any);
+      prisma.booking.findMany.mockResolvedValue([
+        {
+          date: new Date('2023-01-01T10:00:00Z'),
+          finalPrice: 100,
+          status: 'COMPLETED',
+          timezone: 'UTC',
+          service: { name: 'Service 1' }
+        },
+        {
+          date: new Date('2023-02-02T10:00:00Z'),
+          finalPrice: 150,
+          status: 'COMPLETED',
+          timezone: 'UTC',
+          service: { name: 'Service 2' }
+        },
+      ] as any);
       prisma.booking.count.mockResolvedValue(5);
       prisma.booking.aggregate.mockResolvedValue({ _sum: { finalPrice: 250 } } as any);
 
@@ -296,14 +320,22 @@ describe('AdminService', () => {
         id: userId,
         businesses: [{ id: businessId }]
       } as any);
-      prisma.booking.findMany
-        .mockResolvedValueOnce([
-          { date: new Date('2023-01-01T10:00:00Z'), finalPrice: 100, status: 'COMPLETED', timezone: 'UTC' },
-          { date: new Date('2023-01-02T10:00:00Z'), finalPrice: 150, status: 'COMPLETED', timezone: 'UTC' },
-        ] as any)
-        .mockResolvedValueOnce([
-          { service: { name: 'Service 1' }, date: new Date('2023-01-01'), finalPrice: 100, status: 'COMPLETED', timezone: 'UTC' },
-        ] as any);
+      prisma.booking.findMany.mockResolvedValue([
+        {
+          date: new Date('2023-01-01T10:00:00Z'),
+          finalPrice: 100,
+          status: 'COMPLETED',
+          timezone: 'UTC',
+          service: { name: 'Service 1' }
+        },
+        {
+          date: new Date('2023-02-02T10:00:00Z'),
+          finalPrice: 150,
+          status: 'COMPLETED',
+          timezone: 'UTC',
+          service: { name: 'Service 2' }
+        },
+      ] as any);
       prisma.booking.count.mockResolvedValue(5);
       prisma.booking.aggregate.mockResolvedValue({ _sum: { finalPrice: 250 } } as any);
 

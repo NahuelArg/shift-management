@@ -157,7 +157,7 @@ const bookingData = {
     @Param('id') id: string,
     @Request() req: RequestWithUser,
   ): Promise<BookingDto> {
-    return this.bookingsService.remove(id, req.user);
+    return this.bookingsService.delete(id, req.user);
   }
 }
 
