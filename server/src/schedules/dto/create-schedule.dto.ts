@@ -8,7 +8,7 @@ export class CreateScheduleDto {
   })
   @IsNumber()
   @IsNotEmpty()
-  dayOfWeek: number;
+  dayOfWeek!: number;
 
   @ApiProperty({
     description: 'Start time',
@@ -16,7 +16,7 @@ export class CreateScheduleDto {
   })
   @IsString()
   @IsNotEmpty()
-  from: string;
+  from!: string;
 
   @ApiProperty({
     description: 'End time',
@@ -24,7 +24,7 @@ export class CreateScheduleDto {
   })
   @IsString()
   @IsNotEmpty()
-  to: string;
+  to!: string;
 
   @ApiProperty({
     description: 'Business ID',
@@ -32,5 +32,5 @@ export class CreateScheduleDto {
   })
   @IsUUID()
   @IsNotEmpty()
-  businessId: string;
+  businessId!: string;
 }
