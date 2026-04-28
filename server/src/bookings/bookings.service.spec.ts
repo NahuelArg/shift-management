@@ -52,7 +52,8 @@ describe('BookingsService', () => {
     service = module.get<BookingsService>(BookingsService);
     prisma = module.get<DeepMockProxy<PrismaService>>(PrismaService);
   })
-
+  afterEach(async()=> await module.close())
+  
   it('should be defined', () => {
     expect(service).toBeDefined();
   });
@@ -66,32 +67,32 @@ describe('BookingsService', () => {
       expect(result).toEqual([mockBooking]);
     });
   })
-  describe('remove', () => {
+  describe('delete', () => {
     it('should throw NotFoundException if booking not found', async () => {
       prisma.booking.findUnique.mockResolvedValue(null);
       prisma.user.findUnique.mockResolvedValue(null);
-      await expect(() => service.remove('1', { userId: 'user1', role: 'CLIENT' })).rejects.toThrow(NotFoundException);
+      await expect(() => service.delete('1', { userId: 'user1', role: 'CLIENT' })).rejects.toThrow(NotFoundException);
     });
     it('should throw ForbiddenException if client is not owner', async () => {
       prisma.booking.findUnique.mockResolvedValue({ ...mockBooking, userId: 'otherUser' });
       prisma.user.findUnique.mockResolvedValue(userMock as any);
-      await expect(() => service.remove('1', { userId: 'user1', role: 'CLIENT' })).rejects.toThrow(ForbiddenException);
+      await expect(() => service.delete('1', { userId: 'user1', role: 'CLIENT' })).rejects.toThrow(ForbiddenException);
     });
     it('should throw ForbiddenException if employee tries to delete booking from another business', async () => {
       prisma.booking.findUnique.mockResolvedValue({ ...mockBooking, userId: '123' });
       prisma.user.findUnique.mockResolvedValue({ ...userMock, businessId: 'otherBusiness' } as any);
-      await expect(() => service.remove('1', { userId: 'user1', role: 'EMPLOYEE' })).rejects.toThrow(ForbiddenException);
+      await expect(() => service.delete('1', { userId: 'user1', role: 'EMPLOYEE' })).rejects.toThrow(ForbiddenException);
     });
     it('should throw ForbiddenException if ADMIN tries to delete booking from another business', async () => {
       prisma.booking.findUnique.mockResolvedValue({ ...mockBooking, userId: '123' });
       prisma.user.findUnique.mockResolvedValue({ ...userMock, businessId: 'otherBusiness' } as any);
-      await expect(() => service.remove('1', { userId: 'user1', role: 'ADMIN' })).rejects.toThrow(ForbiddenException);
+      await expect(() => service.delete('1', { userId: 'user1', role: 'ADMIN' })).rejects.toThrow(ForbiddenException);
     });
     it('should delete the booking if user is EMPLOYEE', async () => {
       prisma.booking.findUnique.mockResolvedValue(mockBooking);
       prisma.user.findUnique.mockResolvedValue(userMock as any);
       prisma.booking.delete.mockResolvedValue(mockBooking);
-      const result = await service.remove('1', { userId: 'user1', role: 'EMPLOYEE' });
+      const result = await service.delete('1', { userId: 'user1', role: 'EMPLOYEE' });
       expect(result).toBeDefined();
     });
 
@@ -99,7 +100,7 @@ describe('BookingsService', () => {
       prisma.booking.findUnique.mockResolvedValue(mockBooking);
       prisma.user.findUnique.mockResolvedValue(userMock as any);
       prisma.booking.delete.mockResolvedValue(mockBooking);
-      const result = await service.remove('1', { userId: 'user1', role: 'ADMIN' });
+      const result = await service.delete('1', { userId: 'user1', role: 'ADMIN' });
       expect(result).toBeDefined();
     });
   })
