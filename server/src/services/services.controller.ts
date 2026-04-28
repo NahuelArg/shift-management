@@ -5,7 +5,6 @@ import {
   Body,
   Delete,
   Param,
-  BadRequestException,
   UseGuards,
   Put,
   Request,
@@ -25,20 +24,21 @@ import { ServiceDto } from './dto/service.dto';
 import { CreateServiceDto } from './dto/create-service.dto';
 import { UpdateServiceDto } from './dto/updateServices.dto';
 import { RequestWithUser } from '../types/express-request.interface';
+import { BusinessWithServices } from './dto/businessWithService.dto';
 
 @ApiTags('Services')
 @Controller('services')
 export class ServicesController {
-  constructor(private readonly servicesService: ServicesService) {}
+  constructor(private readonly servicesService: ServicesService) { }
 
   @Get()
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('ADMIN', 'CLIENT')
+  @Roles('ADMIN')
   @ApiOperation({ summary: 'Get all services' })
   @ApiResponse({ status: 200, type: [ServiceDto] })
-  async findAll(): Promise<Service[]> {
-    return this.servicesService.findAll();
+  async findAll(@Request() req: RequestWithUser): Promise<BusinessWithServices[]> {
+    return this.servicesService.findAll(req.user.userId);
   }
 
   @Get('my-business')
@@ -51,7 +51,7 @@ export class ServicesController {
     return this.servicesService.getServicesByEmployee(req.user.userId);
   }
 
-  @Delete(':id')
+  @Delete(':businessId/:id')
   @ApiBearerAuth()
   @Roles('ADMIN')
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -61,19 +61,26 @@ export class ServicesController {
     description: 'Servicio eliminado',
     type: ServiceDto,
   })
-  async delete(@Param('id') id: string): Promise<Service> {
-    return this.servicesService.delete(id);
+  async delete(
+    @Param('id') id: string,
+    @Request() req: RequestWithUser,
+    @Param('businessId') businessId: string)
+    : Promise<Service> {
+    return this.servicesService.delete(id, req.user.userId, businessId);
   }
 
 
   @Get(':businessId')
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('ADMIN', 'CLIENT')
+  @Roles('ADMIN')
   @ApiOperation({ summary: 'Get all services' })
   @ApiResponse({ status: 200, type: [ServiceDto] })
-  async findById(@Param('businessId') businessId: string): Promise<Service[]> {
-    return this.servicesService.findBy(businessId);
+  async findById(
+    @Param('businessId') businessId: string,
+    @Request() req: RequestWithUser)
+    : Promise<Service[]> {
+    return this.servicesService.getServicesByBusinessId(businessId, req.user.userId,);
   }
 
   @Post()
@@ -82,17 +89,13 @@ export class ServicesController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Create new service' })
   @ApiResponse({ status: 201, type: ServiceDto })
-  async create(@Body() body: CreateServiceDto): Promise<Service> {
-    try {
-      return this.servicesService.create(body);
-    } catch (error) {
-      if (error instanceof Error) {
-        throw new BadRequestException(error.message);
-      }
-      throw new BadRequestException('Unknown error occurred');
-    }
+  async create(
+    @Request() req: RequestWithUser,
+    @Body() body: CreateServiceDto)
+    : Promise<Service> {
+      return this.servicesService.create(body,req.user.userId);
   }
-  @Put(':id')
+  @Put(':businessId/:id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
   @ApiBearerAuth()
@@ -100,12 +103,10 @@ export class ServicesController {
   @ApiResponse({ status: 200, type: ServiceDto })
   async update(
     @Param('id') id: string,
+    @Param('businessId') businessId: string,
+    @Request() req: RequestWithUser,
     @Body() updateServiceDto: UpdateServiceDto,
   ): Promise<Service> {
-    const service = await this.servicesService.update(id, updateServiceDto);
-    if (!service) {
-      throw new BadRequestException('Service not found');
-    }
-    return service;
+    return await this.servicesService.update(id, updateServiceDto, req.user.userId, businessId);
   }
 }
