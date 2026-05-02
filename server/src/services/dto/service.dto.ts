@@ -7,5 +7,5 @@ export class ServiceDto extends CreateServiceDto {
     example: '572ba60c-1fc5-4bc3-8472-afee5062b0e1',
   })
   @IsUUID()
-  id: string;
+  id!: string;
 }

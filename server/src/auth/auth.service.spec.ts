@@ -3,6 +3,7 @@ import { AuthService } from './auth.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { JwtService } from '@nestjs/jwt';
 import { BadRequestException, ConflictException, ForbiddenException, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import { DeepMockProxy, mockDeep } from 'jest-mock-extended'
 
 
 
@@ -12,21 +13,16 @@ jest.mock('bcrypt', () => ({
 }))
 describe('AuthService', () => {
   let service: AuthService;
-  let prisma: { user: { findUnique: jest.Mock; create: jest.Mock } }
+  let prisma: DeepMockProxy<PrismaService>;
   let module: TestingModule;
 
   beforeEach(async () => {
-     module = await Test.createTestingModule({
+    module = await Test.createTestingModule({
       providers: [
         AuthService,
         {
           provide: PrismaService,
-          useValue: {
-            user: {
-              findUnique: jest.fn(),
-              create: jest.fn()
-            }
-          },
+          useValue: mockDeep<PrismaService>()
         },
         {
           provide: JwtService,
@@ -37,27 +33,38 @@ describe('AuthService', () => {
 
       ]
     }).compile();
-    prisma = module.get<any>(PrismaService)
+    prisma = module.get<DeepMockProxy<PrismaService>>(PrismaService)
     service = module.get<AuthService>(AuthService);
   });
-  
+
   it('should be defined', () => {
     expect(service).toBeDefined();
   });
 
   describe('register', () => {
+    const mockUser = {
+        id: '1',
+        name: 'name',
+        email: 'test@test.com',
+        password:'passwordHashed',
+        phone: null,
+        role: 'CLIENT',
+        businessId: null,
+        createdAt: expect.any(Date),
+        authProvider: 'LOCAL'
+      }
     it('should throw ConflictException if email already exists', async () => {
-      prisma.user.findUnique.mockResolvedValue({ id: 1, email: 'test@test.com' })
+      prisma.user.findUnique.mockResolvedValue(mockUser as any)
       await expect(() => service.register({
-        name: 'JhonDoe',
-        email: 'email@test.com'
+        name: mockUser.name,
+        email: mockUser.email
       })).rejects.toThrow(ConflictException)
     })
     it('should throw BadRequestException if AuthProvider is LOCAL and password is null', async () => {
       prisma.user.findUnique.mockResolvedValue(null)
       await expect(() => service.register({
-        name: 'JhonDoe',
-        email: 'email@test.com',
+        name: mockUser.name,
+        email: mockUser.email,
         authProvider: 'LOCAL',
       })).rejects.toThrow(BadRequestException)
     })
@@ -72,36 +79,34 @@ describe('AuthService', () => {
     it('should return code 200 success register', async () => {
       prisma.user.findUnique.mockResolvedValue(null)
       prisma.user.create.mockResolvedValue({
-        id: 1,
+        id: '1',
         name: 'name',
         email: 'test@test.com',
         phone: null,
         role: 'CLIENT',
         businessId: null,
         createdAt: expect.any(Date),
-        bookings: [],
         authProvider: 'GOOGLE'
-      })
+      } as any)
       await expect(service.register({
         name: 'John',
         email: 'email@test.com',
         authProvider: 'GOOGLE'
       })).resolves.toEqual(expect.objectContaining({
-        id: 1,
+        id: '1',
         name: 'name',
         email: 'test@test.com',
         phone: null,
         role: 'CLIENT',
         businessId: null,
         createdAt: new Date,
-        bookings: [],
         authProvider: 'GOOGLE',
       }))
     })
   })
   describe('login', () => {
     it('should throw Unauthorized Exception if email is not valid', async () => {
-      prisma.user.findUnique.mockResolvedValue({ id: 1, email: 'test@test.com', password: '123456789', authProvider: 'LOCAL' })
+      prisma.user.findUnique.mockResolvedValue({ id: '1', email: 'test@test.com', password: '123456789', authProvider: 'LOCAL' } as any)
       await expect(() => service.login({
         password: '1234567789',
         email: 'email@test.com',
@@ -115,14 +120,14 @@ describe('AuthService', () => {
       })).rejects.toThrow(NotFoundException)
     })
     it('should throw UnauthorizedException if user is not local', async () => {
-      prisma.user.findUnique.mockResolvedValue({ id: 1, email: 'test@test.com', password: '123456789', authProvider: 'GOOGLE' })
+      prisma.user.findUnique.mockResolvedValue({ id: '1', email: 'test@test.com', password: '123456789', authProvider: 'GOOGLE' } as any)
       await expect(() => service.login({
         password: '123456789',
         email: 'email@test.com',
       })).rejects.toThrow(UnauthorizedException)
     })
     it('should throw UnauthorizedException if password is wrong', async () => {
-      prisma.user.findUnique.mockResolvedValue({ id: 1, email: 'test@test.com', password: '123456789' })
+      prisma.user.findUnique.mockResolvedValue({ id: '1', email: 'test@test.com', password: '123456789' } as any)
       await expect(() => service.login({
         password: '123456778',
         email: 'email@test.com',
@@ -139,8 +144,7 @@ describe('AuthService', () => {
         phone: null,
         businessId: null,
         createdAt: new Date(),
-        bookings: [],
-      })
+      } as any)
       const bcrypt = require('bcrypt')
       bcrypt.compare.mockResolvedValue(true)
       let jwt = module.get<any>(JwtService)
@@ -150,7 +154,7 @@ describe('AuthService', () => {
         email: 'email@test.com',
       })).resolves.toEqual(expect.objectContaining({
         accessToken: expect.any(String),
-        user: expect.objectContaining({email:'email@test.com'})
+        user: expect.objectContaining({ email: 'email@test.com' })
       }))
     })
   })

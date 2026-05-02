@@ -123,8 +123,8 @@ export class BusinessService {
       );
     }
 
-    return this.prisma.business.create({
-      data: {
+    return await this.prisma.business.create({
+      data:{
         name: data.name,
         ownerId: data.ownerId,
       },

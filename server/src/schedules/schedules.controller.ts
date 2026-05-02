@@ -8,6 +8,7 @@ import {
   UseGuards,
   BadRequestException,
   Put,
+  Request
 } from '@nestjs/common';
 import { SchedulesService } from './schedules.service';
 import {
@@ -23,6 +24,8 @@ import { Roles } from '../decorators/roles.decorator';
 import { ScheduleDto } from './dto/schedulesDto.dto';
 import { CreateScheduleDto } from './dto/create-schedule.dto';
 import { UpdateScheduleDto } from './dto/updateSchedules.dto';
+import { RequestWithUser } from '../types/express-request.interface';
+
 
 @ApiTags('Schedules')
 @Controller('schedules')
@@ -39,8 +42,11 @@ export class SchedulesController {
     description: 'Schedule deleted',
     type: ScheduleDto,
   })
-  async delete(@Param('id') id: string): Promise<Schedule> {
-    return this.schedulesService.delete(id);
+  async delete(
+    @Request() req: RequestWithUser,
+    @Param('id') id: string):
+     Promise<Schedule> {
+    return this.schedulesService.delete(id, req.user.userId);
   }
 
   @Get()
@@ -53,8 +59,23 @@ export class SchedulesController {
     description: 'List of schedules',
     type: [ScheduleDto],
   })
-  async findAll(): Promise<Schedule[]> {
-    return this.schedulesService.findAll();
+  async findAll(@Request() req:RequestWithUser): Promise<Schedule[]> {
+    const userId = req.user.userId 
+    return this.schedulesService.findAll(userId);
+  }
+
+  @Get(':id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get a schedule by ID' })
+  @ApiResponse({
+    status: 200,
+    description: 'Get Schedule by ID',
+    type: ScheduleDto,
+  })
+  async findOne(@Param('id') id: string): Promise<Schedule> {
+    return this.schedulesService.findOne(id);
   }
 
   @Post()
@@ -90,10 +111,11 @@ export class SchedulesController {
   })
   @ApiResponse({ status: 400, description: 'Error updating schedule' })
   async update(
+    @Request() req: RequestWithUser,
     @Param('id') id: string,
     @Body() updateScheduleDto: UpdateScheduleDto,
   ): Promise<Schedule> {
-    const schedule = await this.schedulesService.update(id, updateScheduleDto);
+    const schedule = await this.schedulesService.update(id, updateScheduleDto, req.user.userId);
     if (!schedule) {
       throw new BadRequestException('Schedule not found');
     }

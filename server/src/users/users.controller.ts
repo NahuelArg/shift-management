@@ -8,7 +8,7 @@ import {
   UseGuards,
   Put,
   Query,
-  BadRequestException,
+  Request,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/CreateUserDto.dto';
@@ -19,12 +19,13 @@ import { RolesGuard } from '../guard/roles.guard';
 import { ApiBearerAuth } from '@nestjs/swagger';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { UpdateUserDto } from './dto/updateUser.dto';
+import { RequestWithUser } from 'src/types/express-request.interface';
 
 
 @ApiTags('Users')
 @Controller('users')
 export class UsersController {
-  constructor(private readonly usersService: UsersService) {}
+  constructor(private readonly usersService: UsersService) { }
   @Delete(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @ApiBearerAuth()
@@ -35,8 +36,10 @@ export class UsersController {
     description: 'User successfully deleted',
     type: UserDto,
   })
-  async deleteUser(@Param('id') id: string): Promise<UserDto> {
-    return this.usersService.deleteUser(id);
+  async deleteUser(
+    @Param('id') id: string,
+    @Request() req: RequestWithUser): Promise<UserDto> {
+    return await this.usersService.delete(id, req.user.userId);
   }
   @Get()
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -44,8 +47,8 @@ export class UsersController {
   @Roles('ADMIN')
   @ApiOperation({ summary: 'Get all users' })
   @ApiResponse({ status: 200, description: 'List of users', type: [UserDto] })
-  async findAll(): Promise<UserDto[]> {
-    return this.usersService.findAll();
+  async findAll(@Request() req: RequestWithUser): Promise<UserDto[]> {
+    return await this.usersService.findAll(req.user.userId);
   }
 
   @Get('search')
@@ -54,11 +57,10 @@ export class UsersController {
   @Roles('EMPLOYEE', 'ADMIN')
   @ApiOperation({ summary: 'Search users by email (EMPLOYEE/ADMIN)' })
   @ApiResponse({ status: 200, description: 'List of users matching search', type: [UserDto] })
-  async searchUsers(@Query('email') email: string): Promise<Omit<UserDto, 'password'>[]> {
-    if (!email || email.trim().length === 0) {
-      throw new BadRequestException('Email query parameter is required');
-    }
-    return this.usersService.searchByEmail(email);
+  async searchUsers(
+    @Query('email') email: string,
+    @Request() req: RequestWithUser): Promise<Omit<UserDto, 'password'>[]> {
+    return await this.usersService.searchByEmail(email, req.user.userId);
   }
 
   @Post()
@@ -71,11 +73,11 @@ export class UsersController {
     description: 'User successfully created',
     type: UserDto,
   })
-  async createUser(@Body() body: CreateUserDto): Promise<UserDto>{
-    return this.usersService.createUser(body)
+  async createUser(@Body() body: CreateUserDto): Promise<UserDto> {
+    return await this.usersService.create(body)
   }
 
-  
+
   @Put(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @ApiBearerAuth()
@@ -89,11 +91,8 @@ export class UsersController {
   async updateUser(
     @Param('id') id: string,
     @Body() updateUserDto: UpdateUserDto,
+    @Request() req: RequestWithUser
   ): Promise<UserDto> {
-    const user = await this.usersService.updateUser(id, updateUserDto);
-    if (!user) {
-      throw new BadRequestException('User not found');
-    }
-    return user;
+    return await this.usersService.update(id, updateUserDto, req.user.userId);
   }
 }

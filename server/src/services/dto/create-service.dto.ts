@@ -15,7 +15,7 @@ export class CreateServiceDto {
   })
   @IsString()
   @IsNotEmpty()
-  name: string;
+  name!: string;
 
   @ApiPropertyOptional({
     description: 'Service description',
@@ -31,15 +31,14 @@ export class CreateServiceDto {
   })
   @IsNumber()
   @Min(1, { message: 'Duration must be at least 1 minute' })
-  durationMin: number;
+  durationMin!: number;
 
   @ApiProperty({
     description: 'Price in ARS',
     example: 2500,
   })
   @IsNumber()
-  @IsOptional()
-  price: number;
+  price!: number;
 
   @ApiProperty({
     description: 'Business ID',
@@ -47,5 +46,5 @@ export class CreateServiceDto {
   })
   @IsUUID()
   @IsNotEmpty()
-  businessId: string;
+  businessId!: string;
 }
