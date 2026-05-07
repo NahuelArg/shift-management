@@ -68,16 +68,14 @@ const Calendar: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      const start = viewDays[0].toISOString().slice(0, 10);
-      const end   = viewDays[viewDays.length - 1].toISOString().slice(0, 10);
-      const res   = await apiClient.get(`/bookings/my-bookings?from=${start}&to=${end}`);
+      const res = await apiClient.get('/bookings');
       setBookings(res.data);
     } catch {
       setError('No se pudieron cargar los turnos');
     } finally {
       setLoading(false);
     }
-  }, [token, currentDate, viewMode]);
+  }, [token]);
 
   useEffect(() => { fetchBookings(); }, [fetchBookings]);
 
@@ -228,15 +226,15 @@ const Calendar: React.FC = () => {
                       />
                     ))}
                     {/* Booking chips */}
-                    {dayBookings.map(b => (
+                    {dayBookings.filter(b => b.service && b.date && b.endTime).map(b => (
                       <button
                         key={b.id}
                         className={`absolute rounded-md border text-xs font-medium text-left px-1.5 py-1 overflow-hidden transition-opacity hover:opacity-80 ${statusColors[b.status] ?? 'bg-surface-3 text-content'}`}
                         style={chipStyle(b)}
                         onClick={() => setSelectedBooking(b)}
                       >
-                        <div className="truncate font-semibold">{b.service.name}</div>
-                        <div className="truncate opacity-75">{b.user.name}</div>
+                        <div className="truncate font-semibold">{b.service?.name ?? '—'}</div>
+                        <div className="truncate opacity-75">{b.user?.name ?? '—'}</div>
                       </button>
                     ))}
                   </div>
@@ -258,8 +256,8 @@ const Calendar: React.FC = () => {
           <div className="space-y-4">
             <div className="flex items-start justify-between">
               <div>
-                <h3 className="font-semibold text-content">{selectedBooking.service.name}</h3>
-                <p className="text-sm text-content-3">{selectedBooking.business.name}</p>
+                <h3 className="font-semibold text-content">{selectedBooking.service?.name ?? '—'}</h3>
+                <p className="text-sm text-content-3">{selectedBooking.business?.name ?? '—'}</p>
               </div>
               <StatusBadge
                 label={selectedBooking.status}
@@ -269,7 +267,7 @@ const Calendar: React.FC = () => {
             <dl className="space-y-2 text-sm">
               <div className="flex justify-between">
                 <dt className="text-content-3">Cliente</dt>
-                <dd className="font-medium text-content">{selectedBooking.user.name}</dd>
+                <dd className="font-medium text-content">{selectedBooking.user?.name ?? '—'}</dd>
               </div>
               {selectedBooking.employee && (
                 <div className="flex justify-between">
@@ -289,13 +287,15 @@ const Calendar: React.FC = () => {
                   {new Date(selectedBooking.endTime).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })}
                 </dd>
               </div>
-              <div className="flex justify-between">
-                <dt className="text-content-3">Duración</dt>
-                <dd className="font-medium text-content">{selectedBooking.service.durationMin} min</dd>
-              </div>
+              {selectedBooking.service && (
+                <div className="flex justify-between">
+                  <dt className="text-content-3">Duración</dt>
+                  <dd className="font-medium text-content">{selectedBooking.service.durationMin} min</dd>
+                </div>
+              )}
               <div className="flex justify-between">
                 <dt className="text-content-3">Precio</dt>
-                <dd className="font-bold text-content">${selectedBooking.finalPrice.toLocaleString('es-AR')}</dd>
+                <dd className="font-bold text-content">${selectedBooking.finalPrice?.toLocaleString('es-AR') ?? '—'}</dd>
               </div>
             </dl>
           </div>

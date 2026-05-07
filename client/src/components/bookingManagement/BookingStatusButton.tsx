@@ -1,64 +1,63 @@
 import { useState } from 'react';
 import { updateBookingStatus } from '../../services/bookingService';
+import Button from '../ui/Button';
 
 interface BookingStatusButtonProps {
-    bookingId: string;
-    currentStatus: string;
-    onStatusUpdate: () => void;
+  bookingId: string;
+  currentStatus: string;
+  onStatusUpdate: () => void;
 }
 
+type Transition = { label: string; next: string; variant: 'primary' | 'danger' | 'ghost' };
+
+const TRANSITIONS: Record<string, Transition[]> = {
+  PENDING: [
+    { label: 'Confirmar',  next: 'CONFIRMED', variant: 'primary' },
+    { label: 'Cancelar',   next: 'CANCELLED', variant: 'danger'  },
+  ],
+  CONFIRMED: [
+    { label: 'Completar',  next: 'COMPLETED', variant: 'primary' },
+    { label: 'Cancelar',   next: 'CANCELLED', variant: 'danger'  },
+  ],
+  COMPLETED: [],
+  CANCELLED: [],
+};
+
 const BookingStatusButton = ({ bookingId, currentStatus, onStatusUpdate }: BookingStatusButtonProps) => {
-    const [isLoading, setIsLoading] = useState(false);
+  const [loadingNext, setLoadingNext] = useState<string | null>(null);
 
-    const getNextStatus = (current: string) => {
-        switch (current) {
-            case 'PENDING':
-                return 'CONFIRMED';
-            case 'CONFIRMED':
-                return 'CANCELLED';
-            case 'CANCELLED':
-                return 'PENDING';
-            default:
-                return 'PENDING';
-        }
-    };
+  const transitions = TRANSITIONS[currentStatus] ?? [];
 
-    const getStatusColor = (status: string) => {
-        switch (status) {
-            case 'PENDING':
-                return 'bg-yellow-500';
-            case 'CONFIRMED':
-                return 'bg-green-500';
-            case 'CANCELLED':
-                return 'bg-red-500';
-            default:
-                return 'bg-gray-500';
-        }
-    };
+  if (transitions.length === 0) return null;
 
-    const handleStatusChange = async () => {
-        try {
-            setIsLoading(true);
-            const nextStatus = getNextStatus(currentStatus);
-            await updateBookingStatus(bookingId, nextStatus);
-            onStatusUpdate();
-        } catch (error) {
-            console.error('Error updating booking status:', error);
-            alert('Error al actualizar el estado de la reserva');
-        } finally {
-            setIsLoading(false);
-        }
-    };
+  const handleChange = async (next: string) => {
+    setLoadingNext(next);
+    try {
+      await updateBookingStatus(bookingId, next);
+      onStatusUpdate();
+    } catch {
+      // error is handled by caller's toast or console
+    } finally {
+      setLoadingNext(null);
+    }
+  };
 
-    return (
-        <button
-            onClick={handleStatusChange}
-            disabled={isLoading}
-            className={`px-4 py-2 rounded-md text-white ${getStatusColor(currentStatus)} ${isLoading ? 'opacity-50' : 'hover:opacity-80'}`}
+  return (
+    <div className="flex items-center gap-2">
+      {transitions.map(t => (
+        <Button
+          key={t.next}
+          size="sm"
+          variant={t.variant}
+          loading={loadingNext === t.next}
+          disabled={loadingNext !== null}
+          onClick={() => handleChange(t.next)}
         >
-            {isLoading ? 'Actualizando...' : currentStatus}
-        </button>
-    );
+          {t.label}
+        </Button>
+      ))}
+    </div>
+  );
 };
 
 export default BookingStatusButton;

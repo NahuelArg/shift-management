@@ -76,7 +76,8 @@ const Services: React.FC = () => {
     setSubmitting(true);
     try {
       if (editingService) {
-        await serviceService.update(editingService.id, formData);
+        const { businessId, ...updateData } = formData;
+        await serviceService.update(editingService.id, businessId, updateData);
         toast('Servicio actualizado', 'success');
       } else {
         await serviceService.create(formData);
@@ -93,8 +94,10 @@ const Services: React.FC = () => {
 
   const handleDelete = async (id: string) => {
     if (!window.confirm('¿Eliminar este servicio?')) return;
+    const svc = services.find(s => s.id === id);
+    if (!svc) return;
     try {
-      await serviceService.delete(id);
+      await serviceService.delete(id, svc.businessId);
       setServices(prev => prev.filter(s => s.id !== id));
       toast('Servicio eliminado', 'success');
     } catch (err: any) {

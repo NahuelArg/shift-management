@@ -41,7 +41,7 @@ const BusinessPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [editingBusiness, setEditingBusiness] = useState<Business | null>(null);
-  const [formData, setFormData] = useState<CreateBusinessDto>({ name: '', ownerId: user?.id || '' });
+  const [formData, setFormData] = useState<CreateBusinessDto>({ name: '' });
   const [submitting, setSubmitting] = useState(false);
 
   const [showServicesModal, setShowServicesModal] = useState(false);
@@ -50,10 +50,6 @@ const BusinessPage: React.FC = () => {
   const [showServiceForm, setShowServiceForm] = useState(false);
   const [serviceForm, setServiceForm] = useState({ name: '', description: '', price: '', durationMin: '' });
   const [serviceSubmitting, setServiceSubmitting] = useState(false);
-
-  useEffect(() => {
-    setFormData(prev => ({ ...prev, ownerId: user?.id || '' }));
-  }, [user?.id]);
 
   useEffect(() => { fetchBusinesses(); }, [user?.id]);
 
@@ -66,13 +62,13 @@ const BusinessPage: React.FC = () => {
 
   const openCreate = () => {
     setEditingBusiness(null);
-    setFormData({ name: '', ownerId: user?.id || '' });
+    setFormData({ name: '' });
     setShowModal(true);
   };
 
   const openEdit = (b: Business) => {
     setEditingBusiness(b);
-    setFormData({ name: b.name, ownerId: b.ownerId });
+    setFormData({ name: b.name });
     setShowModal(true);
   };
 
@@ -142,7 +138,7 @@ const BusinessPage: React.FC = () => {
   const handleDeleteService = async (serviceId: string) => {
     if (!window.confirm('¿Eliminar este servicio?')) return;
     try {
-      await serviceService.delete(serviceId);
+      await serviceService.delete(serviceId, selectedBusiness!.id);
       setBusinessServices(prev => prev.filter(s => s.id !== serviceId));
       toast('Servicio eliminado', 'success');
     } catch (err: any) {

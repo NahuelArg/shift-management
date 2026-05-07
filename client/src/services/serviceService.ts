@@ -28,8 +28,8 @@ export interface UpdateServiceDto {
 
 export const serviceService = {
   async getAll(): Promise<Service[]> {
-    const response = await apiClient.get('/services');
-    return response.data;
+    const response = await apiClient.get<{ name: string; services: Service[] }[]>('/services');
+    return response.data.flatMap(biz => biz.services);
   },
 
   async create(data: CreateServiceDto): Promise<Service> {
@@ -37,13 +37,13 @@ export const serviceService = {
     return response.data;
   },
 
-  async update(id: string, data: UpdateServiceDto): Promise<Service> {
-    const response = await apiClient.put(`/services/${id}`, data);
+  async update(id: string, businessId: string, data: Omit<UpdateServiceDto, 'businessId'>): Promise<Service> {
+    const response = await apiClient.put(`/services/${businessId}/${id}`, data);
     return response.data;
   },
 
-  async delete(id: string): Promise<Service> {
-    const response = await apiClient.delete(`/services/${id}`);
+  async delete(id: string, businessId: string): Promise<Service> {
+    const response = await apiClient.delete(`/services/${businessId}/${id}`);
     return response.data;
   },
 };

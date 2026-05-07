@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
 import BookingForm, { type CreateBookingData } from '../components/bookingManagement/BookingForm';
 import { createBooking } from '../services/bookingService';
 import { useAuth } from '../context/AuthContext';
+import { apiClient } from '../services/apiClient';
 import BookingStatusButton from '../components/bookingManagement/BookingStatusButton';
 import StatusBadge, { bookingStatusVariant } from '../components/ui/StatusBadge';
 import { useToast } from '../components/ui/Toast';
@@ -15,20 +15,20 @@ interface Booking {
   finalPrice: number;
 }
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-
 const Bookings = () => {
-  const { token } = useAuth();
+  const { user } = useAuth();
   const { toast } = useToast();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
 
   const fetchBookings = async () => {
+    const endpoint =
+      user?.role === 'ADMIN'    ? '/bookings' :
+      user?.role === 'EMPLOYEE' ? '/bookings/my-assignments' :
+                                  '/bookings/my-bookings';
     try {
-      const res = await axios.get(`${API_BASE_URL}/bookings/my-bookings`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const res = await apiClient.get(endpoint);
       setBookings(res.data);
     } catch {
       toast('Error al cargar las reservas', 'error');
@@ -37,7 +37,7 @@ const Bookings = () => {
     }
   };
 
-  useEffect(() => { if (token) fetchBookings(); }, [token]);
+  useEffect(() => { if (user) fetchBookings(); }, [user]);
 
   const handleCreate = async (data: CreateBookingData) => {
     try {
@@ -47,6 +47,7 @@ const Bookings = () => {
       fetchBookings();
     } catch (err: any) {
       toast(err.message || 'Error al crear la reserva', 'error');
+      throw err;
     }
   };
 
@@ -68,7 +69,7 @@ const Bookings = () => {
       {showForm && (
         <div className="bg-surface rounded-xl shadow-card border border-border p-6 animate-fade-in">
           <h3 className="text-base font-semibold text-content mb-4">Nueva reserva</h3>
-          <BookingForm role="CLIENT" onSubmit={handleCreate} />
+          <BookingForm role={(user?.role as 'ADMIN' | 'CLIENT' | 'EMPLOYEE') ?? 'CLIENT'} onSubmit={handleCreate} />
         </div>
       )}
 

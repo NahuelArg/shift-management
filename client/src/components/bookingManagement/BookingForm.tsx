@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import ServiceSelector from './ServiceSelector';
 import { useAuth } from '../../context/AuthContext';
-import axios from 'axios';
-
+import { apiClient } from '../../services/apiClient';
+import Input from '../ui/Input';
+import Select from '../ui/Select';
+import Button from '../ui/Button';
 
 interface Service {
   id: string;
@@ -23,8 +25,8 @@ interface BookingFormProps {
 export interface CreateBookingData {
   serviceId: string;
   businessId: string;
-  date: string;  // Format: "2025-07-18T18:00:00.000Z"
-  timezone: string;  // Format: "America/Argentina/Buenos_Aires"
+  date: string;
+  timezone: string;
   finalPrice: number;
   employeeId?: string;
   userId?: string;
@@ -38,6 +40,7 @@ export interface BookingData extends CreateBookingData {
   status: BookingStatus;
   createdAt: Date;
 }
+
 interface Employee {
   id: string;
   name: string;
@@ -45,7 +48,20 @@ interface Employee {
 
 type BookingStatus = 'PENDING' | 'CONFIRMED' | 'CANCELLED';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+function translateBookingError(msg: string): string {
+  if (!msg) return 'Error al crear la reserva';
+  if (/closing time|would end at/i.test(msg))
+    return 'El turno finalizaría después del horario de cierre. Elegí un horario más temprano.';
+  if (/No available employees/i.test(msg))
+    return 'No hay empleados disponibles en ese horario.';
+  if (/not available at the chosen time/i.test(msg))
+    return 'El empleado seleccionado no está disponible en ese horario.';
+  if (/Employee not found in this business/i.test(msg))
+    return 'El empleado no pertenece a este negocio.';
+  if (/required/i.test(msg) && !/negocio|atiende/i.test(msg))
+    return 'Completá todos los campos requeridos.';
+  return msg;
+}
 
 const BookingForm: React.FC<BookingFormProps> = ({
   onSubmit,
@@ -62,56 +78,61 @@ const BookingForm: React.FC<BookingFormProps> = ({
   const [availableEmployees, setAvailableEmployees] = useState<Employee[]>([]);
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string | null>(null);
   const [loadingEmployees, setLoadingEmployees] = useState(false);
-  const [employeeError, setEmployeeError] = useState<string | null>(null);
-  const effectiveBusinessId = role === 'CLIENT' ? selectedBusiness?.id : businessId;
+  const [businesses, setBusinesses] = useState<{ id: string; name: string; services: Service[] }[]>([]);
+
+  const [adminBusinesses, setAdminBusinesses] = useState<{ id: string; name: string }[]>([]);
+  const [adminSelectedBusinessId, setAdminSelectedBusinessId] = useState<string>('');
+
+  const needsAdminBusinessPicker = role === 'ADMIN' && !businessId;
+  const effectiveBusinessId =
+    role === 'CLIENT'      ? selectedBusiness?.id :
+    needsAdminBusinessPicker ? adminSelectedBusinessId || undefined :
+    businessId;
+
   const [bookingData, setBookingData] = useState<CreateBookingData>({
     serviceId: '',
     businessId: '',
-    date: new Date().toISOString().split('T')[0], // Just the date part initially
+    date: new Date().toISOString().split('T')[0],
     timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-    finalPrice: 0
+    finalPrice: 0,
   });
-  const [businesses, setBusinesses] = useState<{ id: string; name: string; services: Service[] }[]>([]);
 
-  // Update bookingData when selectedService changes
   useEffect(() => {
     if (selectedService) {
       setBookingData(prev => ({
         ...prev,
         serviceId: selectedService.id,
         businessId: selectedService.businessId,
-        finalPrice: selectedService.price
+        finalPrice: selectedService.price,
       }));
     }
   }, [selectedService]);
-  // Fetch business info if role is CLIENT
+
   useEffect(() => {
     if (role !== 'CLIENT') return;
-
-    axios.get(`${API_BASE_URL}/business/public`, {
-      withCredentials: true,
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
-    })
-      .then(response => {
-        setBusinesses(response.data);
-      })
-      .catch(error => {
-        console.error('Error fetching business:', error);
-        setError('Failed to fetch business information');
-        setTimeout(() => setError(null), 5000);
-      });
+    apiClient.get('/business/public')
+      .then(res => setBusinesses(res.data))
+      .catch(() => setError('Error al cargar los negocios'));
   }, [role]);
+
+  useEffect(() => {
+    if (!needsAdminBusinessPicker) return;
+    apiClient.get('/business')
+      .then(res => {
+        setAdminBusinesses(res.data);
+        if (res.data.length > 0) setAdminSelectedBusinessId(res.data[0].id);
+      })
+      .catch(() => setError('Error al cargar los negocios'));
+  }, [needsAdminBusinessPicker]);
 
   useEffect(() => {
     if (!effectiveBusinessId || !selectedService || !bookingData.date || !startTime) {
       setAvailableEmployees([]);
       return;
-    };
+    }
     const [year, month, day] = bookingData.date.split('-').map(Number);
     const [hours, minutes] = startTime.split(':').map(Number);
-    const startDateTime = new Date(year, month - 1, day, hours, minutes)
+    const startDateTime = new Date(year, month - 1, day, hours, minutes);
     const endDateTime = new Date(startDateTime.getTime() + selectedService.durationMin * 60000);
 
     setLoadingEmployees(true);
@@ -120,20 +141,11 @@ const BookingForm: React.FC<BookingFormProps> = ({
       date: startDateTime.toISOString(),
       endTime: endDateTime.toISOString(),
     });
-    axios.get(`${API_BASE_URL}/bookings/available-employees?${params}`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      }
+    apiClient.get(`/bookings/available-employees?${params}`, {
+      headers: { Authorization: `Bearer ${token}` },
     })
-      .then(response => {
-        setAvailableEmployees(response.data);
-      })
-      .catch(error => {
-        setAvailableEmployees([]);
-        console.error('Error fetching available employees:', error);
-        setEmployeeError('Failed to fetch available employees');
-        setTimeout(() => setEmployeeError(null), 5000);
-      })
+      .then(res => setAvailableEmployees(res.data))
+      .catch(() => setAvailableEmployees([]))
       .finally(() => setLoadingEmployees(false));
   }, [effectiveBusinessId, selectedService, bookingData.date, startTime, token]);
 
@@ -143,19 +155,18 @@ const BookingForm: React.FC<BookingFormProps> = ({
     setLoading(true);
 
     if (!token) {
-      setError('You must be logged in to create a booking');
+      setError('Debés iniciar sesión para crear una reserva');
       setLoading(false);
       return;
     }
 
     if (!selectedService || !bookingData.date || !startTime) {
-      setError('Please fill in all required fields');
+      setError('Completá todos los campos requeridos');
       setLoading(false);
       return;
     }
 
     try {
-      // Convert the date and time to an ISO string in the correct timezone
       const [year, month, day] = bookingData.date.split('-').map(Number);
       const [hours, minutes] = startTime.split(':').map(Number);
       const dateTime = new Date(year, month - 1, day, hours, minutes);
@@ -166,133 +177,124 @@ const BookingForm: React.FC<BookingFormProps> = ({
         date: dateTime.toISOString(),
         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
         finalPrice: selectedService.price,
-        ...(selectedEmployeeId && { employeeId: selectedEmployeeId})
+        ...(selectedEmployeeId && { employeeId: selectedEmployeeId }),
       };
 
       await onSubmit(submitData);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred while saving the booking');
+      const msg = err instanceof Error ? err.message : 'Error al crear la reserva';
+      setError(translateBookingError(msg));
     } finally {
       setLoading(false);
     }
   };
 
-
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      {/* Business selectior Only CLIENT */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {role === 'CLIENT' && (
-          <div className="col-span-2">
-            <label className="block text-sm font-medium text-gray-700">Select Business</label>
-            <select
-              value={selectedBusiness?.id || ''}
-              onChange={(e) => {
-                const business = businesses.find(b => b.id === e.target.value) || null;
-                setSelectedBusiness(business);
-                setSelectedService(null); // Reset selected service when business changes
-              }}
-              required
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-            >
-              <option value="">-- Seleccionar un negocio --</option>
-              {businesses.map(business => (
-                <option key={business.id} value={business.id}>{business.name}</option>
-              ))}
-            </select>
-          </div>
-        )}
-         {/*SERVICE SELECTOR  */}
-        <div className="col-span-2">
-          {role === 'CLIENT' ? (
-            <>
-              <label className="block text-sm font-medium text-gray-700">Servicio *</label>
-              <select
-                value={selectedService?.id || ''}
-                onChange={(e) => {
-                  const s = selectedBusiness?.services.find(s => s.id === e.target.value) || null;
-                  setSelectedService(s);
-                }}
-                disabled={!selectedBusiness}
-                required
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 disabled:opacity-50"
-              >
-                <option value="">Seleccionar servicio...</option>
-                {selectedBusiness?.services.map(s => (
-                  <option key={s.id} value={s.id}>{s.name} — ${s.price} ({s.durationMin} min)</option>
-                ))}
-              </select>
-            </>
-          ) : (
-            <ServiceSelector
-              businessId={businessId}
-              onServiceSelect={(service) => setSelectedService(service)}
-              selectedServiceId={bookingData.serviceId}
-            />
-          )}
-        </div>
-        {/* Date and time inputs */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700">Date</label>
-          <input
-            type="date"
-            name="date"
-            value={bookingData.date.split('T')[0]} // Extract only the date part from ISO string
-            onChange={(e) => setBookingData(prev => ({ ...prev, date: e.target.value }))}
-            required
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-          />
-        </div>
-        {/* Time input */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700">Start Time</label>
-          <input
-            type="time"
-            value={startTime}
-            onChange={(e) => setStartTime(e.target.value)}
-            required
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-          />
-        </div>
-        
-       
-        {/*Employee selection */}
-        <div className="col-span-2">
-          <label className="block text-sm font-medium text-gray-700">Select Employee (optional)</label>
-          {loadingEmployees ? (
-            <p>Loading available employees...Cargando empleados...</p>
-          ) : employeeError ? (
-            <p className="text-red-600">{employeeError}</p>
-          ) : (
-            <select
-              value={selectedEmployeeId || ''}
-              onChange={(e) => setSelectedEmployeeId(e.target.value || null)}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-              disabled={!selectedService || !startTime || !bookingData.date}
-            >
-              <option value="">Cualquier empleado disponible</option>
-              {availableEmployees.map(emp => (
-                <option key={emp.id} value={emp.id}>{emp.name}</option>
-              ))}
-            </select>
-          )}
-
-        </div>
-      </div>
-      {error && (
-        <div className="text-red-600 text-sm mt-2">{error}</div>
+    <form onSubmit={handleSubmit} className="space-y-4">
+      {/* Business selector — CLIENT only */}
+      {role === 'CLIENT' && (
+        <Select
+          label="Negocio"
+          value={selectedBusiness?.id || ''}
+          onChange={e => {
+            const biz = businesses.find(b => b.id === e.target.value) || null;
+            setSelectedBusiness(biz);
+            setSelectedService(null);
+          }}
+          required
+        >
+          <option value="">Seleccioná un negocio</option>
+          {businesses.map(b => (
+            <option key={b.id} value={b.id}>{b.name}</option>
+          ))}
+        </Select>
       )}
 
-      
-      {/* Employee selection is optional, only show if there are available employees */}
-      <div className="flex justify-end space-x-3">
-        <button
-          type="submit"
-          disabled={loading || !selectedService}
-          className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
+      {/* Admin business picker — only when no businessId prop */}
+      {needsAdminBusinessPicker && (
+        <Select
+          label="Negocio"
+          value={adminSelectedBusinessId}
+          onChange={e => setAdminSelectedBusinessId(e.target.value)}
+          required
         >
-          {loading ? 'Saving...' : isEditing ? 'Update Booking' : 'Create Booking'}
-        </button>
+          <option value="">Seleccioná un negocio</option>
+          {adminBusinesses.map(b => (
+            <option key={b.id} value={b.id}>{b.name}</option>
+          ))}
+        </Select>
+      )}
+
+      {/* Service selector */}
+      {role === 'CLIENT' ? (
+        <Select
+          label="Servicio"
+          value={selectedService?.id || ''}
+          onChange={e => {
+            const s = selectedBusiness?.services.find(sv => sv.id === e.target.value) || null;
+            setSelectedService(s);
+          }}
+          disabled={!selectedBusiness}
+          required
+        >
+          <option value="">Seleccioná un servicio</option>
+          {selectedBusiness?.services.map(s => (
+            <option key={s.id} value={s.id}>
+              {s.name} — ${s.price} ({s.durationMin} min)
+            </option>
+          ))}
+        </Select>
+      ) : (
+        <ServiceSelector
+          businessId={businessId}
+          onServiceSelect={service => setSelectedService(service)}
+          selectedServiceId={bookingData.serviceId}
+        />
+      )}
+
+      {/* Date and time */}
+      <div className="grid grid-cols-2 gap-4">
+        <Input
+          label="Fecha"
+          type="date"
+          value={bookingData.date.split('T')[0]}
+          onChange={e => setBookingData(prev => ({ ...prev, date: e.target.value }))}
+          required
+        />
+        <Input
+          label="Hora de inicio"
+          type="time"
+          value={startTime}
+          onChange={e => setStartTime(e.target.value)}
+          required
+        />
+      </div>
+
+      {/* Employee selector */}
+      <Select
+        label="Empleado (opcional)"
+        value={selectedEmployeeId || ''}
+        onChange={e => setSelectedEmployeeId(e.target.value || null)}
+        disabled={loadingEmployees || !selectedService || !startTime || !bookingData.date}
+        hint={loadingEmployees ? 'Cargando empleados disponibles…' : undefined}
+      >
+        <option value="">Cualquier empleado disponible</option>
+        {availableEmployees.map(emp => (
+          <option key={emp.id} value={emp.id}>{emp.name}</option>
+        ))}
+      </Select>
+
+      {/* Inline error */}
+      {error && (
+        <div className="bg-danger-light border border-danger/30 text-danger-text text-sm px-4 py-3 rounded-lg">
+          {error}
+        </div>
+      )}
+
+      <div className="flex justify-end pt-2">
+        <Button type="submit" loading={loading} disabled={!selectedService}>
+          {isEditing ? 'Actualizar turno' : 'Crear turno'}
+        </Button>
       </div>
     </form>
   );
