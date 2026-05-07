@@ -260,7 +260,16 @@ export class BookingsService {
     }
     if (filters.userId) where.userId = filters.userId;
 
-    return this.prisma.booking.findMany({ where });
+    return this.prisma.booking.findMany({
+      where,
+      include: {
+        service: true,
+        user: { select: { id: true, name: true, email: true } },
+        employee: { select: { id: true, name: true } },
+        business: { select: { id: true, name: true } },
+      },
+      orderBy: { date: 'asc' },
+    });
   }
   async updateStatus(id: string, status: BookingStatus) {
     return this.prisma.booking.update({
