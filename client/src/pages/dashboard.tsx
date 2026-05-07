@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import NavBar from '../components/navBar';
-import axios from 'axios';
-
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+import { apiClient } from '../services/apiClient';
+import StatCard from '../components/ui/StatCard';
+import StatusBadge, { bookingStatusVariant } from '../components/ui/StatusBadge';
 
 interface Booking {
   id: string;
@@ -12,266 +12,142 @@ interface Booking {
   endTime: string;
   status: string;
   finalPrice: number;
-  service: {
-    name: string;
-    durationMin: number;
-  };
-  business: {
-    name: string;
-  };
+  service: { name: string; durationMin: number };
+  business: { name: string };
 }
+
+const TurnosIcon = () => (
+  <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.75" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2v16z" />
+  </svg>
+);
+const PendingIcon = () => (
+  <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.75" viewBox="0 0 24 24">
+    <circle cx="12" cy="12" r="10" /><path strokeLinecap="round" d="M12 6v6l4 2" />
+  </svg>
+);
+const ConfirmedIcon = () => (
+  <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.75" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+  </svg>
+);
+const CancelledIcon = () => (
+  <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.75" viewBox="0 0 24 24">
+    <circle cx="12" cy="12" r="10" /><path strokeLinecap="round" d="M15 9l-6 6M9 9l6 6" />
+  </svg>
+);
 
 const Dashboard: React.FC = () => {
   const { user, token } = useAuth();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [stats, setStats] = useState({
-    total: 0,
-    pending: 0,
-    confirmed: 0,
-    cancelled: 0,
-  });
-
-  useEffect(() => {
-    if (user && token) {
-      fetchBookings();
-    }
-  }, [user, token]);
+  const [stats, setStats] = useState({ total: 0, pending: 0, confirmed: 0, cancelled: 0 });
 
   const fetchBookings = async () => {
+    if (!token) return;
     try {
       setLoading(true);
       setError(null);
-      const response = await axios.get(`${API_BASE_URL}/bookings/my-bookings`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      // Transform backend data to frontend format
-      const transformedBookings = response.data.map((booking: any) => ({
-        ...booking,
-        date: new Date(booking.date).toISOString().split('T')[0],
-        startTime: new Date(booking.date).toTimeString().slice(0, 5),
-        endTime: new Date(booking.endTime).toTimeString().slice(0, 5),
+      const res = await apiClient.get('/bookings/my-bookings');
+      const transformed = res.data.map((b: any) => ({
+        ...b,
+        date:      new Date(b.date).toISOString().split('T')[0],
+        startTime: new Date(b.date).toTimeString().slice(0, 5),
+        endTime:   new Date(b.endTime).toTimeString().slice(0, 5),
       }));
-
-      setBookings(transformedBookings);
-
-      // Calcular estadísticas
-      const stats = {
-        total: transformedBookings.length,
-        pending: transformedBookings.filter((b: Booking) => b.status === 'PENDING').length,
-        confirmed: transformedBookings.filter((b: Booking) => b.status === 'CONFIRMED').length,
-        cancelled: transformedBookings.filter((b: Booking) => b.status === 'CANCELLED').length,
-      };
-      setStats(stats);
+      setBookings(transformed);
+      setStats({
+        total:     transformed.length,
+        pending:   transformed.filter((b: Booking) => b.status === 'PENDING').length,
+        confirmed: transformed.filter((b: Booking) => b.status === 'CONFIRMED').length,
+        cancelled: transformed.filter((b: Booking) => b.status === 'CANCELLED').length,
+      });
     } catch (err: any) {
-      console.error('Error fetching bookings:', err);
-      setError(err.response?.data?.message || 'Error al cargar las reservas. Por favor, intenta de nuevo.');
+      setError(err.response?.data?.message || 'Error al cargar las reservas');
     } finally {
       setLoading(false);
     }
   };
 
-  const getStatusBadge = (status: string) => {
-    const badges = {
-      PENDING: 'bg-yellow-100 text-yellow-800',
-      CONFIRMED: 'bg-green-100 text-green-800',
-      CANCELLED: 'bg-red-100 text-red-800',
-      COMPLETED: 'bg-blue-100 text-blue-800',
-    };
-    return badges[status as keyof typeof badges] || 'bg-gray-100 text-gray-800';
-  };
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('es-AR', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    });
-  };
+  useEffect(() => { fetchBookings(); }, [token]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-blue-100">
-      <NavBar />
-      <div className="container mx-auto px-4 py-8">
-        <div className="bg-white rounded-xl shadow-lg p-8">
-          {/* Header */}
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-800 mb-2">
-              ¡Bienvenido, {user?.name}!
-            </h1>
-            <p className="text-gray-600">
-              Aquí puedes ver y gestionar todas tus reservas
-            </p>
-          </div>
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-xl font-bold text-content">¡Bienvenido, {user?.name}!</h2>
+        <p className="text-sm text-content-3 mt-0.5">Aquí puedes ver y gestionar todas tus reservas</p>
+      </div>
 
-          {/* Estadísticas */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-            <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg p-6 text-white">
-              <div className="text-3xl font-bold">{stats.total}</div>
-              <div className="text-blue-100">Total de Reservas</div>
-            </div>
-            <div className="bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-lg p-6 text-white">
-              <div className="text-3xl font-bold">{stats.pending}</div>
-              <div className="text-yellow-100">Pendientes</div>
-            </div>
-            <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-lg p-6 text-white">
-              <div className="text-3xl font-bold">{stats.confirmed}</div>
-              <div className="text-green-100">Confirmadas</div>
-            </div>
-            <div className="bg-gradient-to-br from-red-500 to-red-600 rounded-lg p-6 text-white">
-              <div className="text-3xl font-bold">{stats.cancelled}</div>
-              <div className="text-red-100">Canceladas</div>
-            </div>
-          </div>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <StatCard label="Total"      value={stats.total}     icon={<TurnosIcon />}   accent="primary" />
+        <StatCard label="Pendientes" value={stats.pending}   icon={<PendingIcon />}  accent="warning" />
+        <StatCard label="Confirmadas" value={stats.confirmed} icon={<ConfirmedIcon />} accent="success" />
+        <StatCard label="Canceladas" value={stats.cancelled} icon={<CancelledIcon />} accent="danger" />
+      </div>
 
-          {/* Lista de Reservas */}
-          <div>
-            <h2 className="text-2xl font-bold text-gray-800 mb-4">
-              Mis Reservas
-            </h2>
-
-            {error && (
-              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4">
-                <div className="flex items-center">
-                  <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                  </svg>
-                  <span>{error}</span>
-                </div>
-                <button
-                  onClick={fetchBookings}
-                  className="mt-2 text-sm underline hover:no-underline"
-                >
-                  Intentar de nuevo
-                </button>
-              </div>
-            )}
-
-            {loading ? (
-              <div className="text-center py-8">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-                <p className="text-gray-600 mt-4">Cargando reservas...</p>
-              </div>
-            ) : bookings.length === 0 ? (
-              <div className="text-center py-12 bg-gray-50 rounded-lg">
-                <svg
-                  className="mx-auto h-12 w-12 text-gray-400"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-                  />
-                </svg>
-                <h3 className="mt-2 text-lg font-medium text-gray-900">
-                  No tienes reservas
-                </h3>
-                <p className="mt-1 text-gray-500">
-                  Comienza creando tu primera reserva
-                </p>
-                <div className="mt-6">
-                  <a
-                    href="/bookings"
-                    className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
-                  >
-                    Crear Reserva
-                  </a>
-                </div>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {bookings.map((booking) => (
-                  <div
-                    key={booking.id}
-                    className="border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow"
-                  >
-                    <div className="flex flex-col md:flex-row md:items-center md:justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
-                          <h3 className="text-lg font-semibold text-gray-800">
-                            {booking.service.name}
-                          </h3>
-                          <span
-                            className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusBadge(
-                              booking.status
-                            )}`}
-                          >
-                            {booking.status}
-                          </span>
-                        </div>
-                        <div className="space-y-1 text-sm text-gray-600">
-                          <p className="flex items-center gap-2">
-                            <svg
-                              className="w-4 h-4"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                              stroke="currentColor"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
-                              />
-                            </svg>
-                            <span className="font-medium">
-                              {booking.business.name}
-                            </span>
-                          </p>
-                          <p className="flex items-center gap-2">
-                            <svg
-                              className="w-4 h-4"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                              stroke="currentColor"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-                              />
-                            </svg>
-                            {formatDate(booking.date)}
-                          </p>
-                          <p className="flex items-center gap-2">
-                            <svg
-                              className="w-4 h-4"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                              stroke="currentColor"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                              />
-                            </svg>
-                            {booking.startTime} - {booking.endTime} (
-                            {booking.service.durationMin} min)
-                          </p>
-                        </div>
-                      </div>
-                      <div className="mt-4 md:mt-0 md:ml-6 text-right">
-                        <div className="text-2xl font-bold text-blue-600">
-                          ${booking.finalPrice.toLocaleString()}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+      <div className="bg-surface rounded-xl shadow-card border border-border p-5">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-base font-semibold text-content">Mis Reservas</h3>
+          <Link
+            to="/bookings"
+            className="text-sm font-medium text-primary hover:text-primary-hover transition-colors"
+          >
+            Nueva reserva →
+          </Link>
         </div>
+
+        {error && (
+          <div className="bg-danger-light border border-danger/30 text-danger-text px-4 py-3 rounded-lg text-sm mb-4 flex items-center justify-between">
+            <span>{error}</span>
+            <button onClick={fetchBookings} className="underline ml-2">Reintentar</button>
+          </div>
+        )}
+
+        {loading ? (
+          <div className="flex items-center justify-center py-12 text-content-3 text-sm gap-2">
+            <svg className="animate-spin-slow w-5 h-5" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+            </svg>
+            Cargando reservas…
+          </div>
+        ) : bookings.length === 0 ? (
+          <div className="text-center py-12">
+            <svg className="mx-auto w-12 h-12 text-content-3 mb-3" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
+              <rect x="3" y="4" width="18" height="18" rx="2" /><path strokeLinecap="round" d="M16 2v4M8 2v4M3 10h18" />
+            </svg>
+            <p className="text-content-2 font-medium">No tienes reservas</p>
+            <p className="text-sm text-content-3 mt-1">Crea tu primera reserva para comenzar</p>
+            <Link
+              to="/bookings"
+              className="inline-flex mt-4 px-4 py-2 bg-primary text-content-inverse rounded-lg text-sm font-medium hover:bg-primary-hover transition-colors"
+            >
+              Crear reserva
+            </Link>
+          </div>
+        ) : (
+          <div className="divide-y divide-border">
+            {bookings.map(b => (
+              <div key={b.id} className="py-4 flex items-start justify-between gap-4">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap mb-1">
+                    <span className="font-semibold text-content text-sm">{b.service.name}</span>
+                    <StatusBadge label={b.status} variant={bookingStatusVariant(b.status)} />
+                  </div>
+                  <p className="text-xs text-content-3">{b.business.name}</p>
+                  <p className="text-xs text-content-3 mt-0.5">
+                    {new Date(b.date).toLocaleDateString('es-AR', { weekday: 'short', day: 'numeric', month: 'short' })}
+                    {' · '}{b.startTime} – {b.endTime} ({b.service.durationMin} min)
+                  </p>
+                </div>
+                <div className="text-base font-bold text-content shrink-0">
+                  ${b.finalPrice.toLocaleString('es-AR')}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
