@@ -1,0 +1,122 @@
+# Changelog
+
+All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
+
+## 0.1.0 (2026-04-28)
+
+
+### ⚠ BREAKING CHANGES
+
+* **users:** findAll no longer returns all users globally. delete and
+update return 404 if the target user is not in the caller is business.
+* **schedules:** findAll, delete, and update now require authenticated
+admin ownership of the target business. Unauthenticated or cross-business
+requests return 403.
+* **services:** DELETE and PUT routes changed from /:id to /:businessId/:id.
+findAll response shape changed to BusinessWithServices[]. CLIENT role no
+longer has access to findAll or findById
+
+### Features
+
+* add CLIENT and EMPLOYEE dashboards with routing and documentation ([2fe87e7](https://github.com/NahuelArg/shift-management/commit/2fe87e717722bb6a123ba8ed086bb66cfdbebb7c))
+* add COMPLETED status to BookingStatus enum ([968fb17](https://github.com/NahuelArg/shift-management/commit/968fb175695fd45ea01533a41d51f3a67d0f3bd7))
+* add employee role support for dashboard navigation and update login service ([f90ba9f](https://github.com/NahuelArg/shift-management/commit/f90ba9fa43b5383cd16d2d5f4b7ee867b1a5abc3))
+* add initial database migration with user, business, service, and booking tables ([7e8848c](https://github.com/NahuelArg/shift-management/commit/7e8848c047133c07aecda536365d4a3d57f07f49))
+* add UpdateEmployeeDto and fix employee endpoints ([53ba53e](https://github.com/NahuelArg/shift-management/commit/53ba53eca4262257690bfd1e576122d4d0063519))
+* add Vercel configuration file for deployment setup ([62e5a7f](https://github.com/NahuelArg/shift-management/commit/62e5a7f19f70bdbc1842ffc2be822cd93355eb8d))
+* **business:** implement full CRUD with ownership validation ([4316d48](https://github.com/NahuelArg/shift-management/commit/4316d488e0094f72f0a46506e16fb9c02c3e418c))
+* **client:** implement business management interface ([1cb5bb3](https://github.com/NahuelArg/shift-management/commit/1cb5bb39dd01c61f8c6659326480d68f6bb27a51))
+* implement booking creation in employee dashboard ([3b9f0cf](https://github.com/NahuelArg/shift-management/commit/3b9f0cfdadb9acc8466a9f7bcc4d1777785d48e5))
+* implement role-based booking endpoints and fix dashboards ([4b6f3b6](https://github.com/NahuelArg/shift-management/commit/4b6f3b6ad67f18851277212f439c5574f6abb03b))
+* migrate database from MySQL to PostgreSQL ([067aebe](https://github.com/NahuelArg/shift-management/commit/067aebe2be4d62626466ef48599e233f93dce5e0))
+* migrate from MySQL to PostgreSQL with Supabase integration (#X) ([14bd64c](https://github.com/NahuelArg/shift-management/commit/14bd64cfe9c51c36dad333d626c49155594f26c0))
+* **prisma:** add directUrl for Supabase connection pooling ([6077121](https://github.com/NahuelArg/shift-management/commit/607712150da2e8f1211a08d705bdc785ca5ed574))
+* redesign client bookings page with creation form and booking list ([e47c5b9](https://github.com/NahuelArg/shift-management/commit/e47c5b9dba2e7c7b8dac252baab20e173c5d3730))
+* refactor API URL usage across components and services ([11a890b](https://github.com/NahuelArg/shift-management/commit/11a890b33deb8b56734f967165e5d9912a0ee633))
+* **schedules:** scope CRUD to owner and add GET /:id endpoint ([d7c96f0](https://github.com/NahuelArg/shift-management/commit/d7c96f04227a6fbcae5d97a7622078b167757e49))
+* **services, schedules:** align with new auth patterns and CRUD structure ([91289c1](https://github.com/NahuelArg/shift-management/commit/91289c1c02dbcf747554a3b80f769569231c82d0))
+* **services:** scope CRUD to owner and add businessId to routes ([af1b3cd](https://github.com/NahuelArg/shift-management/commit/af1b3cdc2243275b0bbb4c7e8b6a468f030ceb27))
+* transform booking data format in dashboard and employee dashboard, update sorting in bookings service, and omit password in user search responses ([bfcb8b7](https://github.com/NahuelArg/shift-management/commit/bfcb8b782cfce167a54a5c00c358a0d4e7870b10))
+* update API base URL to use environment variable ([5b2aae5](https://github.com/NahuelArg/shift-management/commit/5b2aae5e495e64fe6c411439fe7f46df298e45db))
+* update API configuration for production and development environments ([9b0a3da](https://github.com/NahuelArg/shift-management/commit/9b0a3da91c2645e994f6241c229550b55e932365))
+* **users, admin:** implement user management with CRUD operations ([7a6772a](https://github.com/NahuelArg/shift-management/commit/7a6772a37d5eb91b861ace8208f6f719ed54d55d))
+* **users:** scope user listing and management to business owner ([5c35e40](https://github.com/NahuelArg/shift-management/commit/5c35e401e8cd3cc76bc5bc5a419cc733e6e569cc))
+* **utils:** add toMinutes string-to-minutes converter ([ce199c3](https://github.com/NahuelArg/shift-management/commit/ce199c396d0b1e54ca052362cb7af5e8df207879))
+
+
+### Bug Fixes
+
+* add build command and output directory to Vercel configuration ([fc07414](https://github.com/NahuelArg/shift-management/commit/fc0741457c7ddd245895f1dfdc43db5c0a9768b5))
+* add dayOfWeek and businessId to schedule update and DTOs ([ca26d16](https://github.com/NahuelArg/shift-management/commit/ca26d16f4fe02ff947eb9f9c12358932a6ef950c))
+* **admin:** add error handling to fetchMetrics [B-1] ([98d5565](https://github.com/NahuelArg/shift-management/commit/98d5565e24e04cd5ac29e65d69fd2b127d9bf600))
+* **admin:** move setTimeout out of JSX into useEffect [M-2] ([0bde60b](https://github.com/NahuelArg/shift-management/commit/0bde60b03b8eeda76e2d447b2c2db58d501694a9))
+* **admin:** remove dead duplicate groupBy validation in getAllMetrics() ([052fe49](https://github.com/NahuelArg/shift-management/commit/052fe49e1cf3e8c60620b350db8a77f9eb930555)), closes [#142](https://github.com/NahuelArg/shift-management/issues/142)
+* **admin:** replace invalid JS comments with JSX comments inside return [M-3] ([4871dd8](https://github.com/NahuelArg/shift-management/commit/4871dd87d59f26cf1e7e9bc8063a927383cab70c))
+* **admin:** replace local Role/AuthProvider enums with Prisma-generated ones ([6cef148](https://github.com/NahuelArg/shift-management/commit/6cef148e96a952e5c31df6524d03a901f511b892))
+* **admin:** show error to user in fetchEmployees instead of console.error [B-2] ([857c569](https://github.com/NahuelArg/shift-management/commit/857c5698f6b0c82e7ef90643bee7c96a1ff99222))
+* **admin:** simplify createAdmin and add return statement ([b2bda95](https://github.com/NahuelArg/shift-management/commit/b2bda95263f0e70f9cc2b98f95e444504f55d706)), closes [#6](https://github.com/NahuelArg/shift-management/issues/6) [#5](https://github.com/NahuelArg/shift-management/issues/5) [#6](https://github.com/NahuelArg/shift-management/issues/6)
+* **auth:** add validation for null password in OAuth users (Bug [#11](https://github.com/NahuelArg/shift-management/issues/11)) ([a05537d](https://github.com/NahuelArg/shift-management/commit/a05537d2016a96ec9013affaf3755ebb33dc1e88))
+* **auth:** fix JWT_SECRET typo, hardcoded OAuth URL and type payload ([0495660](https://github.com/NahuelArg/shift-management/commit/0495660a4a524fc0e25aef659355c534e19cf6eb)), closes [#129](https://github.com/NahuelArg/shift-management/issues/129) [#131](https://github.com/NahuelArg/shift-management/issues/131) [#134](https://github.com/NahuelArg/shift-management/issues/134)
+* **auth:** remove hardcoded password null from user mapping and update example ([b2f7bc2](https://github.com/NahuelArg/shift-management/commit/b2f7bc20657aaa4362e189d3b1858d4ef49d81c6))
+* **auth:** use correct exception types and add unit tests [L-1] ([42ea98b](https://github.com/NahuelArg/shift-management/commit/42ea98b8e84abb31a03582fb89c263a341bd7d9f))
+* **bookings:** compare schedule times as minutes instead of strings [A-4] ([5bf34c9](https://github.com/NahuelArg/shift-management/commit/5bf34c9c11d7750ee37091697d1c72aa0cac93d9))
+* **bookings:** handle only P2025 as NotFoundException in updateBooking [A-5] ([35ba16a](https://github.com/NahuelArg/shift-management/commit/35ba16a4af3fbea7576ec63728f4807e7c3c561f))
+* **bookings:** implement employee-based conflict validation (Bug [#8](https://github.com/NahuelArg/shift-management/issues/8)) ([0b478fd](https://github.com/NahuelArg/shift-management/commit/0b478fd07401ec24c61da5684d1ad4e14eec0ba6))
+* **bookings:** remove TODO comment about making timezone required in DTO ([fbb9edb](https://github.com/NahuelArg/shift-management/commit/fbb9edb4d45ce14edfd5f70a634dccb694b989fe))
+* **bookings:** rename remove to delete and tighten ownership checks ([6f8aa27](https://github.com/NahuelArg/shift-management/commit/6f8aa27997d5e3275f27622219255b7916ad21e4))
+* **bookings:** replace invalid España/Madrid timezone with valid values [M-1] ([179c95a](https://github.com/NahuelArg/shift-management/commit/179c95a802ab9a7394660a2d83a88428da57410f))
+* **bookings:** validate endTime within business hours and fix timezone handling ([2d19516](https://github.com/NahuelArg/shift-management/commit/2d19516a0e43b6a75c4b79325926e2b60704ead4)), closes [#7](https://github.com/NahuelArg/shift-management/issues/7) [#7](https://github.com/NahuelArg/shift-management/issues/7)
+* **bookings:** validate service durationMin before use ([b6bad4c](https://github.com/NahuelArg/shift-management/commit/b6bad4ce100ef169630174b6e4d21945cfb1cdfb)), closes [#4](https://github.com/NahuelArg/shift-management/issues/4)
+* **business:** add missing await on create ([f13c62b](https://github.com/NahuelArg/shift-management/commit/f13c62b91707cf257a3cff1154b9a91da8f97285))
+* **business:** correct try-catch syntax in update method ([154e25f](https://github.com/NahuelArg/shift-management/commit/154e25fbc671334d528712b065673e97252bc4ed)), closes [#1](https://github.com/NahuelArg/shift-management/issues/1) [#1](https://github.com/NahuelArg/shift-management/issues/1)
+* **client:** remove manual localStorage reads in bookingService ([dc29c78](https://github.com/NahuelArg/shift-management/commit/dc29c782c201ad399c9462cc9f04675c6b04756a)), closes [#144](https://github.com/NahuelArg/shift-management/issues/144)
+* correct date/time handling between frontend and backend ([3739dca](https://github.com/NahuelArg/shift-management/commit/3739dca25c6c6e0ab2bac83b68594a530314410d))
+* correct production start script path in package.json ([fdc9ac2](https://github.com/NahuelArg/shift-management/commit/fdc9ac23b6cad2547d1c227ed916f5185494de01))
+* correct timezone handling and add businessId validation in booking creation ([e42e6e8](https://github.com/NahuelArg/shift-management/commit/e42e6e87a6d1f3ca9ac180f9104938fe4748d529))
+* **cors:** remove duplicate enableCors() call in main.ts ([93ecd70](https://github.com/NahuelArg/shift-management/commit/93ecd70e1270e5f44278792fd5c3f3350e920606)), closes [#130](https://github.com/NahuelArg/shift-management/issues/130)
+* **db:** add missing indexes on Booking.userId and Service.businessId ([7180417](https://github.com/NahuelArg/shift-management/commit/7180417c53cf308fdf622a4d3fe153990c94d1eb)), closes [#138](https://github.com/NahuelArg/shift-management/issues/138)
+* **dependencies:** remove date-fns-tz, fix absolute imports across server, install mapped-types [B-4] ([3b1621e](https://github.com/NahuelArg/shift-management/commit/3b1621ed6c412c00dda920cf142166696744746f))
+* include businessId in schedule update DTO and adjust UpdateScheduleDto structure ([d0d836d](https://github.com/NahuelArg/shift-management/commit/d0d836df811b23d0eba6c9f000ec2a567e5d4eff))
+* **jwt:** remove token field from JWT validate() return payload ([7cbc53d](https://github.com/NahuelArg/shift-management/commit/7cbc53d4b8565213a6c00d04ee462d03eae410fe))
+* **performance:** add composite index on Schedule (businessId, dayOfWeek) [B-6] ([c37d054](https://github.com/NahuelArg/shift-management/commit/c37d054125e8bd9a8403d9cfbd51fd469b239965))
+* **performance:** resolve N+1 query in findAvailableEmployee [A-1] ([76ec7fa](https://github.com/NahuelArg/shift-management/commit/76ec7fafbffc00994d2f8b1543acbf14cc9b5b74))
+* **prisma:** remove incorrect default from Booking.endTime ([975cc4b](https://github.com/NahuelArg/shift-management/commit/975cc4b75b1afc54d96388750de184d7ca5ba70e)), closes [#3](https://github.com/NahuelArg/shift-management/issues/3)
+* **quality:** remove duplicate AuthService and JwtService from AppModule providers [M-7] ([6dc3dba](https://github.com/NahuelArg/shift-management/commit/6dc3dba29b37adb8e557397dd75c33503d0107aa))
+* **quality:** remove duplicate PrismaService injection in BookingsService [A-2] ([f74c4f8](https://github.com/NahuelArg/shift-management/commit/f74c4f8d586ebc5c0b244d4b85a1ca47e2b5d2db))
+* remove businessId from schedule update DTO ([4602bf9](https://github.com/NahuelArg/shift-management/commit/4602bf934fa85b0a0e346a2a5e0673c45b5fc924))
+* remove businessId from update schedule DTO ([60754e7](https://github.com/NahuelArg/shift-management/commit/60754e7a07d9ca7112010ef611282e32e3fc0d6f))
+* remove debug log for token in createBooking function ([e78f979](https://github.com/NahuelArg/shift-management/commit/e78f9795879aee483e926dab7cb14f2691e8c9af))
+* remove password from user search results type ([3aa5df1](https://github.com/NahuelArg/shift-management/commit/3aa5df1000681c8fe9d449d9de67aacf57240da0))
+* remove unnecessary builds configuration from Vercel setup ([a33b513](https://github.com/NahuelArg/shift-management/commit/a33b513f6ee65d182dc6dd8b87523f6f36ead89f))
+* remove unnecessary space in API request parameters ([f8a980e](https://github.com/NahuelArg/shift-management/commit/f8a980e8d5754949c1dda25a60dce7ac209c3acc))
+* remove unused AuthProvider import from admin page ([757dfbc](https://github.com/NahuelArg/shift-management/commit/757dfbc28d58362679567bfa2b5a49ea880ce87a))
+* remove unused authProvider parameter from employee fetch request ([4665e42](https://github.com/NahuelArg/shift-management/commit/4665e421f86ac23c1b5a9e88d250c74061daf333))
+* remove unused GET /all endpoint from bookings controller ([10d10f4](https://github.com/NahuelArg/shift-management/commit/10d10f4cead0c07e72ad70febdbf7b4b7f8c2a1c))
+* remove unused notes state and property from BookingData interface ([e428d14](https://github.com/NahuelArg/shift-management/commit/e428d14d6eccf55e8d3c856083dde501d055a2e5))
+* rename duration to durationMin in service and business forms ([d4cc7b1](https://github.com/NahuelArg/shift-management/commit/d4cc7b1b42842810e8697cceb43e9318a6c9ed04))
+* replace startTime with date in Booking interface and display ([a7c9389](https://github.com/NahuelArg/shift-management/commit/a7c9389b276a04f9e45f3aee2c9c5118f53cdabc))
+* resolve 8 critical bugs in admin page and configure CORS for development ([0607abf](https://github.com/NahuelArg/shift-management/commit/0607abf8ed09fbb3c0cc5927c6441973c6cbbebc))
+* resolve all 8 bugs in users page and simplify CORS configuration ([3476974](https://github.com/NahuelArg/shift-management/commit/347697459649f010d3ee08603648ddc2c3a1d2e7))
+* resolve TypeScript compilation errors ([0ba2abe](https://github.com/NahuelArg/shift-management/commit/0ba2abe1e7c71314514015fb3763066b6ab83d49))
+* **schedules:** return empty array instead of 404 when no schedules found [M-4] ([6964796](https://github.com/NahuelArg/shift-management/commit/6964796095a86bf68ece5eb281d9123c92f72c24))
+* **security:** add Helmet.js and rate limiting ([dbf0e13](https://github.com/NahuelArg/shift-management/commit/dbf0e135ba0665759d536b9d9b6d106ebf3a6960)), closes [#132](https://github.com/NahuelArg/shift-management/issues/132) [#133](https://github.com/NahuelArg/shift-management/issues/133)
+* **security:** add RolesGuard to admin employee endpoints [C-2] ([57e6ac3](https://github.com/NahuelArg/shift-management/commit/57e6ac3c8493457ccd202290faf173e512a8c777))
+* **security:** fail fast when JWT_SECRET is undefinded[C-4] ([1094290](https://github.com/NahuelArg/shift-management/commit/10942901f7e046280512e998d15fd0e76d48760f))
+* **security:** prevent seed from running in production [C-5] ([cdc714e](https://github.com/NahuelArg/shift-management/commit/cdc714ecf9ee56bd658a5ef316e9c6373dcf3c58))
+* **security:** remove password field from LoginResponse interface [M-6] ([18459e0](https://github.com/NahuelArg/shift-management/commit/18459e06d60e4d150c8cb4a3e7b72606e0c342f9))
+* **security:** require auth on DELETE /users/:id [C-1] ([207c9cf](https://github.com/NahuelArg/shift-management/commit/207c9cf0b2d7d608282b3ca66c5ae6d860a82ffb))
+* **security:** resctric CORS to ALLOWED_ORIGINS en var [C-3] ([b0c8d66](https://github.com/NahuelArg/shift-management/commit/b0c8d66e8a5a805e9fe70baf9a8054f3a66bc48e))
+* **security:** restrict schedule creation, update and deletion to ADMIN role [M-8] ([483ba56](https://github.com/NahuelArg/shift-management/commit/483ba56bf31f532ce09731f3f2e38383b2b3728f))
+* **security:** validate JWT expiration on app init in AuthContext [A-6] ([94636ea](https://github.com/NahuelArg/shift-management/commit/94636eaf7a075f62a95776112533aa6173b5c5a8))
+* send browser timezone on booking creation and format dates in admin metrics ([0f16eb0](https://github.com/NahuelArg/shift-management/commit/0f16eb0640a0679dd466f8b893524a317b8c67bf))
+* **tsconfig:** remove baseUrl and add paths configuration ([e90177b](https://github.com/NahuelArg/shift-management/commit/e90177b344389f97ff65ecbb4a87654ec13c9310))
+* update CORS origin to use ALLOWED_ORIGINS environment variable ([9092915](https://github.com/NahuelArg/shift-management/commit/90929158ecc42b601c9919ff237e4b33a9d4810a))
+* update Vercel configuration to use rewrites instead of routes ([4dc80d5](https://github.com/NahuelArg/shift-management/commit/4dc80d51c813d9ec1e230baa01d9aa2de93e948f))
+* use date field instead of startTime for client booking display ([b535859](https://github.com/NahuelArg/shift-management/commit/b535859ca6b0cd963eea5062568ccf2d130a5536))
+* use date field instead of startTime for client booking display ([0a768c4](https://github.com/NahuelArg/shift-management/commit/0a768c464c9a95b4e809d6b214dcb6a2bf1e9872))
+* use path param to filter services by business in ServiceSelecto ([c16edcb](https://github.com/NahuelArg/shift-management/commit/c16edcb272a25704e21e36028049830ddd9b06b4))
+* **users:** add email duplicate check, password hashing and omit password from response ([ce748bb](https://github.com/NahuelArg/shift-management/commit/ce748bb7b3476c3e3a6fa0b7af8463114ed49a39))
+* **users:** change phone number validation from number to string in CreateUserDto ([4a75518](https://github.com/NahuelArg/shift-management/commit/4a75518685d0701b74211a45e6dd4759b2b5691e))
+* **users:** correct formatting in createUser method for consistency ([ccc44a7](https://github.com/NahuelArg/shift-management/commit/ccc44a7ff8466cac467877f9dc066e8039b4bf24))
+* **utils:** convert only bigint to string, not all numbers [A-3] ([a1a73b4](https://github.com/NahuelArg/shift-management/commit/a1a73b4b3c5a02f825c93e00eccdee04ccbfa375))
+* UX improvements - nav link, auto-dismiss, scroll, date format, schedule validation ([e27ef63](https://github.com/NahuelArg/shift-management/commit/e27ef638e460b89ba7e5a6b86ca74bbfbdd08937))

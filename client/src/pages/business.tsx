@@ -1,488 +1,253 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   businessService,
   serviceService,
   type Business,
   type Service,
   type CreateBusinessDto,
-  type UpdateBusinessDto,
 } from '../services/businessService';
-import {useAuth} from  '../context/AuthContext';
-import NavBar from '../components/navBar';
+import { useAuth } from '../context/AuthContext';
+import Modal from '../components/ui/Modal';
+import Button from '../components/ui/Button';
+import Input from '../components/ui/Input';
+import { useToast } from '../components/ui/Toast';
 
-
+const PlusIcon = () => (
+  <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M12 5v14m-7-7h14" />
+  </svg>
+);
+const EditIcon = () => (
+  <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+  </svg>
+);
+const TrashIcon = () => (
+  <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+  </svg>
+);
+const EyeIcon = () => (
+  <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" />
+  </svg>
+);
 
 const BusinessPage: React.FC = () => {
   const { user } = useAuth();
-  // Estado: Negocios
+  const { toast } = useToast();
+
   const [businesses, setBusinesses] = useState<Business[]>([]);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
-
-  // Estado: Formulario de negocio
-  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [showModal, setShowModal] = useState(false);
   const [editingBusiness, setEditingBusiness] = useState<Business | null>(null);
-  const [formData, setFormData] = useState<CreateBusinessDto>({
-    name: '',
-    ownerId: user?.id || '',
-  });
+  const [formData, setFormData] = useState<CreateBusinessDto>({ name: '', ownerId: user?.id || '' });
+  const [submitting, setSubmitting] = useState(false);
 
-
-  // Estado: Servicios
-  const [selectedBusinessServices, setSelectedBusinessServices] = useState<Service[]>([]);
   const [showServicesModal, setShowServicesModal] = useState(false);
-  const [selectedBusinessForServices, setSelectedBusinessForServices] = useState<Business | null>(null);
+  const [selectedBusiness, setSelectedBusiness] = useState<Business | null>(null);
+  const [businessServices, setBusinessServices] = useState<Service[]>([]);
   const [showServiceForm, setShowServiceForm] = useState(false);
-  const [serviceFormData, setServiceFormData] = useState({
-    name: '',
-    description: '',
-    price: '',
-    durationMin: '',
-  });
-   const formRef = useRef<HTMLFormElement>(null);
+  const [serviceForm, setServiceForm] = useState({ name: '', description: '', price: '', durationMin: '' });
+  const [serviceSubmitting, setServiceSubmitting] = useState(false);
 
-  // Cargar negocios al montar
   useEffect(() => {
-    fetchBusinesses();
+    setFormData(prev => ({ ...prev, ownerId: user?.id || '' }));
   }, [user?.id]);
 
-  // Actualizar ownerId cuando el usuario cambia
-useEffect(() => {
-  setFormData(prev => ({
-    ...prev,
-    ownerId: user?.id || '',
-  }));
-}, [user?.id]);
-
-  // ===== NEGOCIOS =====
+  useEffect(() => { fetchBusinesses(); }, [user?.id]);
 
   const fetchBusinesses = async () => {
     setLoading(true);
-    setTimeout(() => setError(null), 5000);
+    try { setBusinesses(await businessService.getAll()); }
+    catch (err: any) { toast(err.response?.data?.message || 'Error al cargar negocios', 'error'); }
+    finally { setLoading(false); }
+  };
+
+  const openCreate = () => {
+    setEditingBusiness(null);
+    setFormData({ name: '', ownerId: user?.id || '' });
+    setShowModal(true);
+  };
+
+  const openEdit = (b: Business) => {
+    setEditingBusiness(b);
+    setFormData({ name: b.name, ownerId: b.ownerId });
+    setShowModal(true);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formData.name.trim()) { toast('El nombre es obligatorio', 'error'); return; }
+    setSubmitting(true);
     try {
-      const data = await businessService.getAll();
-      setBusinesses(data);
+      if (editingBusiness) {
+        await businessService.update(editingBusiness.id, { name: formData.name });
+        toast('Negocio actualizado', 'success');
+      } else {
+        await businessService.create(formData);
+        toast('Negocio creado', 'success');
+      }
+      setShowModal(false);
+      fetchBusinesses();
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Error al cargar negocios');
-      setTimeout(() => setError(null), 5000);
+      toast(err.response?.data?.message || 'Error al guardar', 'error');
     } finally {
-      setLoading(false);
+      setSubmitting(false);
     }
   };
 
-  const handleCreateBusiness = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!formData.ownerId) {
-    setError('Debes seleccionar un propietario');
-    setTimeout(() => setError(null), 5000);
-    return;
-  }
-  if (!formData.name.trim()) {
-    setError('El nombre del negocio es obligatorio');
-    setTimeout(() => setError(null), 5000);
-    return;
-  }
-
-    try {
-      await businessService.create(formData);
-      setSuccess('Negocio creado exitosamente');
-          setTimeout(() => setSuccess(null), 5000);
-
-      setShowCreateForm(false);
-      setFormData({ name: '', ownerId: user?.id || '' });
-      fetchBusinesses();
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Error al crear negocio');
-          setTimeout(() => setError(null), 5000);
-
-    }
-  };
-
-  const handleUpdateBusiness = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-   if (!editingBusiness) {
-    setError('No hay negocio en edición');
-    setTimeout(() => setError(null), 5000);
-    return;
-  }
-  if (!formData.name.trim()) {
-    setError('El nombre del negocio es obligatorio');
-    setTimeout(() => setError(null), 5000);
-    return;
-  }
-    setError(null);
-    setSuccess(null);
-
-    try {
-      const updateData: UpdateBusinessDto = {
-        name: formData.name,
-      };
-      await businessService.update(editingBusiness.id, updateData);
-      setSuccess('Negocio actualizado exitosamente');
-      setEditingBusiness(null);
-      setFormData({ name: '', ownerId: user?.id || '' });
-      fetchBusinesses();
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Error al actualizar negocio');
-      setTimeout(() => setError(null), 5000);
-    }
-  };
-
-  const handleDeleteBusiness = async (id: string) => {
-    if (!window.confirm('¿Estás seguro de que deseas eliminar este negocio?')) return;
-
-    setError(null);
-    setSuccess(null);
-    setTimeout(() => setSuccess(null), 5000);
-    setTimeout(() => setError(null), 5000);
-
+  const handleDelete = async (id: string) => {
+    if (!window.confirm('¿Eliminar este negocio? Se eliminarán todos sus datos.')) return;
     try {
       await businessService.delete(id);
-      setSuccess('Negocio eliminado exitosamente');
-        setTimeout(() => setSuccess(null), 5000);
-      fetchBusinesses();
+      setBusinesses(prev => prev.filter(b => b.id !== id));
+      toast('Negocio eliminado', 'success');
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Error al eliminar negocio');
-      setTimeout(() => setError(null), 5000);
+      toast(err.response?.data?.message || 'Error al eliminar', 'error');
     }
   };
 
-  const handleEditBusiness = (business: Business) => {
-    setEditingBusiness(business);
-    setFormData({
-      name: business.name,
-      ownerId: business.ownerId,
-    });
-    setShowCreateForm(false);
-    setTimeout(()=>{
-      formRef.current?.scrollIntoView({ behavior: 'smooth' });
-    },0)
-    
-  };
-
-  const handleCancelEdit = () => {
-    setEditingBusiness(null);
-    setShowCreateForm(false);
-    setFormData({ name: '', ownerId: user?.id || '' });
-  };
-
-  // ===== SERVICIOS =====
-
-  const fetchServices = async (businessId: string) => {
-    try {
-      const services = await serviceService.getByBusinessId(businessId);
-      setSelectedBusinessServices(services);
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Error al cargar servicios');
-      setTimeout(() => setError(null), 5000);
-    }
-  };
-
-  const handleViewServices = (business: Business) => {
-    setSelectedBusinessForServices(business);
+  const openServices = async (b: Business) => {
+    setSelectedBusiness(b);
     setShowServicesModal(true);
-    fetchServices(business.id);
+    setShowServiceForm(false);
+    try { setBusinessServices(await serviceService.getByBusinessId(b.id)); }
+    catch { toast('Error al cargar servicios', 'error'); }
   };
 
   const handleCreateService = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedBusinessForServices) return;
-
-    setError(null);
-    setSuccess(null);
-    setTimeout(() => setError(null), 5000);
-    setTimeout(() => setSuccess(null), 5000);
+    if (!selectedBusiness) return;
+    setServiceSubmitting(true);
     try {
       await serviceService.create({
-        name: serviceFormData.name,
-        description: serviceFormData.description || undefined,
-        price: serviceFormData.price ? parseFloat(serviceFormData.price) : undefined,
-        durationMin: serviceFormData.durationMin ? parseInt(serviceFormData.durationMin) : undefined,
-        businessId: selectedBusinessForServices.id,
+        name: serviceForm.name,
+        description: serviceForm.description || undefined,
+        price: serviceForm.price ? parseFloat(serviceForm.price) : undefined,
+        durationMin: serviceForm.durationMin ? parseInt(serviceForm.durationMin) : undefined,
+        businessId: selectedBusiness.id,
       });
-
-      setSuccess('Servicio creado exitosamente');
-        setTimeout(() => setSuccess(null), 5000);
-      setServiceFormData({ name: '', description: '', price: '', durationMin: '' });
+      toast('Servicio creado', 'success');
+      setServiceForm({ name: '', description: '', price: '', durationMin: '' });
       setShowServiceForm(false);
-      
-      // Recarga servicios
-      fetchServices(selectedBusinessForServices.id);
+      setBusinessServices(await serviceService.getByBusinessId(selectedBusiness.id));
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Error al crear servicio');
-      setTimeout(() => setError(null), 5000);
+      toast(err.response?.data?.message || 'Error al crear servicio', 'error');
+    } finally {
+      setServiceSubmitting(false);
     }
   };
 
   const handleDeleteService = async (serviceId: string) => {
-    if (!window.confirm('¿Estás seguro de que deseas eliminar este servicio?')) return;
-
-    setError(null);
-    setSuccess(null);
-    setTimeout(() => setError(null), 5000);
-    setTimeout(() => setSuccess(null), 5000);
-
+    if (!window.confirm('¿Eliminar este servicio?')) return;
     try {
       await serviceService.delete(serviceId);
-      setSuccess('Servicio eliminado exitosamente');
-      setTimeout(() => setSuccess(null), 5000);
-      
-      if (selectedBusinessForServices) {
-        fetchServices(selectedBusinessForServices.id);
-      }
+      setBusinessServices(prev => prev.filter(s => s.id !== serviceId));
+      toast('Servicio eliminado', 'success');
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Error al eliminar servicio');
-      setTimeout(() => setError(null), 5000);
+      toast(err.response?.data?.message || 'Error al eliminar', 'error');
     }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-orange-50 to-orange-100">
-      <NavBar />
-      <div className="container mx-auto px-4 py-8">
-        <div className="bg-white rounded-xl shadow-lg p-8">
-          <h1 className="text-3xl font-bold text-gray-800 mb-6">Gestión de Negocios</h1>
+    <div className="space-y-6">
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <div>
+          <h2 className="text-xl font-bold text-content">Negocios</h2>
+          <p className="text-sm text-content-3 mt-0.5">Administrá tus negocios y sus servicios</p>
+        </div>
+        <Button leftIcon={<PlusIcon />} onClick={openCreate}>Nuevo negocio</Button>
+      </div>
 
-          {error && (
-            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-              {error}
-            </div>
-          )}
+      <div className="bg-surface rounded-xl shadow-card border border-border overflow-hidden">
+        {loading ? (
+          <div className="flex items-center justify-center py-12 text-content-3 text-sm">Cargando…</div>
+        ) : businesses.length === 0 ? (
+          <div className="text-center py-12">
+            <p className="text-content-2 font-medium">No hay negocios</p>
+            <p className="text-sm text-content-3 mt-1">Creá tu primer negocio para comenzar</p>
+            <Button className="mt-4" leftIcon={<PlusIcon />} onClick={openCreate}>Crear negocio</Button>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-surface-2 border-b border-border">
+                <tr>
+                  {['Nombre', 'Propietario', 'Acciones'].map(h => (
+                    <th key={h} className="px-4 py-3 text-left text-xs font-medium text-content-3 uppercase tracking-wider">{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {businesses.map(b => (
+                  <tr key={b.id} className="hover:bg-surface-2 transition-colors">
+                    <td className="px-4 py-3 font-medium text-content">{b.name}</td>
+                    <td className="px-4 py-3 text-content-3 font-mono text-xs">{b.ownerId?.slice(0, 8)}…</td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-2">
+                        <button onClick={() => openServices(b)} className="w-7 h-7 flex items-center justify-center rounded-md text-info hover:bg-info-light transition-colors" title="Ver servicios"><EyeIcon /></button>
+                        <button onClick={() => openEdit(b)} className="w-7 h-7 flex items-center justify-center rounded-md text-content-2 hover:bg-surface-3 transition-colors" title="Editar"><EditIcon /></button>
+                        <button onClick={() => handleDelete(b.id)} className="w-7 h-7 flex items-center justify-center rounded-md text-danger hover:bg-danger-light transition-colors" title="Eliminar"><TrashIcon /></button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
 
-          {success && (
-            <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
-              {success}
-            </div>
-          )}
+      {/* Business form modal */}
+      <Modal open={showModal} onClose={() => setShowModal(false)} title={editingBusiness ? 'Editar negocio' : 'Nuevo negocio'} size="sm">
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          <Input label="Nombre del negocio" value={formData.name} onChange={e => setFormData(p => ({ ...p, name: e.target.value }))} required />
+          <div className="flex gap-2 pt-2">
+            <Button type="submit" loading={submitting} className="flex-1">{editingBusiness ? 'Guardar' : 'Crear'}</Button>
+            <Button type="button" variant="secondary" onClick={() => setShowModal(false)} className="flex-1">Cancelar</Button>
+          </div>
+        </form>
+      </Modal>
 
-          {/* Botón crear negocio */}
-          {!showCreateForm && !editingBusiness && (
-            <button
-              onClick={() => setShowCreateForm(true)}
-              className="bg-orange-600 hover:bg-orange-700 text-white font-semibold py-2 px-6 rounded-lg mb-6 transition-colors"
-            >
-              Crear Nuevo Negocio
-            </button>
-          )}
+      {/* Services modal */}
+      <Modal open={showServicesModal} onClose={() => setShowServicesModal(false)} title={`Servicios · ${selectedBusiness?.name ?? ''}`} size="md">
+        <div className="space-y-4">
+          <div className="flex justify-end">
+            <Button size="sm" leftIcon={<PlusIcon />} onClick={() => setShowServiceForm(v => !v)}>
+              {showServiceForm ? 'Cancelar' : 'Añadir servicio'}
+            </Button>
+          </div>
 
-          {/* Formulario crear/editar negocio */}
-          {(showCreateForm || editingBusiness) && (
-            <form ref={formRef}
-              onSubmit={editingBusiness ? handleUpdateBusiness : handleCreateBusiness}
-              className="mb-8 bg-gray-50 p-6 rounded-lg"
-            >
-              <h2 className="text-xl font-semibold mb-4">
-                {editingBusiness ? 'Editar Negocio' : 'Crear Negocio'}
-              </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <input
-                  type="text"
-                  placeholder="Nombre del negocio"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  required
-                  className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-400"
-                />
+          {showServiceForm && (
+            <form onSubmit={handleCreateService} className="bg-surface-2 rounded-xl p-4 flex flex-col gap-3">
+              <Input label="Nombre" value={serviceForm.name} onChange={e => setServiceForm(p => ({ ...p, name: e.target.value }))} required />
+              <div className="grid grid-cols-2 gap-3">
+                <Input label="Precio ($)" type="number" min="0" step="0.01" value={serviceForm.price} onChange={e => setServiceForm(p => ({ ...p, price: e.target.value }))} />
+                <Input label="Duración (min)" type="number" min="1" value={serviceForm.durationMin} onChange={e => setServiceForm(p => ({ ...p, durationMin: e.target.value }))} />
               </div>
-              <div className="flex gap-2 mt-4">
-                <button
-                  type="submit"
-                  className="bg-orange-600 hover:bg-orange-700 text-white font-semibold py-2 px-6 rounded-lg transition-colors"
-                >
-                  {editingBusiness ? 'Actualizar' : 'Crear'}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowCreateForm(false);
-                    handleCancelEdit();
-                  }}
-                  className="bg-gray-300 hover:bg-gray-400 text-gray-800 font-semibold py-2 px-6 rounded-lg transition-colors"
-                >
-                  Cancelar
-                </button>
-              </div>
+              <Input label="Descripción" value={serviceForm.description} onChange={e => setServiceForm(p => ({ ...p, description: e.target.value }))} />
+              <Button type="submit" size="sm" loading={serviceSubmitting}>Crear servicio</Button>
             </form>
           )}
 
-          {/* Tabla de negocios */}
-          {loading ? (
-            <div className="text-center py-8">Cargando...</div>
+          {businessServices.length === 0 ? (
+            <p className="text-center py-6 text-content-3 text-sm">No hay servicios para este negocio</p>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="min-w-full bg-white rounded-lg shadow">
-                <thead className="bg-gray-100">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                      Nombre
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                      Servicios
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                      Acciones
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200">
-                  {businesses.map((business) => (
-                    <tr key={business.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap font-medium">{business.name}</td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <button
-                          onClick={() => handleViewServices(business)}
-                          className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm"
-                        >
-                          Ver Servicios ({business.services?.length})
-                        </button>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <button
-                          onClick={() => handleEditBusiness(business)}
-                          className="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded mr-2 text-sm"
-                        >
-                          Editar
-                        </button>
-                        <button
-                          onClick={() => handleDeleteBusiness(business.id)}
-                          className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm"
-                        >
-                          Eliminar
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <div className="divide-y divide-border">
+              {businessServices.map(s => (
+                <div key={s.id} className="py-3 flex items-center justify-between gap-3">
+                  <div>
+                    <p className="font-medium text-content text-sm">{s.name}</p>
+                    <p className="text-xs text-content-3">{s.durationMin} min · ${s.price?.toLocaleString('es-AR')}</p>
+                  </div>
+                  <button onClick={() => handleDeleteService(s.id)} className="w-7 h-7 flex items-center justify-center rounded-md text-danger hover:bg-danger-light transition-colors"><TrashIcon /></button>
+                </div>
+              ))}
             </div>
           )}
         </div>
-      </div>
-
-      {/* Modal de servicios */}
-      {showServicesModal && selectedBusinessForServices && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-lg p-8 w-full max-w-2xl max-h-96 overflow-y-auto">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-bold">
-                Servicios: {selectedBusinessForServices.name}
-              </h2>
-              <button
-                onClick={() => setShowServicesModal(false)}
-                className="text-gray-500 hover:text-gray-700 text-2xl"
-              >
-                ✕
-              </button>
-            </div>
-
-            {!showServiceForm && (
-              <button
-                onClick={() => setShowServiceForm(true)}
-                className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg mb-4"
-              >
-                Agregar Servicio
-              </button>
-            )}
-
-            {showServiceForm && (
-              <form ref={formRef} onSubmit={handleCreateService} className="mb-6 bg-gray-50 p-4 rounded-lg">
-                <h3 className="font-semibold mb-4">Nuevo Servicio</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <input
-                    type="text"
-                    placeholder="Nombre del servicio"
-                    value={serviceFormData.name}
-                    onChange={(e) => setServiceFormData({ ...serviceFormData, name: e.target.value })}
-                    required
-                    className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400"
-                  />
-                  <input
-                    type="text"
-                    placeholder="Descripción (opcional)"
-                    value={serviceFormData.description}
-                    onChange={(e) => setServiceFormData({ ...serviceFormData, description: e.target.value })}
-                    className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400"
-                  />
-                  <input
-                    type="number"
-                    placeholder="Precio (opcional)"
-                    value={serviceFormData.price}
-                    onChange={(e) => setServiceFormData({ ...serviceFormData, price: e.target.value })}
-                    step="0.01"
-                    className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400"
-                  />
-                  <input
-                    type="number"
-                    placeholder="Duración en minutos (opcional)"
-                    value={serviceFormData.durationMin}
-                    onChange={(e) => setServiceFormData({ ...serviceFormData, durationMin: e.target.value })}
-                    className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400"
-                  />
-                </div>
-                <div className="flex gap-2 mt-4">
-                  <button
-                    type="submit"
-                    className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg"
-                  >
-                    Agregar
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShowServiceForm(false);
-                      setServiceFormData({ name: '', description: '', price: '', durationMin: '' });
-                    }}
-                    className="bg-gray-300 hover:bg-gray-400 text-gray-800 font-semibold py-2 px-4 rounded-lg"
-                  >
-                    Cancelar
-                  </button>
-                </div>
-              </form>
-            )}
-
-            {selectedBusinessServices.length === 0 ? (
-              <p className="text-gray-500 text-center py-4">No hay servicios registrados</p>
-            ) : (
-              <div className="space-y-3">
-                {selectedBusinessServices.map((service) => (
-                  <div
-                    key={service.id}
-                    className="bg-gray-50 p-4 rounded-lg border border-gray-200"
-                  >
-                    <div className="flex justify-between items-start">
-                      <div className="flex-1">
-                        <h4 className="font-semibold text-gray-800">{service.name}</h4>
-                        {service.description && (
-                          <p className="text-sm text-gray-600">{service.description}</p>
-                        )}
-                        <div className="flex gap-4 mt-2 text-sm">
-                          {service.price && <span className="text-green-600">Precio: ${service.price}</span>}
-                          {service.durationMin && <span className="text-blue-600">Duración: {service.durationMin} min</span>}
-                        </div>
-                      </div>
-                      <button
-                        onClick={() => handleDeleteService(service.id)}
-                        className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm ml-2"
-                      >
-                        Eliminar
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            <button
-              onClick={() => setShowServicesModal(false)}
-              className="w-full mt-6 bg-gray-300 hover:bg-gray-400 text-gray-800 font-semibold py-2 rounded-lg"
-            >
-              Cerrar
-            </button>
-          </div>
-        </div>
-      )}
+      </Modal>
     </div>
   );
 };
