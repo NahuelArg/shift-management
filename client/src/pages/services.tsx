@@ -139,7 +139,7 @@ const Services: React.FC = () => {
                     <td className="px-4 py-3 font-medium text-content">{s.name}</td>
                     <td className="px-4 py-3 text-content-2">{getBusinessName(s.businessId)}</td>
                     <td className="px-4 py-3 text-content-2">{s.durationMin} min</td>
-                    <td className="px-4 py-3 font-medium text-content">${s.price.toLocaleString('es-AR')}</td>
+                    <td className="px-4 py-3 font-medium text-content">${s.price != null ? s.price.toLocaleString('es-AR') : '—'}</td>
                     <td className="px-4 py-3 text-content-3 max-w-xs truncate">{s.description || '—'}</td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
