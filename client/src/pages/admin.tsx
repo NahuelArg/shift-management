@@ -6,7 +6,6 @@ import BookingForm from '../components/bookingManagement/BookingForm';
 import type { Business } from '../services/businessService';
 import type { Employee } from '../services/userService';
 import StatCard from '../components/ui/StatCard';
-import StatusBadge from '../components/ui/StatusBadge';
 import Modal from '../components/ui/Modal';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
