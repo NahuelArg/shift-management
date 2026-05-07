@@ -27,10 +27,9 @@ export interface Business {
 }
 
 /**
- * DTO para crear negocio: solo nombre y UUID del dueño
+ * DTO para crear negocio: solo nombre (el backend toma el ownerId del JWT)
  */
 export interface CreateBusinessDto {
-  ownerId: string;
   name: string;
 }
 
@@ -115,8 +114,8 @@ export const serviceService = {
     return response.data;
   },
 
-  async delete(id: string): Promise<Service> {
-    const response = await apiClient.delete(`/services/${id}`);
+  async delete(serviceId: string, businessId: string): Promise<Service> {
+    const response = await apiClient.delete(`/services/${businessId}/${serviceId}`);
     return response.data;
   },
 };

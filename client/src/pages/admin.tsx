@@ -403,7 +403,8 @@ const Admin: React.FC = () => {
               toast('Turno creado exitosamente', 'success');
               setShowBookingForm(false);
             } catch (err: any) {
-              toast(err.response?.data?.message || 'Error al crear el turno', 'error');
+              toast(err.message || 'Error al crear el turno', 'error');
+              throw err;
             }
           }}
         />
