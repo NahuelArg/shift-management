@@ -5,6 +5,7 @@ interface StatCardProps {
   value: string | number;
   icon: React.ReactNode;
   trend?: { value: number; label: string };
+  subtitle?: string;
   accent?: 'primary' | 'success' | 'warning' | 'danger' | 'info';
   className?: string;
 }
@@ -22,6 +23,7 @@ const StatCard: React.FC<StatCardProps> = ({
   value,
   icon,
   trend,
+  subtitle,
   accent = 'primary',
   className = '',
 }) => (
@@ -32,6 +34,7 @@ const StatCard: React.FC<StatCardProps> = ({
     <div className="flex-1 min-w-0">
       <p className="text-xs font-medium text-content-3 uppercase tracking-wider mb-1">{label}</p>
       <p className="text-2xl font-bold text-content leading-tight">{value}</p>
+      {subtitle && <p className="text-xs text-content-3 mt-0.5">{subtitle}</p>}
       {trend && (
         <p className={`text-xs mt-1 font-medium ${trend.value >= 0 ? 'text-success' : 'text-danger'}`}>
           {trend.value >= 0 ? '↑' : '↓'} {Math.abs(trend.value)}% {trend.label}
