@@ -1,15 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import axios from 'axios';
+import { apiClient } from '../services/apiClient';
 import StatCard from '../components/ui/StatCard';
 import StatusBadge, { bookingStatusVariant } from '../components/ui/StatusBadge';
+import Avatar from '../components/ui/Avatar';
 import Modal from '../components/ui/Modal';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
 import Select from '../components/ui/Select';
 import { useToast } from '../components/ui/Toast';
-
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 interface Booking {
   id: string;
@@ -19,7 +18,7 @@ interface Booking {
   status: string;
   finalPrice: number;
   service: { name: string; durationMin: number };
-  user: { name: string; email: string };
+  user: { name: string; email: string } | null;
 }
 interface Service { id: string; name: string; durationMin: number; price: number; businessId: string }
 interface UserSearchResult { id: string; name: string; email: string; phone: string | null }
@@ -50,6 +49,16 @@ const PlusIcon = () => (
   </svg>
 );
 
+type StatusFilter = 'ALL' | 'PENDING' | 'CONFIRMED' | 'COMPLETED' | 'CANCELLED';
+
+const STATUS_TABS: { key: StatusFilter; label: string }[] = [
+  { key: 'ALL',       label: 'Todos' },
+  { key: 'PENDING',   label: 'Pendiente' },
+  { key: 'CONFIRMED', label: 'Confirmado' },
+  { key: 'COMPLETED', label: 'Completado' },
+  { key: 'CANCELLED', label: 'Cancelado' },
+];
+
 const EmployeeDashboard: React.FC = () => {
   const { user, token } = useAuth();
   const { toast } = useToast();
@@ -57,6 +66,7 @@ const EmployeeDashboard: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [updatingStatus, setUpdatingStatus] = useState<string | null>(null);
   const [stats, setStats] = useState({ today: 0, pending: 0, confirmed: 0, completed: 0 });
+  const [activeTab, setActiveTab] = useState<StatusFilter>('ALL');
 
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [services, setServices] = useState<Service[]>([]);
@@ -73,7 +83,7 @@ const EmployeeDashboard: React.FC = () => {
   const fetchBookings = async () => {
     try {
       setLoading(true);
-      const res = await axios.get(`${API_BASE_URL}/bookings/my-assignments`, { headers: { Authorization: `Bearer ${token}` } });
+      const res = await apiClient.get('/bookings/my-assignments');
       const transformed = res.data.map((b: any) => ({
         ...b,
         date:      new Date(b.date).toISOString().split('T')[0],
@@ -100,8 +110,11 @@ const EmployeeDashboard: React.FC = () => {
   const updateStatus = async (id: string, status: string) => {
     setUpdatingStatus(id);
     try {
-      await axios.patch(`${API_BASE_URL}/bookings/${id}/status`, { status }, { headers: { Authorization: `Bearer ${token}` } });
+      await apiClient.patch(`/bookings/${id}/status`, { status });
       setBookings(prev => prev.map(b => b.id === id ? { ...b, status } : b));
+      if (status === 'COMPLETED') {
+        setStats(prev => ({ ...prev, completed: prev.completed + 1 }));
+      }
       toast('Estado actualizado', 'success');
     } catch {
       toast('Error al actualizar el estado', 'error');
@@ -112,7 +125,7 @@ const EmployeeDashboard: React.FC = () => {
 
   const loadServices = async () => {
     try {
-      const res = await axios.get(`${API_BASE_URL}/services/my-business`, { headers: { Authorization: `Bearer ${token}` } });
+      const res = await apiClient.get('/services/my-business');
       setServices(res.data);
     } catch { /* empty */ }
   };
@@ -121,7 +134,7 @@ const EmployeeDashboard: React.FC = () => {
     if (q.trim().length < 3) { setSearchResults([]); return; }
     setSearchLoading(true);
     try {
-      const res = await axios.get(`${API_BASE_URL}/users/search`, { params: { email: q.trim() }, headers: { Authorization: `Bearer ${token}` } });
+      const res = await apiClient.get('/users/search', { params: { email: q.trim() } });
       setSearchResults(res.data);
     } catch { setSearchResults([]); }
     finally { setSearchLoading(false); }
@@ -134,10 +147,10 @@ const EmployeeDashboard: React.FC = () => {
     const [h, mi] = formData.startTime.split(':').map(Number);
     const start = new Date(y, mo - 1, d, h, mi);
     const end   = new Date(start.getTime() + svc.durationMin * 60000);
-    axios.get(`${API_BASE_URL}/bookings/available-employees?businessId=${svc.businessId}&date=${start.toISOString()}&endTime=${end.toISOString()}`, {
-      headers: { Authorization: `Bearer ${token}` }
-    }).then(r => setAvailableEmps(r.data)).catch(() => setAvailableEmps([]));
-  }, [formData.serviceId, formData.date, formData.startTime, services, token]);
+    apiClient.get(`/bookings/available-employees?businessId=${svc.businessId}&date=${start.toISOString()}&endTime=${end.toISOString()}`)
+      .then(r => setAvailableEmps(r.data))
+      .catch(() => setAvailableEmps([]));
+  }, [formData.serviceId, formData.date, formData.startTime, services]);
 
   const openModal = () => { setShowCreateModal(true); loadServices(); };
   const closeModal = () => {
@@ -162,7 +175,7 @@ const EmployeeDashboard: React.FC = () => {
     setCreating(true);
     try {
       const dt = new Date(`${formData.date}T${formData.startTime}:00`);
-      await axios.post(`${API_BASE_URL}/bookings`, {
+      await apiClient.post('/bookings', {
         ...(selectedClient && { userId: selectedClient.id }),
         serviceId: formData.serviceId,
         businessId: selectedService.businessId,
@@ -170,7 +183,7 @@ const EmployeeDashboard: React.FC = () => {
         finalPrice: selectedService.price,
         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
         ...(selectedEmpId && { employeeId: selectedEmpId }),
-      }, { headers: { Authorization: `Bearer ${token}` } });
+      });
       toast('Turno creado exitosamente', 'success');
       await fetchBookings();
       closeModal();
@@ -181,108 +194,185 @@ const EmployeeDashboard: React.FC = () => {
     }
   };
 
-  const sortedBookings = [...bookings].sort((a, b) => {
-    const dc = new Date(a.date).getTime() - new Date(b.date).getTime();
-    return dc !== 0 ? dc : a.startTime.localeCompare(b.startTime);
-  });
-  const isToday = (d: string) => d.startsWith(new Date().toISOString().split('T')[0]);
+  const todayStr = new Date().toISOString().split('T')[0];
+  const todayBookings = bookings
+    .filter(b => b.date.startsWith(todayStr))
+    .sort((a, b) => a.startTime.localeCompare(b.startTime));
+
+  const filteredBookings = bookings
+    .filter(b => activeTab === 'ALL' || b.status === activeTab)
+    .sort((a, b) => {
+      const dc = a.date.localeCompare(b.date);
+      return dc !== 0 ? dc : a.startTime.localeCompare(b.startTime);
+    });
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h2 className="text-xl font-bold text-content">Panel de empleado</h2>
-          <p className="text-sm text-content-3 mt-0.5">Gestiona tus turnos asignados</p>
+          <h2 className="text-xl font-bold text-content">Mis Turnos</h2>
+          <p className="text-sm text-content-3 mt-0.5">Gestioná tus turnos asignados</p>
         </div>
         <Button leftIcon={<PlusIcon />} onClick={openModal}>Nueva reserva</Button>
       </div>
 
+      {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard label="Hoy"        value={stats.today}     icon={<TodayIcon />}    accent="primary" />
-        <StatCard label="Pendientes" value={stats.pending}   icon={<PendingIcon />}  accent="warning" />
+        <StatCard label="Turnos hoy"  value={stats.today}     icon={<TodayIcon />}    accent="primary" />
+        <StatCard label="Pendientes"  value={stats.pending}   icon={<PendingIcon />}  accent="warning" />
         <StatCard label="Confirmados" value={stats.confirmed} icon={<ConfirmedIcon />} accent="success" />
         <StatCard label="Completados" value={stats.completed} icon={<CompletedIcon />} accent="info" />
       </div>
 
-      <div className="bg-surface rounded-xl shadow-card border border-border p-5">
-        <h3 className="text-base font-semibold text-content mb-4">Turnos asignados</h3>
-        {loading ? (
-          <div className="flex items-center justify-center py-10 text-content-3 text-sm gap-2">
-            <svg className="animate-spin-slow w-5 h-5" fill="none" viewBox="0 0 24 24">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
-            </svg>
-            Cargando…
-          </div>
-        ) : sortedBookings.length === 0 ? (
-          <div className="text-center py-10 text-content-3 text-sm">No hay turnos asignados en este momento</div>
-        ) : (
-          <div className="space-y-3">
-            {sortedBookings.map(b => (
-              <div
-                key={b.id}
-                className={`rounded-xl border p-4 ${isToday(b.date) ? 'border-primary/30 bg-primary-light' : 'border-border'}`}
-              >
-                <div className="flex items-start justify-between gap-4 flex-wrap">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap mb-1">
-                      {isToday(b.date) && (
-                        <span className="text-xs font-bold bg-primary text-content-inverse px-2 py-0.5 rounded-full">HOY</span>
-                      )}
-                      <span className="font-semibold text-content text-sm">{b.service.name}</span>
-                      <StatusBadge label={b.status} variant={bookingStatusVariant(b.status)} />
+      {loading ? (
+        <div className="flex items-center justify-center py-12 text-content-3 text-sm gap-2">
+          <svg className="animate-spin-slow w-5 h-5" fill="none" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+          </svg>
+          Cargando…
+        </div>
+      ) : (
+        <>
+          {/* Today's bookings */}
+          {todayBookings.length > 0 && (
+            <div className="bg-surface rounded-xl shadow-card border border-border p-5">
+              <h3 className="text-sm font-semibold text-content-3 uppercase tracking-wider mb-4">
+                — Turnos de hoy ({todayBookings.length})
+              </h3>
+              <div className="space-y-3">
+                {todayBookings.map(b => (
+                  <div key={b.id} className="flex items-center gap-4 p-3 rounded-xl border border-primary/20 bg-primary-light">
+                    <Avatar name={b.user?.name || 'Walk-in'} size="md" className="shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-sm text-content">{b.user?.name || 'Walk-in'}</p>
+                      <p className="text-xs text-content-3">
+                        {b.service.name} · {b.startTime} – {b.endTime}
+                      </p>
                     </div>
-                    <p className="text-xs text-content-2 font-medium">{b.user?.name || 'Walk-in'}</p>
-                    <p className="text-xs text-content-3 mt-0.5">
-                      {new Date(b.date).toLocaleDateString('es-AR', { weekday: 'short', day: 'numeric', month: 'short' })}
-                      {' · '}{b.startTime} – {b.endTime} ({b.service.durationMin} min)
-                    </p>
+                    <div className="flex items-center gap-3 shrink-0">
+                      <span className="text-sm font-bold text-content">${b.finalPrice.toLocaleString('es-AR')}</span>
+                      <StatusBadge label={b.status} variant={bookingStatusVariant(b.status)} />
+                      {b.status !== 'COMPLETED' && b.status !== 'CANCELLED' && (
+                        <Button
+                          size="sm"
+                          loading={updatingStatus === b.id}
+                          disabled={updatingStatus !== null}
+                          onClick={() => updateStatus(b.id, 'COMPLETED')}
+                        >
+                          Completar
+                        </Button>
+                      )}
+                    </div>
                   </div>
-                  <div className="text-base font-bold text-content shrink-0">
-                    ${b.finalPrice.toLocaleString('es-AR')}
-                  </div>
-                </div>
-
-                {b.status !== 'COMPLETED' && b.status !== 'CANCELLED' && (
-                  <div className="flex gap-2 mt-3 pt-3 border-t border-border">
-                    <Button
-                      size="sm" variant="secondary"
-                      disabled={updatingStatus === b.id || b.status === 'CONFIRMED'}
-                      loading={updatingStatus === b.id}
-                      onClick={() => updateStatus(b.id, 'CONFIRMED')}
-                      className="flex-1"
-                    >
-                      {b.status === 'CONFIRMED' ? '✓ Confirmado' : 'Confirmar'}
-                    </Button>
-                    <Button
-                      size="sm"
-                      disabled={updatingStatus === b.id}
-                      loading={updatingStatus === b.id}
-                      onClick={() => updateStatus(b.id, 'COMPLETED')}
-                      className="flex-1"
-                    >
-                      Completar
-                    </Button>
-                    <Button
-                      size="sm" variant="danger"
-                      disabled={updatingStatus === b.id}
-                      onClick={() => updateStatus(b.id, 'CANCELLED')}
-                      className="flex-1"
-                    >
-                      Cancelar
-                    </Button>
-                  </div>
-                )}
+                ))}
               </div>
-            ))}
+            </div>
+          )}
+
+          {/* All bookings with tabs */}
+          <div className="bg-surface rounded-xl shadow-card border border-border p-5">
+            <h3 className="text-base font-semibold text-content mb-4">Todos los turnos</h3>
+
+            {/* Tab filter */}
+            <div className="flex items-center gap-1 mb-5 flex-wrap">
+              {STATUS_TABS.map(tab => (
+                <button
+                  key={tab.key}
+                  onClick={() => setActiveTab(tab.key)}
+                  className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                    activeTab === tab.key
+                      ? 'bg-primary text-content-inverse'
+                      : 'text-content-2 hover:bg-surface-2'
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+
+            {filteredBookings.length === 0 ? (
+              <div className="text-center py-8 text-content-3 text-sm">
+                No hay turnos {activeTab !== 'ALL' ? 'con ese estado' : 'asignados'}
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-border">
+                      <th className="pb-3 text-left text-xs font-medium text-content-3 uppercase tracking-wider">Servicio / Cliente</th>
+                      <th className="pb-3 text-left text-xs font-medium text-content-3 uppercase tracking-wider">Fecha y hora</th>
+                      <th className="pb-3 text-left text-xs font-medium text-content-3 uppercase tracking-wider">Estado</th>
+                      <th className="pb-3 text-right text-xs font-medium text-content-3 uppercase tracking-wider">Precio</th>
+                      <th className="pb-3 text-right text-xs font-medium text-content-3 uppercase tracking-wider">Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border">
+                    {filteredBookings.map(b => {
+                      const isToday = b.date.startsWith(todayStr);
+                      return (
+                        <tr key={b.id} className="hover:bg-surface-2 transition-colors">
+                          <td className="py-3.5 pr-4">
+                            <p className="font-medium text-content">{b.service.name}</p>
+                            <div className="flex items-center gap-1.5 mt-0.5">
+                              <span className="text-xs text-content-3">{b.user?.name || 'Walk-in'}</span>
+                            </div>
+                          </td>
+                          <td className="py-3.5 pr-4">
+                            <div className="flex items-center gap-1.5">
+                              {isToday && (
+                                <span className="text-xs font-bold bg-primary text-content-inverse px-1.5 py-0.5 rounded">HOY</span>
+                              )}
+                              <span className="text-content-2">
+                                {new Date(b.date).toLocaleDateString('es-AR', { day: 'numeric', month: 'short' })}
+                              </span>
+                            </div>
+                            <p className="text-xs text-content-3 mt-0.5">{b.startTime} – {b.endTime}</p>
+                          </td>
+                          <td className="py-3.5 pr-4">
+                            <StatusBadge label={b.status} variant={bookingStatusVariant(b.status)} />
+                          </td>
+                          <td className="py-3.5 pr-4 text-right font-semibold text-content">
+                            ${b.finalPrice.toLocaleString('es-AR')}
+                          </td>
+                          <td className="py-3.5 text-right">
+                            {b.status !== 'COMPLETED' && b.status !== 'CANCELLED' && (
+                              <div className="flex items-center justify-end gap-1.5">
+                                {b.status === 'PENDING' && (
+                                  <Button
+                                    size="sm" variant="secondary"
+                                    loading={updatingStatus === b.id}
+                                    disabled={updatingStatus !== null}
+                                    onClick={() => updateStatus(b.id, 'CONFIRMED')}
+                                  >
+                                    Confirmar
+                                  </Button>
+                                )}
+                                <Button
+                                  size="sm"
+                                  loading={updatingStatus === b.id}
+                                  disabled={updatingStatus !== null}
+                                  onClick={() => updateStatus(b.id, 'COMPLETED')}
+                                >
+                                  Completar
+                                </Button>
+                              </div>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
-        )}
-      </div>
+        </>
+      )}
 
       {/* Create booking modal */}
       <Modal open={showCreateModal} onClose={closeModal} title="Nueva reserva" size="md">
         <form onSubmit={handleCreate} className="space-y-5">
-          {/* Client search */}
           <div>
             <div className="flex items-center justify-between mb-1.5">
               <label className="text-sm font-medium text-content-2">Cliente</label>

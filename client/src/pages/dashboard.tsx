@@ -76,24 +76,24 @@ const Dashboard: React.FC = () => {
     <div className="space-y-6">
       <div>
         <h2 className="text-xl font-bold text-content">¡Bienvenido, {user?.name}!</h2>
-        <p className="text-sm text-content-3 mt-0.5">Aquí puedes ver y gestionar todas tus reservas</p>
+        <p className="text-sm text-content-3 mt-0.5">Aquí podés ver y gestionar todas tus reservas</p>
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard label="Total"      value={stats.total}     icon={<TurnosIcon />}   accent="primary" />
-        <StatCard label="Pendientes" value={stats.pending}   icon={<PendingIcon />}  accent="warning" />
+        <StatCard label="Total"       value={stats.total}     icon={<TurnosIcon />}   accent="primary" />
+        <StatCard label="Pendientes"  value={stats.pending}   icon={<PendingIcon />}  accent="warning" />
         <StatCard label="Confirmadas" value={stats.confirmed} icon={<ConfirmedIcon />} accent="success" />
-        <StatCard label="Canceladas" value={stats.cancelled} icon={<CancelledIcon />} accent="danger" />
+        <StatCard label="Canceladas"  value={stats.cancelled} icon={<CancelledIcon />} accent="danger" />
       </div>
 
       <div className="bg-surface rounded-xl shadow-card border border-border p-5">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-base font-semibold text-content">Mis Reservas</h3>
+          <h3 className="text-base font-semibold text-content">Historial de reservas</h3>
           <Link
             to="/bookings"
-            className="text-sm font-medium text-primary hover:text-primary-hover transition-colors"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary text-content-inverse rounded-lg text-sm font-medium hover:bg-primary-hover transition-colors"
           >
-            Nueva reserva →
+            + Reservar turno
           </Link>
         </div>
 
@@ -117,8 +117,8 @@ const Dashboard: React.FC = () => {
             <svg className="mx-auto w-12 h-12 text-content-3 mb-3" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
               <rect x="3" y="4" width="18" height="18" rx="2" /><path strokeLinecap="round" d="M16 2v4M8 2v4M3 10h18" />
             </svg>
-            <p className="text-content-2 font-medium">No tienes reservas</p>
-            <p className="text-sm text-content-3 mt-1">Crea tu primera reserva para comenzar</p>
+            <p className="text-content-2 font-medium">No tenés reservas</p>
+            <p className="text-sm text-content-3 mt-1">Creá tu primera reserva para comenzar</p>
             <Link
               to="/bookings"
               className="inline-flex mt-4 px-4 py-2 bg-primary text-content-inverse rounded-lg text-sm font-medium hover:bg-primary-hover transition-colors"
@@ -127,25 +127,39 @@ const Dashboard: React.FC = () => {
             </Link>
           </div>
         ) : (
-          <div className="divide-y divide-border">
-            {bookings.map(b => (
-              <div key={b.id} className="py-4 flex items-start justify-between gap-4">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap mb-1">
-                    <span className="font-semibold text-content text-sm">{b.service.name}</span>
-                    <StatusBadge label={b.status} variant={bookingStatusVariant(b.status)} />
-                  </div>
-                  <p className="text-xs text-content-3">{b.business.name}</p>
-                  <p className="text-xs text-content-3 mt-0.5">
-                    {new Date(b.date).toLocaleDateString('es-AR', { weekday: 'short', day: 'numeric', month: 'short' })}
-                    {' · '}{b.startTime} – {b.endTime} ({b.service.durationMin} min)
-                  </p>
-                </div>
-                <div className="text-base font-bold text-content shrink-0">
-                  ${b.finalPrice.toLocaleString('es-AR')}
-                </div>
-              </div>
-            ))}
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-border">
+                  <th className="pb-3 text-left text-xs font-medium text-content-3 uppercase tracking-wider">Servicio</th>
+                  <th className="pb-3 text-left text-xs font-medium text-content-3 uppercase tracking-wider">Fecha y hora</th>
+                  <th className="pb-3 text-left text-xs font-medium text-content-3 uppercase tracking-wider">Estado</th>
+                  <th className="pb-3 text-right text-xs font-medium text-content-3 uppercase tracking-wider">Precio</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {bookings.map(b => (
+                  <tr key={b.id} className="hover:bg-surface-2 transition-colors">
+                    <td className="py-3.5 pr-4">
+                      <p className="font-medium text-content">{b.service.name}</p>
+                      <p className="text-xs text-content-3 mt-0.5">{b.business.name}</p>
+                    </td>
+                    <td className="py-3.5 pr-4 text-content-2">
+                      <p>
+                        {new Date(b.date).toLocaleDateString('es-AR', { weekday: 'short', day: 'numeric', month: 'short' })}
+                      </p>
+                      <p className="text-xs text-content-3 mt-0.5">{b.startTime} – {b.endTime}</p>
+                    </td>
+                    <td className="py-3.5 pr-4">
+                      <StatusBadge label={b.status} variant={bookingStatusVariant(b.status)} />
+                    </td>
+                    <td className="py-3.5 text-right font-semibold text-content">
+                      ${b.finalPrice.toLocaleString('es-AR')}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
       </div>

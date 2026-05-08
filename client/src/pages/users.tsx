@@ -132,7 +132,7 @@ const Users: React.FC = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h2 className="text-xl font-bold text-content">Usuarios</h2>
+          <h2 className="text-xl font-bold text-content">Empleados</h2>
           <p className="text-sm text-content-3 mt-0.5">Gestioná los empleados de tu negocio</p>
         </div>
         {selectedBusiness && <Button leftIcon={<PlusIcon />} onClick={() => setShowCreate(true)}>Nuevo empleado</Button>}

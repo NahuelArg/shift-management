@@ -8,14 +8,8 @@ interface NavItem {
   to: string;
   label: string;
   icon: React.ReactNode;
-  roles?: Array<'ADMIN' | 'CLIENT' | 'EMPLOYEE'>;
 }
 
-const CalendarIcon = () => (
-  <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.75" viewBox="0 0 24 24">
-    <rect x="3" y="4" width="18" height="18" rx="2" /><path strokeLinecap="round" d="M16 2v4M8 2v4M3 10h18" />
-  </svg>
-);
 const HomeIcon = () => (
   <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.75" viewBox="0 0 24 24">
     <path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
@@ -24,11 +18,6 @@ const HomeIcon = () => (
 const UsersIcon = () => (
   <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.75" viewBox="0 0 24 24">
     <path strokeLinecap="round" strokeLinejoin="round" d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" /><circle cx="9" cy="7" r="4" /><path strokeLinecap="round" d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" />
-  </svg>
-);
-const BriefcaseIcon = () => (
-  <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.75" viewBox="0 0 24 24">
-    <rect x="2" y="7" width="20" height="14" rx="2" /><path strokeLinecap="round" d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2" />
   </svg>
 );
 const ScissorsIcon = () => (
@@ -46,6 +35,16 @@ const BookmarkIcon = () => (
     <path strokeLinecap="round" strokeLinejoin="round" d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2v16z" />
   </svg>
 );
+const CalendarIcon = () => (
+  <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.75" viewBox="0 0 24 24">
+    <rect x="3" y="4" width="18" height="18" rx="2" /><path strokeLinecap="round" d="M16 2v4M8 2v4M3 10h18" />
+  </svg>
+);
+const HistoryIcon = () => (
+  <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.75" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+  </svg>
+);
 const ChevronIcon = ({ flipped }: { flipped?: boolean }) => (
   <svg
     width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"
@@ -60,17 +59,24 @@ const LogoutIcon = () => (
   </svg>
 );
 
-const navItems: NavItem[] = [
-  { to: '/dashboard/admin',    label: 'Dashboard',  icon: <HomeIcon />,      roles: ['ADMIN'] },
-  { to: '/dashboard/employee', label: 'Dashboard',  icon: <HomeIcon />,      roles: ['EMPLOYEE'] },
-  { to: '/dashboard',          label: 'Dashboard',  icon: <HomeIcon />,      roles: ['CLIENT'] },
-  { to: '/calendar',           label: 'Calendario', icon: <CalendarIcon />,  roles: ['ADMIN', 'EMPLOYEE'] },
-  { to: '/bookings',           label: 'Turnos',     icon: <BookmarkIcon />,  roles: ['ADMIN', 'CLIENT', 'EMPLOYEE'] },
-  { to: '/services',           label: 'Servicios',  icon: <ScissorsIcon />,  roles: ['ADMIN'] },
-  { to: '/schedules',          label: 'Horarios',   icon: <ClockIcon />,     roles: ['ADMIN'] },
-  { to: '/business',           label: 'Negocio',    icon: <BriefcaseIcon />, roles: ['ADMIN'] },
-  { to: '/users',              label: 'Usuarios',   icon: <UsersIcon />,     roles: ['ADMIN'] },
-];
+const navByRole: Record<string, NavItem[]> = {
+  ADMIN: [
+    { to: '/dashboard/admin', label: 'Dashboard',  icon: <HomeIcon /> },
+    { to: '/users',           label: 'Empleados',  icon: <UsersIcon /> },
+    { to: '/bookings',        label: 'Reservas',   icon: <BookmarkIcon /> },
+    { to: '/services',        label: 'Servicios',  icon: <ScissorsIcon /> },
+    { to: '/schedules',       label: 'Horarios',   icon: <ClockIcon /> },
+    { to: '/calendar',        label: 'Calendario', icon: <CalendarIcon /> },
+  ],
+  EMPLOYEE: [
+    { to: '/dashboard/employee', label: 'Mis Turnos', icon: <HomeIcon /> },
+    { to: '/bookings',           label: 'Historial',  icon: <HistoryIcon /> },
+  ],
+  CLIENT: [
+    { to: '/dashboard', label: 'Mis Reservas', icon: <HomeIcon /> },
+    { to: '/bookings',  label: 'Reservar',     icon: <BookmarkIcon /> },
+  ],
+};
 
 const Sidebar: React.FC = () => {
   const { user, logout } = useAuth();
@@ -83,10 +89,7 @@ const Sidebar: React.FC = () => {
     navigate('/home');
   };
 
-  const visibleItems = navItems.filter(
-    item => !item.roles || (user && item.roles.includes(user.role))
-  );
-
+  const visibleItems: NavItem[] = user ? (navByRole[user.role] ?? []) : [];
   const isActive = (to: string) => location.pathname === to;
 
   const sidebarContent = (
@@ -116,7 +119,7 @@ const Sidebar: React.FC = () => {
       <nav className="flex-1 py-3 overflow-y-auto">
         {visibleItems.map(item => (
           <Link
-            key={item.to}
+            key={item.to + item.label}
             to={item.to}
             onClick={() => setMobileOpen(false)}
             title={compact ? item.label : undefined}
