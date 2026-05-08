@@ -58,11 +58,16 @@ Reservas · Empleados · Servicios · Métricas — todo en un solo lugar
 
 ## Screenshots
 
-> _Reemplazar con capturas reales del proyecto en producción_
+| Dashboard Admin |
+| <img width="2560" height="1392" alt="Captura de pantalla 2026-05-08 183506" src="https://github.com/user-attachments/assets/1b2e1326-e6df-4074-b023-bae564b1c3ae" />
+| Gestión de Turnos |
+| <img width="2560" height="1392" alt="Captura de pantalla 2026-05-08 183148" src="https://github.com/user-attachments/assets/2cd38663-6880-496c-9351-6712de83cff0" />
+| Vista Empleado |
+|<img width="2560" height="1392" alt="Captura de pantalla 2026-05-08 183506" src="https://github.com/user-attachments/assets/b5b8d857-8a9f-41a8-a98f-e2d0247e59f9" />
+| Calendario |
+<img width="2560" height="1392" alt="Captura de pantalla 2026-05-08 183442" src="https://github.com/user-attachments/assets/01c9c428-45b3-4f76-90e7-9360241f364e" />
 
-| Dashboard Admin | Gestión de Turnos | Vista Empleado |
-|:-:|:-:|:-:|
-| _(screenshot)_ | _(screenshot)_ | _(screenshot)_ |
+|
 
 ---
 
