@@ -40,6 +40,11 @@ const CalendarIcon = () => (
     <rect x="3" y="4" width="18" height="18" rx="2" /><path strokeLinecap="round" d="M16 2v4M8 2v4M3 10h18" />
   </svg>
 );
+const BuildingIcon = () => (
+  <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.75" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M3 21h18M3 7l9-4 9 4M4 7v14M20 7v14M9 21V9m0 0h6m-6 0v12m6-12v12" />
+  </svg>
+);
 const HistoryIcon = () => (
   <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.75" viewBox="0 0 24 24">
     <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -66,6 +71,7 @@ const navByRole: Record<string, NavItem[]> = {
     { to: '/bookings',        label: 'Reservas',   icon: <BookmarkIcon /> },
     { to: '/services',        label: 'Servicios',  icon: <ScissorsIcon /> },
     { to: '/schedules',       label: 'Horarios',   icon: <ClockIcon /> },
+    { to: '/business',        label: 'Negocios',   icon: <BuildingIcon /> },
     { to: '/calendar',        label: 'Calendario', icon: <CalendarIcon /> },
   ],
   EMPLOYEE: [
