@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import axios from 'axios';
+import apiClient from '../../services/apiClient';
 import { useAuth } from '../../context/AuthContext';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+
 
 
 interface Service {
@@ -36,10 +36,9 @@ const ServiceSelector: React.FC<ServiceSelectorProps> = ({
       
       setLoading(true);
       try {
-        const response = await axios.get(`${API_BASE_URL}/services/${businessId}`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        setServices(response.data);
+         apiClient.get(`/services/${businessId}`)
+          .then(res => setServices(res.data))
+          .catch(() => setError('Error loading services'));
       } catch (err) {
         setError('Error loading services');
         console.error('Error fetching services:', err);
