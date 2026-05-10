@@ -23,6 +23,13 @@
     -moz-osx-font-smoothing: grayscale;
   }
 
+  @media (max-width: 768px) {
+  .calendar-page .page-body {
+    padding: 0.5rem;
+    padding-bottom: 5.5rem;
+  }
+}
+
   :focus-visible {
     outline: 2px solid oklch(0.56 0.20 262);
     outline-offset: 2px;
