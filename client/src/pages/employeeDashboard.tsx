@@ -3,7 +3,6 @@ import { useAuth } from '../context/AuthContext';
 import { apiClient } from '../services/apiClient';
 import StatCard from '../components/ui/StatCard';
 import StatusBadge, { bookingStatusVariant } from '../components/ui/StatusBadge';
-import Avatar from '../components/ui/Avatar';
 import Modal from '../components/ui/Modal';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
@@ -236,32 +235,43 @@ const EmployeeDashboard: React.FC = () => {
         <>
           {/* Today's bookings */}
           {todayBookings.length > 0 && (
-            <div className="bg-surface rounded-xl shadow-card border border-border p-5">
-              <h3 className="text-sm font-semibold text-content-3 uppercase tracking-wider mb-4">
-                — Turnos de hoy ({todayBookings.length})
-              </h3>
-              <div className="space-y-3">
+            <div className="p-4 rounded-xl bg-success/5 border border-success/20">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-xs font-bold text-success uppercase tracking-wider">
+                  Turnos de hoy — {todayBookings.length}
+                </p>
+                <span className="text-xs text-content-3">
+                  {todayBookings.filter(b => b.status === 'COMPLETED').length} / {todayBookings.length} completados
+                </span>
+              </div>
+              <div className="h-1.5 bg-surface-3 rounded-full mb-4 overflow-hidden">
+                <div
+                  className="h-full bg-success rounded-full transition-all duration-500"
+                  style={{ width: `${(todayBookings.filter(b => b.status === 'COMPLETED').length / todayBookings.length) * 100}%` }}
+                />
+              </div>
+              <div className="space-y-2">
                 {todayBookings.map(b => (
-                  <div key={b.id} className="flex items-center gap-4 p-3 rounded-xl border border-primary/20 bg-primary-light">
-                    <Avatar name={b.user?.name || 'Walk-in'} size="md" className="shrink-0" />
-                    <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-sm text-content">{b.user?.name || 'Walk-in'}</p>
-                      <p className="text-xs text-content-3">
-                        {b.service.name} · {b.startTime} – {b.endTime}
-                      </p>
+                  <div key={b.id} className="flex items-center gap-3 p-3 bg-surface rounded-xl border border-border shadow-sm">
+                    <div className="bg-success-light rounded-lg px-2 py-2 text-center shrink-0 min-w-[48px]">
+                      <p className="text-xs font-bold text-success font-mono leading-none">{b.startTime}</p>
+                      <p className="text-xs text-success opacity-70 mt-0.5">{b.service.durationMin}m</p>
                     </div>
-                    <div className="flex items-center gap-3 shrink-0">
-                      <span className="text-sm font-bold text-content">${b.finalPrice.toLocaleString('es-AR')}</span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-content truncate">{b.user?.name ?? 'Walk-in'}</p>
+                      <p className="text-xs text-content-3">{b.service.name}</p>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className="text-sm font-bold text-content font-mono">${b.finalPrice.toLocaleString('es-AR')}</span>
                       <StatusBadge label={b.status} variant={bookingStatusVariant(b.status)} />
                       {b.status !== 'COMPLETED' && b.status !== 'CANCELLED' && (
-                        <Button
-                          size="sm"
-                          loading={updatingStatus === b.id}
-                          disabled={updatingStatus !== null}
+                        <button
                           onClick={() => updateStatus(b.id, 'COMPLETED')}
+                          disabled={updatingStatus !== null}
+                          className="px-2.5 py-1 rounded-lg bg-success text-content-inverse text-xs font-semibold hover:opacity-90 transition-opacity disabled:opacity-50"
                         >
-                          Completar
-                        </Button>
+                          ✓
+                        </button>
                       )}
                     </div>
                   </div>
@@ -280,10 +290,10 @@ const EmployeeDashboard: React.FC = () => {
                 <button
                   key={tab.key}
                   onClick={() => setActiveTab(tab.key)}
-                  className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                  className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-colors ${
                     activeTab === tab.key
                       ? 'bg-primary text-content-inverse'
-                      : 'text-content-2 hover:bg-surface-2'
+                      : 'bg-surface-3 text-content-2 hover:bg-surface-2'
                   }`}
                 >
                   {tab.label}
