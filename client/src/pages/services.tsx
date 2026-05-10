@@ -1,11 +1,17 @@
 import React, { useEffect, useState } from 'react';
 import { serviceService, type Service, type CreateServiceDto } from '../services/serviceService';
 import { businessService, type Business } from '../services/businessService';
+import StatCard from '../components/ui/StatCard';
 import Modal from '../components/ui/Modal';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
 import Select from '../components/ui/Select';
 import { useToast } from '../components/ui/Toast';
+
+const ScissorsIcon = () => <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.75" viewBox="0 0 24 24"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path strokeLinecap="round" d="M20 4L8.12 15.88M14.47 14.48L20 20M8.12 8.12L12 12"/></svg>;
+const CoinIcon    = () => <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.75" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path strokeLinecap="round" d="M12 7v1m0 8v1m-3-5h6m-6 0a3 3 0 006 0"/></svg>;
+const ClockIcon   = () => <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.75" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path strokeLinecap="round" d="M12 6v6l4 2"/></svg>;
+const BuildingIcon = () => <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.75" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M3 21h18M3 7l9-4 9 4M4 7v14M20 7v14M9 21V9m0 0h6m-6 0v12m6-12v12"/></svg>;
 
 const PlusIcon = () => (
   <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
@@ -34,6 +40,7 @@ const Services: React.FC = () => {
   const [editingService, setEditingService] = useState<Service | null>(null);
   const [formData, setFormData] = useState<CreateServiceDto>(emptyForm);
   const [submitting, setSubmitting] = useState(false);
+  const [filterBusiness, setFilterBusiness] = useState('all');
 
   useEffect(() => {
     fetchServices();
@@ -107,6 +114,14 @@ const Services: React.FC = () => {
 
   const getBusinessName = (id: string) => businesses.find(b => b.id === id)?.name ?? '—';
 
+  const avgPrice    = services.length ? Math.round(services.reduce((s, sv) => s + sv.price, 0) / services.length) : 0;
+  const avgDuration = services.length ? Math.round(services.reduce((s, sv) => s + sv.durationMin, 0) / services.length) : 0;
+  const bizCount    = new Set(services.map(sv => sv.businessId)).size;
+
+  const filteredServices = services.filter(s =>
+    filterBusiness === 'all' || s.businessId === filterBusiness
+  );
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-3">
@@ -116,6 +131,29 @@ const Services: React.FC = () => {
         </div>
         <Button leftIcon={<PlusIcon />} onClick={openCreate}>Nuevo servicio</Button>
       </div>
+
+      {/* Stats row */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <StatCard label="Total servicios"  value={services.length}                icon={<ScissorsIcon />} accent="primary" />
+        <StatCard label="Precio promedio"  value={`$${avgPrice.toLocaleString('es-AR')}`} icon={<CoinIcon />}     accent="success" />
+        <StatCard label="Duración prom."   value={`${avgDuration} min`}           icon={<ClockIcon />}    accent="warning" />
+        <StatCard label="Negocios"         value={bizCount}                        icon={<BuildingIcon />} accent="info"    />
+      </div>
+
+      {/* Toolbar */}
+      {(businesses.length > 1 || services.length > 0) && (
+        <div className="flex items-center gap-3 flex-wrap">
+          <select
+            value={filterBusiness}
+            onChange={e => setFilterBusiness(e.target.value)}
+            className="px-3 py-1.5 rounded-lg border border-border bg-surface text-sm text-content focus:border-primary outline-none"
+          >
+            <option value="all">Todos los negocios</option>
+            {businesses.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+          </select>
+          <span className="text-xs text-content-3">{filteredServices.length} servicio{filteredServices.length !== 1 ? 's' : ''}</span>
+        </div>
+      )}
 
       <div className="bg-surface rounded-xl shadow-card border border-border overflow-hidden">
         {loading ? (
@@ -137,17 +175,17 @@ const Services: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
-                {services.map(s => (
+                {filteredServices.map(s => (
                   <tr key={s.id} className="hover:bg-surface-2 transition-colors">
                     <td className="px-4 py-3 font-medium text-content">{s.name}</td>
                     <td className="px-4 py-3 text-content-2">{getBusinessName(s.businessId)}</td>
-                    <td className="px-4 py-3 text-content-2">{s.durationMin} min</td>
-                    <td className="px-4 py-3 font-medium text-content">${s.price != null ? s.price.toLocaleString('es-AR') : '—'}</td>
+                    <td className="px-4 py-3 text-content-2 font-mono">{s.durationMin} min</td>
+                    <td className="px-4 py-3 font-medium text-content font-mono">${s.price != null ? s.price.toLocaleString('es-AR') : '—'}</td>
                     <td className="px-4 py-3 text-content-3 max-w-xs truncate">{s.description || '—'}</td>
                     <td className="px-4 py-3">
-                      <div className="flex items-center gap-2">
-                        <button onClick={() => openEdit(s)} className="w-7 h-7 flex items-center justify-center rounded-md text-content-2 hover:bg-surface-3 transition-colors" aria-label="Editar"><EditIcon /></button>
-                        <button onClick={() => handleDelete(s.id)} className="w-7 h-7 flex items-center justify-center rounded-md text-danger hover:bg-danger-light transition-colors" aria-label="Eliminar"><TrashIcon /></button>
+                      <div className="flex items-center gap-1">
+                        <button onClick={() => openEdit(s)} className="w-7 h-7 flex items-center justify-center rounded-md border border-border text-content-3 hover:border-primary hover:text-primary hover:bg-primary-light transition-colors" title="Editar"><EditIcon /></button>
+                        <button onClick={() => handleDelete(s.id)} className="w-7 h-7 flex items-center justify-center rounded-md border border-border text-content-3 hover:border-danger hover:text-danger hover:bg-danger-light transition-colors" title="Eliminar"><TrashIcon /></button>
                       </div>
                     </td>
                   </tr>
