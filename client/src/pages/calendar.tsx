@@ -4,7 +4,6 @@ import { apiClient } from '../services/apiClient';
 import { createBooking } from '../services/bookingService';
 import BookingForm from '../components/bookingManagement/BookingForm';
 import StatusBadge, { bookingStatusVariant } from '../components/ui/StatusBadge';
-import Button from '../components/ui/Button';
 import Modal from '../components/ui/Modal';
 import { useToast } from '../components/ui/Toast';
 
@@ -56,6 +55,19 @@ const getWeekDays = (base: Date): Date[] => {
     d.setDate(mon.getDate() + i);
     return d;
   });
+};
+
+const useIsMobile = (): boolean => {
+  const [mobile, setMobile] = useState(() =>
+    typeof window !== 'undefined' && window.innerWidth < 768
+  );
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 767px)');
+    const handler = (e: MediaQueryListEvent) => setMobile(e.matches);
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, []);
+  return mobile;
 };
 
 // ── Mini calendar ────────────────────────────────────────────────────────────
@@ -136,6 +148,18 @@ const Calendar: React.FC = () => {
   const [filterEmpId,   setFilterEmpId]   = useState<string | null>(null);
   const [selectedBkg,   setSelectedBkg]   = useState<CalendarBooking | null>(null);
   const [showNewBkg,    setShowNewBkg]    = useState(false);
+  const [showLeftPanel, setShowLeftPanel] = useState(false);
+  const [nowMinutes,    setNowMinutes]    = useState(() => {
+    const n = new Date(); return n.getHours() * 60 + n.getMinutes();
+  });
+
+  useEffect(() => {
+    const id = setInterval(() => {
+      const n = new Date(); setNowMinutes(n.getHours() * 60 + n.getMinutes());
+    }, 60_000);
+    return () => clearInterval(id);
+  }, []);
+
 
   // Fetch business + employees for this admin
   useEffect(() => {
@@ -229,15 +253,25 @@ const Calendar: React.FC = () => {
     return list;
   }, [visibleBkgs, currentDate]);
 
-  // Navigation
+  const isMobile = useIsMobile();
+
+  // Navigation — week jumps 3 days on mobile, 7 on desktop
   const navigate = (dir: 1 | -1) => {
     const d = new Date(currentDate);
-    if (viewMode === 'week') d.setDate(d.getDate() + dir * 7);
+    if (viewMode === 'week') d.setDate(d.getDate() + dir * (isMobile ? 3 : 7));
     else                     d.setDate(d.getDate() + dir);
     setCurrentDate(d);
   };
 
-  const weekDays = getWeekDays(currentDate);
+  const weekDays   = getWeekDays(currentDate);
+  const mobileDays = useMemo(() =>
+    Array.from({ length: 3 }, (_, i) => {
+      const d = new Date(currentDate);
+      d.setDate(currentDate.getDate() + i);
+      return d;
+    }), [currentDate]);
+
+  const displayDays = isMobile && viewMode === 'week' ? mobileDays : weekDays;
 
   // Chip positioning
   const chipStyle = (b: CalendarBooking): React.CSSProperties => {
@@ -254,7 +288,7 @@ const Calendar: React.FC = () => {
 
   const headerLabel = () => {
     if (viewMode === 'week') {
-      const s = weekDays[0], e = weekDays[6];
+      const s = displayDays[0], e = displayDays[displayDays.length - 1];
       return `${s.getDate()} – ${e.getDate()} ${MONTH_NAMES[e.getMonth()]} ${e.getFullYear()}`;
     }
     const d = currentDate;
@@ -264,11 +298,8 @@ const Calendar: React.FC = () => {
   // Hour label helper
   const hLabel = (h: number) => `${String(h).padStart(2, '0')}:00`;
 
-  return (
-    <div className="flex gap-4 h-full min-h-0">
-
-      {/* ── Left panel ─────────────────────────────────────────────── */}
-      <aside className="w-60 shrink-0 bg-surface rounded-xl shadow-card border border-border flex flex-col overflow-y-auto">
+  const leftPanelContent = (
+    <aside className="w-72 md:w-60 shrink-0 bg-surface rounded-xl shadow-card border border-border flex flex-col overflow-y-auto">
         {/* Mini calendar */}
         <MiniCalendar
           selected={currentDate}
@@ -339,13 +370,47 @@ const Calendar: React.FC = () => {
           </div>
         </div>
       </aside>
+  );
 
-      {/* ── Main area ──────────────────────────────────────────────── */}
-      <div className="flex-1 min-w-0 flex flex-col bg-surface rounded-xl shadow-card border border-border overflow-hidden">
+  return (
+    <div className="calendar-page flex gap-4 h-full min-h-0">
+
+      {/* ── Left panel — desktop ────────────────────────────────────── */}
+      <div className="hidden md:flex shrink-0">{leftPanelContent}</div>
+
+      {/* ── Left panel — mobile overlay ─────────────────────────────── */}
+      {showLeftPanel && (
+        <div className="md:hidden fixed inset-0 z-40 flex">
+          <div className="absolute inset-0 bg-black/50" onClick={() => setShowLeftPanel(false)} />
+          <div className="relative z-50 flex h-full">
+            {leftPanelContent}
+          </div>
+        </div>
+      )}
+
+      {/* ── Main area + detail panel ──────────────────────────────── */}
+      <div className="flex-1 min-w-0 flex gap-4 overflow-hidden">
+        <div className="flex-1 min-w-0 flex flex-col bg-surface rounded-xl shadow-card border border-border overflow-hidden">
 
         {/* Toolbar */}
-        <div className="flex items-center justify-between px-5 py-3 border-b border-border shrink-0 flex-wrap gap-3">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-border shrink-0 flex-wrap gap-2">
           <div className="flex items-center gap-2 flex-wrap">
+            {/* Mobile: open left panel overlay */}
+            <button
+              onClick={() => setShowLeftPanel(v => !v)}
+              className={`md:hidden w-8 h-8 flex items-center justify-center rounded-lg border transition-colors
+                ${showLeftPanel
+                  ? 'bg-primary text-content-inverse border-primary'
+                  : 'border-border hover:bg-surface-3 text-content-3'}`}
+              aria-label="Filtros"
+            >
+              <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h10M4 18h7"/>
+              </svg>
+              {filterEmpId && (
+                <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-primary" />
+              )}
+            </button>
             <span className="text-sm font-bold text-content">{headerLabel()}</span>
             <div className="flex items-center gap-1">
               <button
@@ -380,18 +445,26 @@ const Calendar: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-2">
-            <span className="text-xs font-medium text-content-3 bg-surface-2 px-2.5 py-1 rounded-full border border-border">
-              {bookings.length} Total
-            </span>
-            <span className="text-xs font-medium text-primary bg-primary-light px-2.5 py-1 rounded-full">
-              {todayBkgs.length} Hoy
-            </span>
-            <span className="text-xs font-medium text-warning-text bg-warning-light px-2.5 py-1 rounded-full">
-              {pendingCount} Pendientes
-            </span>
-            <Button size="sm" onClick={() => setShowNewBkg(true)}>
-              + Nuevo turno
-            </Button>
+            <div className="hidden sm:flex items-center gap-2">
+              <span className="text-xs font-medium text-content-3 bg-surface-2 px-2.5 py-1 rounded-full border border-border">
+                {bookings.length} Total
+              </span>
+              <span className="text-xs font-medium text-primary bg-primary-light px-2.5 py-1 rounded-full">
+                {todayBkgs.length} Hoy
+              </span>
+              <span className="text-xs font-medium text-warning-text bg-warning-light px-2.5 py-1 rounded-full">
+                {pendingCount} Pendientes
+              </span>
+            </div>
+            <button
+              onClick={() => setShowNewBkg(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-content-inverse text-xs font-semibold hover:opacity-90 transition-opacity shrink-0"
+            >
+              <svg width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                <path strokeLinecap="round" d="M12 5v14M5 12h14"/>
+              </svg>
+              <span className="hidden sm:inline">Nuevo turno</span>
+            </button>
           </div>
         </div>
 
@@ -409,33 +482,34 @@ const Calendar: React.FC = () => {
                 </div>
               ) : (
                 <>
-                  {/* Employee headers */}
-                  <div
-                    className="grid shrink-0 border-b border-border"
-                    style={{ gridTemplateColumns: `4rem repeat(${dayColEmps.length}, 1fr)` }}
-                  >
-                    <div className="h-16 border-r border-border" />
-                    {dayColEmps.map(emp => {
-                      const p = pal(emp.id);
-                      const cnt = bkgsForDay(currentDate).filter(b => b.employee?.id === emp.id).length;
-                      return (
-                        <div key={emp.id} className="h-16 flex flex-col items-center justify-center border-r border-border last:border-r-0 gap-0.5">
-                          <div className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold ${p.av}`}>
-                            {initials(emp.name)}
+                  {/* Horizontal scroll wrapper for mobile */}
+                  <div className="flex-1 overflow-auto">
+                    {/* Employee headers — sticky top */}
+                    <div
+                      className="grid sticky top-0 z-10 bg-surface border-b border-border"
+                      style={{ gridTemplateColumns: `4rem repeat(${dayColEmps.length}, minmax(7rem, 1fr))` }}
+                    >
+                      <div className="h-16 border-r border-border" />
+                      {dayColEmps.map(emp => {
+                        const p = pal(emp.id);
+                        const cnt = bkgsForDay(currentDate).filter(b => b.employee?.id === emp.id).length;
+                        return (
+                          <div key={emp.id} className="h-16 flex flex-col items-center justify-center border-r border-border last:border-r-0 gap-0.5 px-1">
+                            <div className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold ${p.av}`}>
+                              {initials(emp.name)}
+                            </div>
+                            <p className="text-xs font-semibold text-content truncate max-w-full px-1">{emp.name}</p>
+                            <p className="text-xs text-content-3">{cnt} {cnt === 1 ? 'turno' : 'turnos'}</p>
                           </div>
-                          <p className="text-xs font-semibold text-content">{emp.name}</p>
-                          <p className="text-xs text-content-3">{cnt} {cnt === 1 ? 'turno' : 'turnos'}</p>
-                        </div>
-                      );
-                    })}
-                  </div>
+                        );
+                      })}
+                    </div>
 
-                  {/* Scrollable grid body */}
-                  <div className="flex-1 overflow-y-auto">
+                    {/* Grid body */}
                     <div
                       className="grid"
                       style={{
-                        gridTemplateColumns: `4rem repeat(${dayColEmps.length}, 1fr)`,
+                        gridTemplateColumns: `4rem repeat(${dayColEmps.length}, minmax(7rem, 1fr))`,
                         height: `${CELL_H * HOURS.length}px`,
                       }}
                     >
@@ -447,7 +521,7 @@ const Calendar: React.FC = () => {
                             className="absolute w-full flex items-start justify-center"
                             style={{ top: `${(h - 8) * CELL_H}px`, height: `${CELL_H}px` }}
                           >
-                            <span className="text-xs text-content-3 mt-1">{hLabel(h)}</span>
+                            <span className="text-xs text-content-3 mt-1 font-mono">{hLabel(h)}</span>
                           </div>
                         ))}
                       </div>
@@ -460,12 +534,20 @@ const Calendar: React.FC = () => {
                         return (
                           <div key={emp.id} className="relative border-r border-border last:border-r-0">
                             {HOURS.map(h => (
-                              <div
-                                key={h}
-                                className="absolute w-full border-b border-border/40"
-                                style={{ top: `${(h - 8) * CELL_H}px`, height: `${CELL_H}px` }}
-                              />
+                              <React.Fragment key={h}>
+                                <div className="absolute w-full border-t border-border/40" style={{ top: `${(h - 8) * CELL_H}px` }} />
+                                <div className="absolute w-full border-t border-dashed border-border/20" style={{ top: `${(h - 8) * CELL_H + CELL_H / 2}px` }} />
+                              </React.Fragment>
                             ))}
+                            {isSameDay(currentDate, new Date()) && (
+                              <div
+                                className="absolute left-0 right-0 z-10 pointer-events-none flex items-center"
+                                style={{ top: `${((nowMinutes - 8 * 60) / (HOURS.length * 60)) * 100}%` }}
+                              >
+                                <div className="w-2 h-2 rounded-full bg-danger shrink-0 -ml-1" />
+                                <div className="flex-1 h-px bg-danger" />
+                              </div>
+                            )}
                             {colBkgs.map(b => (
                               <button
                                 key={b.id}
@@ -493,30 +575,32 @@ const Calendar: React.FC = () => {
 
             /* ── WEEK VIEW: columns = days ── */
             <div className="flex flex-col h-full overflow-hidden">
-              <div
-                className="grid shrink-0 border-b border-border"
-                style={{ gridTemplateColumns: '4rem repeat(7, 1fr)' }}
-              >
-                <div className="h-12 border-r border-border" />
-                {weekDays.map(day => (
-                  <button
-                    key={day.toISOString()}
-                    onClick={() => { setCurrentDate(day); setViewMode('day'); }}
-                    className={`h-12 flex flex-col items-center justify-center border-r border-border last:border-r-0 text-xs
-                      ${isSameDay(day, new Date()) ? 'bg-primary-light' : 'hover:bg-surface-2'} transition-colors`}
-                  >
-                    <span className="text-content-3 uppercase tracking-wider">{DAY_S[day.getDay()]}</span>
-                    <span className={`font-bold text-sm ${isSameDay(day, new Date()) ? 'text-primary' : 'text-content'}`}>
-                      {day.getDate()}
-                    </span>
-                  </button>
-                ))}
-              </div>
+              <div className="flex-1 overflow-auto">
+                {/* Day headers — sticky */}
+                <div
+                  className="grid sticky top-0 z-10 bg-surface border-b border-border"
+                  style={{ gridTemplateColumns: `4rem repeat(${displayDays.length}, minmax(5rem, 1fr))` }}
+                >
+                  <div className="h-12 border-r border-border" />
+                  {displayDays.map(day => (
+                    <button
+                      key={day.toISOString()}
+                      onClick={() => { setCurrentDate(day); setViewMode('day'); }}
+                      className={`h-12 flex flex-col items-center justify-center border-r border-border last:border-r-0 text-xs
+                        ${isSameDay(day, new Date()) ? 'bg-primary-light' : 'hover:bg-surface-2'} transition-colors`}
+                    >
+                      <span className="text-content-3 uppercase tracking-wider">{DAY_S[day.getDay()]}</span>
+                      <span className={`font-bold text-sm ${isSameDay(day, new Date()) ? 'text-primary' : 'text-content'}`}>
+                        {day.getDate()}
+                      </span>
+                    </button>
+                  ))}
+                </div>
 
-              <div className="flex-1 overflow-y-auto">
+                {/* Grid body */}
                 <div
                   className="grid"
-                  style={{ gridTemplateColumns: '4rem repeat(7, 1fr)', height: `${CELL_H * HOURS.length}px` }}
+                  style={{ gridTemplateColumns: `4rem repeat(${displayDays.length}, minmax(5rem, 1fr))`, height: `${CELL_H * HOURS.length}px` }}
                 >
                   <div className="border-r border-border relative">
                     {HOURS.map(h => (
@@ -529,17 +613,25 @@ const Calendar: React.FC = () => {
                       </div>
                     ))}
                   </div>
-                  {weekDays.map(day => {
+                  {displayDays.map(day => {
                     const dayB = bkgsForDay(day).filter(b => b.service && b.date && b.endTime);
                     return (
                       <div key={day.toISOString()} className="relative border-r border-border last:border-r-0">
                         {HOURS.map(h => (
-                          <div
-                            key={h}
-                            className="absolute w-full border-b border-border/40"
-                            style={{ top: `${(h - 8) * CELL_H}px`, height: `${CELL_H}px` }}
-                          />
+                          <React.Fragment key={h}>
+                            <div className="absolute w-full border-t border-border/40" style={{ top: `${(h - 8) * CELL_H}px` }} />
+                            <div className="absolute w-full border-t border-dashed border-border/20" style={{ top: `${(h - 8) * CELL_H + CELL_H / 2}px` }} />
+                          </React.Fragment>
                         ))}
+                        {isSameDay(day, new Date()) && (
+                          <div
+                            className="absolute left-0 right-0 z-10 pointer-events-none flex items-center"
+                            style={{ top: `${((nowMinutes - 8 * 60) / (HOURS.length * 60)) * 100}%` }}
+                          >
+                            <div className="w-2 h-2 rounded-full bg-danger shrink-0 -ml-1" />
+                            <div className="flex-1 h-px bg-danger" />
+                          </div>
+                        )}
                         {dayB.map(b => {
                           const p = pal(b.employee?.id);
                           return (
@@ -562,10 +654,81 @@ const Calendar: React.FC = () => {
             </div>
           )}
         </div>
-      </div>
+        </div>{/* /calendar grid */}
 
-      {/* ── Booking detail modal ──────────────────────────────────── */}
-      <Modal open={!!selectedBkg} onClose={() => setSelectedBkg(null)} title="Detalle del turno" size="sm">
+        {/* Detail panel — desktop ─────────────────────────────────── */}
+        {selectedBkg && (
+          <aside className="hidden md:flex w-72 shrink-0 flex-col bg-surface rounded-xl shadow-card border border-border overflow-hidden animate-slide-in-right">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-border shrink-0">
+              <span className="text-sm font-bold text-content">Detalle del turno</span>
+              <button onClick={() => setSelectedBkg(null)} className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-surface-3 text-content-3 transition-colors">
+                <svg width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M18 6L6 18M6 6l12 12"/></svg>
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+              <div className="flex items-start justify-between">
+                <div>
+                  <h3 className="font-semibold text-content">{selectedBkg.service?.name ?? '—'}</h3>
+                  <p className="text-sm text-content-3">{selectedBkg.business?.name ?? '—'}</p>
+                </div>
+                <StatusBadge label={selectedBkg.status} variant={bookingStatusVariant(selectedBkg.status)} />
+              </div>
+              <dl className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <dt className="text-content-3">Cliente</dt>
+                  <dd className="font-medium text-content">{selectedBkg.user?.name ?? '—'}</dd>
+                </div>
+                {selectedBkg.employee && (
+                  <div className="flex justify-between">
+                    <dt className="text-content-3">Empleado</dt>
+                    <dd className="font-medium text-content">{selectedBkg.employee.name}</dd>
+                  </div>
+                )}
+                <div className="flex justify-between">
+                  <dt className="text-content-3">Inicio</dt>
+                  <dd className="font-medium text-content font-mono">
+                    {new Date(selectedBkg.date).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })}
+                  </dd>
+                </div>
+                <div className="flex justify-between">
+                  <dt className="text-content-3">Fin</dt>
+                  <dd className="font-medium text-content font-mono">
+                    {new Date(selectedBkg.endTime).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })}
+                  </dd>
+                </div>
+                {selectedBkg.service && (
+                  <div className="flex justify-between">
+                    <dt className="text-content-3">Duración</dt>
+                    <dd className="font-medium text-content">{selectedBkg.service.durationMin} min</dd>
+                  </div>
+                )}
+                <div className="flex justify-between">
+                  <dt className="text-content-3">Precio</dt>
+                  <dd className="font-bold text-content font-mono">${selectedBkg.finalPrice?.toLocaleString('es-AR') ?? '—'}</dd>
+                </div>
+              </dl>
+              {selectedBkg.status !== 'CANCELLED' && selectedBkg.status !== 'COMPLETED' && (
+                <div className="flex flex-col gap-2 pt-2 border-t border-border">
+                  {selectedBkg.status === 'PENDING' && (
+                    <button className="w-full py-2 rounded-lg bg-success text-content-inverse text-sm font-semibold hover:opacity-90 transition-opacity">
+                      Confirmar turno
+                    </button>
+                  )}
+                  <button className="w-full py-2 rounded-lg bg-primary text-content-inverse text-sm font-semibold hover:opacity-90 transition-opacity">
+                    Marcar completado
+                  </button>
+                  <button className="w-full py-2 rounded-lg border border-border text-danger text-sm font-semibold hover:bg-danger-light transition-colors">
+                    Cancelar turno
+                  </button>
+                </div>
+              )}
+            </div>
+          </aside>
+        )}
+      </div>{/* /main area wrapper */}
+
+      {/* ── Booking detail modal — mobile only ───────────────────── */}
+      <Modal open={!!selectedBkg && isMobile} onClose={() => setSelectedBkg(null)} title="Detalle del turno" size="sm">
         {selectedBkg && (
           <div className="space-y-4">
             <div className="flex items-start justify-between">
