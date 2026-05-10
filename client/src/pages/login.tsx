@@ -159,6 +159,30 @@ const Login: React.FC = () => {
                 Ingresar
               </Button>
             </form>
+
+            {/* Mobile test credentials */}
+            <div className="lg:hidden mt-6 pt-5 border-t border-border">
+              <p className="text-xs font-semibold text-content-3 uppercase tracking-wider mb-3">
+                Acceso rápido (demo)
+              </p>
+              <div className="bg-surface-2 rounded-xl overflow-hidden divide-y divide-border">
+                {TEST_CREDENTIALS.map(cred => (
+                  <button
+                    key={cred.email}
+                    type="button"
+                    onClick={() => fillCredential(cred)}
+                    className="w-full flex items-center justify-between px-4 py-3 hover:bg-surface-3 transition-colors text-left"
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <span className="w-2 h-2 rounded-full bg-success shrink-0" />
+                      <span className="text-content-2 text-sm">{cred.email}</span>
+                    </div>
+                    <span className="text-xs text-content-3">{cred.role}</span>
+                  </button>
+                ))}
+              </div>
+              <p className="text-xs text-content-3 mt-2.5 opacity-60">Contraseña: password123</p>
+            </div>
           </div>
 
           <p className="text-center text-sm text-content-3 mt-6">
