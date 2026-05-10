@@ -8,31 +8,31 @@ export default {
     extend: {
       colors: {
         primary: {
-          DEFAULT: 'oklch(0.56 0.20 262)',
-          hover:   'oklch(0.50 0.20 262)',
-          light:   'oklch(0.92 0.06 262)',
-          muted:   'oklch(0.75 0.12 262)',
+          DEFAULT: 'oklch(0.56 0.20 145)',
+          hover:   'oklch(0.50 0.20 145)',
+          light:   'oklch(0.92 0.06 145)',
+          muted:   'oklch(0.75 0.12 145)',
         },
         surface: {
           DEFAULT: 'oklch(0.99 0 0)',
-          2:       'oklch(0.96 0.004 262)',
-          3:       'oklch(0.92 0.006 262)',
+          2:       'oklch(0.96 0.004 145)',
+          3:       'oklch(0.92 0.006 145)',
         },
         sidebar: {
-          DEFAULT: 'oklch(0.14 0.025 262)',
-          hover:   'oklch(0.20 0.025 262)',
-          active:  'oklch(0.56 0.20 262)',
-          text:    'oklch(0.75 0.02 262)',
+          DEFAULT: 'oklch(0.14 0.025 145)',
+          hover:   'oklch(0.20 0.025 145)',
+          active:  'oklch(0.56 0.20 145)',
+          text:    'oklch(0.75 0.02 145)',
           'text-active': 'oklch(0.99 0 0)',
         },
         border: {
-          DEFAULT: 'oklch(0.88 0.006 262)',
-          strong:  'oklch(0.78 0.010 262)',
+          DEFAULT: 'oklch(0.88 0.006 145)',
+          strong:  'oklch(0.78 0.010 145)',
         },
         content: {
-          DEFAULT: 'oklch(0.18 0.01 262)',
-          2:       'oklch(0.42 0.01 262)',
-          3:       'oklch(0.62 0.01 262)',
+          DEFAULT: 'oklch(0.18 0.01 145)',
+          2:       'oklch(0.42 0.01 145)',
+          3:       'oklch(0.62 0.01 145)',
           inverse: 'oklch(0.99 0 0)',
         },
         success: {
@@ -95,13 +95,23 @@ export default {
         'spin-slow': {
           to: { transform: 'rotate(360deg)' },
         },
+        'slide-in-right': {
+          from: { transform: 'translateX(20px)', opacity: '0' },
+          to:   { transform: 'translateX(0)',    opacity: '1' },
+        },
+        ticker: {
+          from: { transform: 'translateX(0)' },
+          to:   { transform: 'translateX(-50%)' },
+        },
       },
       animation: {
-        'fade-in':       'fade-in 0.2s ease-out',
-        'slide-in-left': 'slide-in-left 0.25s ease-out',
-        'slide-up':      'slide-up 0.3s cubic-bezier(0.32, 0.72, 0, 1)',
-        'toast-in':      'toast-in 0.25s ease-out',
-        'spin-slow':     'spin-slow 1s linear infinite',
+        'fade-in':         'fade-in 0.2s ease-out',
+        'slide-in-left':   'slide-in-left 0.25s ease-out',
+        'slide-in-right':  'slide-in-right 0.2s ease-out',
+        'slide-up':        'slide-up 0.3s cubic-bezier(0.32, 0.72, 0, 1)',
+        'toast-in':        'toast-in 0.25s ease-out',
+        'spin-slow':       'spin-slow 1s linear infinite',
+        'ticker':          'ticker 20s linear infinite',
       },
       screens: {
         xs: '375px',

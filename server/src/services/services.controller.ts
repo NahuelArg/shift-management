@@ -55,10 +55,10 @@ export class ServicesController {
   @ApiBearerAuth()
   @Roles('ADMIN')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @ApiOperation({ summary: 'Eliminar un servicio por ID' })
+  @ApiOperation({ summary: 'Delete service by ID' })
   @ApiResponse({
     status: 200,
-    description: 'Servicio eliminado',
+    description: 'Service deleted',
     type: ServiceDto,
   })
   async delete(

@@ -40,6 +40,7 @@ const Users: React.FC = () => {
   const [page, setPage] = useState(1);
   const limit = 10;
 
+  const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
   const [showCreate, setShowCreate] = useState(false);
   const [newEmployee, setNewEmployee] = useState({ name: '', email: '', password: '', businessId: '' });
   const [createLoading, setCreateLoading] = useState(false);
@@ -144,69 +145,137 @@ const Users: React.FC = () => {
         </div>
       )}
 
+      {/* Stats row */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        {[
+          { label: 'Total empleados', value: totalEmployees, color: 'bg-primary-light text-primary' },
+          { label: 'En esta página',  value: employees.length, color: 'bg-info-light text-info' },
+          { label: 'Página',          value: `${page} / ${totalPages}`, color: 'bg-surface-3 text-content-2' },
+          { label: 'Negocio activo',  value: businesses.find(b => b.id === selectedBusiness)?.name ?? '—', color: 'bg-success-light text-success' },
+        ].map(s => (
+          <div key={s.label} className="bg-surface rounded-xl border border-border shadow-card p-4">
+            <p className="text-xs text-content-3 uppercase tracking-wider mb-1">{s.label}</p>
+            <p className={`text-sm font-bold truncate px-2 py-0.5 rounded-md inline-block ${s.color}`}>{s.value}</p>
+          </div>
+        ))}
+      </div>
+
       {businesses.length > 1 && (
-        <Select label="Negocio" value={selectedBusiness} onChange={e => { setSelectedBusiness(e.target.value); setPage(1); }} wrapperClassName="max-w-xs">
+        <Select label="Negocio" value={selectedBusiness} onChange={e => { setSelectedBusiness(e.target.value); setPage(1); setSelectedEmployee(null); }} wrapperClassName="max-w-xs">
           {businesses.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
         </Select>
       )}
 
-      <div className="bg-surface rounded-xl shadow-card border border-border p-5">
-        <div className="flex items-center justify-between flex-wrap gap-3 mb-4">
-          <Input
-            placeholder="Buscar por nombre o email…"
-            value={search}
-            onChange={e => { setSearch(e.target.value); setPage(1); }}
-            wrapperClassName="max-w-72 flex-1"
-            leftIcon={
-              <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                <circle cx="11" cy="11" r="8" /><path strokeLinecap="round" d="M21 21l-4.35-4.35" />
-              </svg>
-            }
-          />
-          <div className="flex items-center gap-2 text-sm text-content-2">
-            <span>Pág. {page}/{totalPages}</span>
-            <Button size="sm" variant="secondary" disabled={page === 1} onClick={() => setPage(p => p - 1)}>←</Button>
-            <Button size="sm" variant="secondary" disabled={page === totalPages || totalEmployees === 0} onClick={() => setPage(p => p + 1)}>→</Button>
+      <div className="flex gap-4 min-h-0">
+        {/* Table */}
+        <div className="flex-1 min-w-0 bg-surface rounded-xl shadow-card border border-border p-5">
+          <div className="flex items-center justify-between flex-wrap gap-3 mb-4">
+            <Input
+              placeholder="Buscar por nombre o email…"
+              value={search}
+              onChange={e => { setSearch(e.target.value); setPage(1); }}
+              wrapperClassName="max-w-72 flex-1"
+              leftIcon={
+                <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <circle cx="11" cy="11" r="8" /><path strokeLinecap="round" d="M21 21l-4.35-4.35" />
+                </svg>
+              }
+            />
+            <div className="flex items-center gap-2 text-sm text-content-2">
+              <span>Pág. {page}/{totalPages}</span>
+              <Button size="sm" variant="secondary" disabled={page === 1} onClick={() => setPage(p => p - 1)}>←</Button>
+              <Button size="sm" variant="secondary" disabled={page === totalPages || totalEmployees === 0} onClick={() => setPage(p => p + 1)}>→</Button>
+            </div>
+          </div>
+
+          <div className="overflow-x-auto rounded-lg border border-border">
+            <table className="w-full text-sm">
+              <thead className="bg-surface-2">
+                <tr>
+                  {['Nombre', 'Email', 'Rol', 'Creado', 'Acciones'].map(h => (
+                    <th key={h} className="px-4 py-2.5 text-left text-xs font-medium text-content-3 uppercase tracking-wider">{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {loadingEmployees ? (
+                  <tr><td colSpan={5} className="px-4 py-8 text-center text-content-3">Cargando…</td></tr>
+                ) : !selectedBusiness ? (
+                  <tr><td colSpan={5} className="px-4 py-8 text-center text-content-3">Seleccioná un negocio</td></tr>
+                ) : employees.length === 0 ? (
+                  <tr><td colSpan={5} className="px-4 py-8 text-center text-content-3">No hay empleados</td></tr>
+                ) : employees.map(emp => (
+                  <tr
+                    key={emp.id}
+                    onClick={() => setSelectedEmployee(selectedEmployee?.id === emp.id ? null : emp)}
+                    className={`cursor-pointer transition-colors ${selectedEmployee?.id === emp.id ? 'bg-primary-light border-l-2 border-primary' : 'hover:bg-surface-2'}`}
+                  >
+                    <td className="px-4 py-3 font-medium text-content">{emp.name}</td>
+                    <td className="px-4 py-3 text-content-2">{emp.email}</td>
+                    <td className="px-4 py-3">
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-info-light text-info-text">
+                        {emp.role || 'EMPLOYEE'}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-content-3">{new Date(emp.createdAt).toLocaleDateString('es-AR')}</td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
+                        <button onClick={() => setEditEmployee({ ...emp, password: '' })} className="w-7 h-7 flex items-center justify-center rounded-md border border-border text-content-3 hover:border-primary hover:text-primary hover:bg-primary-light transition-colors"><EditIcon /></button>
+                        <button onClick={() => handleDelete(emp.id)} className="w-7 h-7 flex items-center justify-center rounded-md border border-border text-content-3 hover:border-danger hover:text-danger hover:bg-danger-light transition-colors"><TrashIcon /></button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
 
-        <div className="overflow-x-auto rounded-lg border border-border">
-          <table className="w-full text-sm">
-            <thead className="bg-surface-2">
-              <tr>
-                {['Nombre', 'Email', 'Rol', 'Creado', 'Acciones'].map(h => (
-                  <th key={h} className="px-4 py-2.5 text-left text-xs font-medium text-content-3 uppercase tracking-wider">{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border">
-              {loadingEmployees ? (
-                <tr><td colSpan={5} className="px-4 py-8 text-center text-content-3">Cargando…</td></tr>
-              ) : !selectedBusiness ? (
-                <tr><td colSpan={5} className="px-4 py-8 text-center text-content-3">Seleccioná un negocio</td></tr>
-              ) : employees.length === 0 ? (
-                <tr><td colSpan={5} className="px-4 py-8 text-center text-content-3">No hay empleados</td></tr>
-              ) : employees.map(emp => (
-                <tr key={emp.id} className="hover:bg-surface-2 transition-colors">
-                  <td className="px-4 py-3 font-medium text-content">{emp.name}</td>
-                  <td className="px-4 py-3 text-content-2">{emp.email}</td>
-                  <td className="px-4 py-3">
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-info-light text-info-text">
-                      {emp.role || 'EMPLOYEE'}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-content-3">{new Date(emp.createdAt).toLocaleDateString('es-AR')}</td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-2">
-                      <button onClick={() => setEditEmployee({ ...emp, password: '' })} className="w-7 h-7 flex items-center justify-center rounded-md text-content-2 hover:bg-surface-3 transition-colors"><EditIcon /></button>
-                      <button onClick={() => handleDelete(emp.id)} className="w-7 h-7 flex items-center justify-center rounded-md text-danger hover:bg-danger-light transition-colors"><TrashIcon /></button>
-                    </div>
-                  </td>
-                </tr>
+        {/* Detail panel */}
+        {selectedEmployee && (
+          <aside className="w-64 shrink-0 bg-surface rounded-xl shadow-card border border-border flex flex-col overflow-hidden animate-slide-in-right">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-border">
+              <span className="text-xs font-bold text-content-3 uppercase tracking-wider">Detalle</span>
+              <button onClick={() => setSelectedEmployee(null)} className="w-6 h-6 flex items-center justify-center rounded hover:bg-surface-3 text-content-3 transition-colors">
+                <svg width="10" height="10" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M18 6L6 18M6 6l12 12"/></svg>
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-4 space-y-3">
+              <div className="text-center py-2">
+                <div className="w-12 h-12 rounded-full bg-info-light flex items-center justify-center text-info font-bold text-lg mx-auto mb-2">
+                  {selectedEmployee.name.split(' ').slice(0, 2).map(w => w[0]).join('').toUpperCase()}
+                </div>
+                <p className="font-bold text-content text-sm">{selectedEmployee.name}</p>
+                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-info-light text-info-text mt-1">
+                  {selectedEmployee.role || 'EMPLOYEE'}
+                </span>
+              </div>
+              {[
+                { label: 'Email',  value: selectedEmployee.email },
+                { label: 'Alta',   value: new Date(selectedEmployee.createdAt).toLocaleDateString('es-AR', { day: 'numeric', month: 'long', year: 'numeric' }) },
+              ].map(f => (
+                <div key={f.label} className="p-3 bg-surface-2 rounded-lg">
+                  <p className="text-xs text-content-3 uppercase tracking-wider">{f.label}</p>
+                  <p className="text-sm font-semibold text-content mt-0.5 break-all">{f.value}</p>
+                </div>
               ))}
-            </tbody>
-          </table>
-        </div>
+              <div className="space-y-2 pt-1">
+                <button
+                  onClick={() => { setEditEmployee({ ...selectedEmployee, password: '' }); setSelectedEmployee(null); }}
+                  className="w-full py-2 rounded-lg border border-border text-sm font-medium text-content-2 hover:border-primary hover:text-primary transition-colors"
+                >
+                  Editar empleado
+                </button>
+                <button
+                  onClick={() => { handleDelete(selectedEmployee.id); setSelectedEmployee(null); }}
+                  className="w-full py-2 rounded-lg border border-border text-sm font-medium text-danger hover:bg-danger-light transition-colors"
+                >
+                  Eliminar
+                </button>
+              </div>
+            </div>
+          </aside>
+        )}
       </div>
 
       <Modal open={showCreate} onClose={() => setShowCreate(false)} title="Nuevo empleado" size="sm">
