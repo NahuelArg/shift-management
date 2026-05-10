@@ -7,7 +7,8 @@ import Input from '../components/ui/Input';
 import Select from '../components/ui/Select';
 import { useToast } from '../components/ui/Toast';
 
-const DAYS = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+const DAYS       = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+const DAYS_SHORT = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
 
 const PlusIcon = () => (
   <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
@@ -36,6 +37,7 @@ const Schedules: React.FC = () => {
   const [editingSchedule, setEditingSchedule] = useState<Schedule | null>(null);
   const [formData, setFormData] = useState<CreateScheduleDto>(emptyForm);
   const [submitting, setSubmitting] = useState(false);
+  const [viewBizId, setViewBizId] = useState('');
 
   useEffect(() => { fetchSchedules(); fetchBusinesses(); }, []);
 
@@ -50,7 +52,10 @@ const Schedules: React.FC = () => {
     try {
       const data = await businessService.getAll();
       setBusinesses(data);
-      if (data.length > 0) setFormData(f => ({ ...f, businessId: f.businessId || data[0].id }));
+      if (data.length > 0) {
+        setFormData(f => ({ ...f, businessId: f.businessId || data[0].id }));
+        setViewBizId(v => v || data[0].id);
+      }
     } catch { /* silent */ }
   };
 
@@ -114,6 +119,55 @@ const Schedules: React.FC = () => {
         <Button leftIcon={<PlusIcon />} onClick={openCreate}>Nuevo horario</Button>
       </div>
 
+      {/* Weekly visual grid */}
+      <div className="bg-surface rounded-xl shadow-card border border-border overflow-hidden">
+        <div className="px-4 py-3 border-b border-border flex items-center justify-between flex-wrap gap-3">
+          <p className="text-sm font-semibold text-content">Vista semanal</p>
+          {businesses.length > 1 && (
+            <select
+              value={viewBizId}
+              onChange={e => setViewBizId(e.target.value)}
+              className="px-3 py-1.5 rounded-lg border border-border bg-surface text-sm text-content focus:border-primary outline-none"
+            >
+              {businesses.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+            </select>
+          )}
+        </div>
+        <div className="grid grid-cols-7">
+          {[0,1,2,3,4,5,6].map(dayIdx => {
+            const daySchedules = schedules.filter(s => s.businessId === viewBizId && s.dayOfWeek === dayIdx);
+            const isWeekend = dayIdx === 0 || dayIdx === 6;
+            return (
+              <div
+                key={dayIdx}
+                className={`p-3 min-h-[80px] border-r border-border last:border-r-0
+                  ${daySchedules.length > 0 ? '' : 'bg-surface-2'}
+                  ${isWeekend && daySchedules.length === 0 ? 'opacity-50' : ''}`}
+              >
+                <p className={`text-xs font-bold uppercase tracking-wider mb-2
+                  ${daySchedules.length > 0 ? 'text-primary' : 'text-content-3'}`}>
+                  {DAYS_SHORT[dayIdx]}
+                </p>
+                {daySchedules.length > 0 ? (
+                  daySchedules.map(s => (
+                    <button
+                      key={s.id}
+                      onClick={() => openEdit(s)}
+                      className="w-full text-left px-2 py-1.5 rounded-md mb-1 bg-primary/10 border border-primary/30 hover:bg-primary/15 transition-colors"
+                    >
+                      <p className="text-xs font-bold text-primary font-mono">{s.from}–{s.to}</p>
+                    </button>
+                  ))
+                ) : (
+                  <p className="text-xs text-content-3 italic">Cerrado</p>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Schedules table */}
       <div className="bg-surface rounded-xl shadow-card border border-border overflow-hidden">
         {loading ? (
           <div className="flex items-center justify-center py-12 text-content-3 text-sm">Cargando…</div>
@@ -171,6 +225,21 @@ const Schedules: React.FC = () => {
             <Input label="Apertura" type="time" value={formData.from} onChange={e => setFormData(p => ({ ...p, from: e.target.value }))} required />
             <Input label="Cierre" type="time" value={formData.to} onChange={e => setFormData(p => ({ ...p, to: e.target.value }))} required />
           </div>
+          {formData.from && formData.to && (() => {
+            const [h1, m1] = formData.from.split(':').map(Number);
+            const [h2, m2] = formData.to.split(':').map(Number);
+            const mins = (h2 * 60 + m2) - (h1 * 60 + m1);
+            if (mins <= 0) return (
+              <p className="text-xs text-danger bg-danger-light px-3 py-2 rounded-lg">
+                La hora de cierre debe ser posterior a la de apertura
+              </p>
+            );
+            return (
+              <p className="text-xs text-primary bg-primary-light px-3 py-2 rounded-lg font-medium">
+                Duración: {Math.floor(mins / 60)}h {mins % 60 > 0 ? `${mins % 60}m` : ''}
+              </p>
+            );
+          })()}
           <div className="flex gap-2 pt-2">
             <Button type="submit" loading={submitting} className="flex-1">{editingSchedule ? 'Guardar' : 'Crear'}</Button>
             <Button type="button" variant="secondary" onClick={() => setShowModal(false)} className="flex-1">Cancelar</Button>
