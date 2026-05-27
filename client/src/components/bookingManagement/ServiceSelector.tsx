@@ -36,9 +36,8 @@ const ServiceSelector: React.FC<ServiceSelectorProps> = ({
       
       setLoading(true);
       try {
-         apiClient.get(`/services/${businessId}`)
-          .then(res => setServices(res.data))
-          .catch(() => setError('Error loading services'));
+        const res = await apiClient.get(`/services/${businessId}`)
+        setServices(res.data);
       } catch (err) {
         setError('Error loading services');
         console.error('Error fetching services:', err);
