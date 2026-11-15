@@ -6,6 +6,7 @@
  *   BASE_URL=http://localhost:3000 node scripts/smoke-test.mjs
  *
  * Variables opcionales: BASE_URL, ORIGIN (frontend permitido por CORS),
+ * SKIP_RATE_LIMIT=true (omite la prueba de rate limit),
  * DEMO_PASSWORD y los emails ADMIN_EMAIL, ADMIN2_EMAIL, EMPLOYEE_EMAIL, CLIENT_EMAIL.
  *
  * Usa las cuentas demo del seed. Todo lo que crea (una reserva) lo borra al
@@ -19,6 +20,8 @@ const BASE = (
 const ORIGIN =
   process.env.ORIGIN ?? 'https://shift-management-livid.vercel.app';
 const PASSWORD = process.env.DEMO_PASSWORD ?? 'password123';
+// true = no ejecutar la prueba de rate limit (bloquea el login ~1 min desde esta IP)
+const SKIP_RATE_LIMIT = process.env.SKIP_RATE_LIMIT === 'true';
 const EMAILS = {
   admin: process.env.ADMIN_EMAIL ?? 'admin1@test.com',
   admin2: process.env.ADMIN2_EMAIL ?? 'admin2@test.com',
@@ -638,6 +641,7 @@ describe(
   '11. Rate limiting (último: bloquea el login ~1 minuto desde esta IP)',
 );
 await check('429 tras 10 intentos de login por minuto', async () => {
+  if (SKIP_RATE_LIMIT) return 'omitida (SKIP_RATE_LIMIT=true)';
   const codes = [];
   for (let i = 0; i < 12; i++) {
     codes.push(

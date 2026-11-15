@@ -1,0 +1,74 @@
+# Smoke tests contra la API desplegada en Render (server/scripts/smoke-test.mjs).
+# Prueba desde afuera, por HTTP, como un usuario real: casos de error (400/401/
+# 403/404/409/429), flujos correctos por rol y la configuración de producción.
+#
+# Se ejecuta:
+#  - a mano: Actions → "Smoke tests (producción)" → Run workflow
+#  - después de cada push a main que toque server/ (espera el deploy de Render)
+#  - una vez por día
+name: Smoke tests (producción)
+
+on:
+  workflow_dispatch:
+    inputs:
+      base_url:
+        description: URL de la API a probar
+        default: https://shift-management-1-n8hg.onrender.com
+      skip_rate_limit:
+        description: Omitir la prueba de rate limit (bloquea el login ~1 min desde el runner)
+        type: boolean
+        default: false
+  push:
+    branches: [main]
+    paths: ['server/**']
+  schedule:
+    - cron: '17 7 * * *' # todos los días ~07:17 UTC
+
+# Nunca dos ejecuciones a la vez: comparten las cuentas demo y el rate limit
+concurrency:
+  group: smoke-tests
+  cancel-in-progress: false
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: server
+    env:
+      BASE_URL: ${{ inputs.base_url || 'https://shift-management-1-n8hg.onrender.com' }}
+      SKIP_RATE_LIMIT: ${{ inputs.skip_rate_limit && 'true' || 'false' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Esperar el deploy nuevo de Render
+        if: github.event_name == 'push'
+        # Render tarda ~2-3 min en construir y arrancar. Consideramos que el deploy
+        # terminó cuando /health responde desde una instancia que arrancó DESPUÉS
+        # de este push (uptime menor que el tiempo transcurrido).
+        run: |
+          start=$(date +%s)
+          sleep 60
+          for i in $(seq 1 40); do
+            elapsed=$(( $(date +%s) - start ))
+            uptime=$(curl -fsS --max-time 60 "$BASE_URL/health" | node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>{try{console.log(JSON.parse(s).uptimeSeconds)}catch{console.log(999999)}})" || echo 999999)
+            echo "intento $i: uptime=${uptime}s, transcurrido=${elapsed}s"
+            if [ "$uptime" -lt "$elapsed" ]; then echo "Deploy nuevo activo"; exit 0; fi
+            sleep 15
+          done
+          echo "::warning::No se detectó un reinicio tras el push; se prueba la versión que esté activa"
+
+      - name: Despertar la API (Render free duerme el servicio)
+        run: |
+          for i in $(seq 1 6); do
+            curl -fsS --max-time 60 "$BASE_URL/health" && exit 0
+            echo "todavía arrancando ($i)…"; sleep 10
+          done
+          echo "::error::La API no respondió en $BASE_URL/health"; exit 1
+
+      - name: Smoke tests
+        run: node scripts/smoke-test.mjs
