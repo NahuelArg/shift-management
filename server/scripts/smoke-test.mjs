@@ -7,6 +7,7 @@
  *
  * Variables opcionales: BASE_URL, ORIGIN (frontend permitido por CORS),
  * SKIP_RATE_LIMIT=true (omite la prueba de rate limit),
+ * EXPECT_SWAGGER=false (exige que /api devuelva 404; por defecto se espera Swagger activo),
  * DEMO_PASSWORD y los emails ADMIN_EMAIL, ADMIN2_EMAIL, EMPLOYEE_EMAIL, CLIENT_EMAIL.
  *
  * Usa las cuentas demo del seed. Todo lo que crea (una reserva) lo borra al
@@ -22,6 +23,8 @@ const ORIGIN =
 const PASSWORD = process.env.DEMO_PASSWORD ?? 'password123';
 // true = no ejecutar la prueba de rate limit (bloquea el login ~1 min desde esta IP)
 const SKIP_RATE_LIMIT = process.env.SKIP_RATE_LIMIT === 'true';
+// Debe coincidir con SWAGGER_ENABLED del servidor (portafolio: true; con datos reales: false)
+const EXPECT_SWAGGER = (process.env.EXPECT_SWAGGER ?? 'true') === 'true';
 const EMAILS = {
   admin: process.env.ADMIN_EMAIL ?? 'admin1@test.com',
   admin2: process.env.ADMIN2_EMAIL ?? 'admin2@test.com',
@@ -585,8 +588,12 @@ await check('403 horario en un negocio ajeno', async () => {
 });
 
 describe('9. Configuración de producción');
-await check('404 Swagger desactivado en producción', async () =>
-  expectStatus(await api('GET', '/api'), 404),
+await check(
+  EXPECT_SWAGGER
+    ? 'Swagger publicado en /api (SWAGGER_ENABLED=true)'
+    : '404 Swagger desactivado en producción',
+  async () =>
+    expectStatus(await api('GET', '/api'), EXPECT_SWAGGER ? 200 : 404),
 );
 await check('404 ruta inexistente', async () =>
   expectStatus(await api('GET', '/no-existe'), 404),

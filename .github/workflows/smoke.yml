@@ -39,6 +39,8 @@ jobs:
     env:
       BASE_URL: ${{ inputs.base_url || 'https://shift-management-1-n8hg.onrender.com' }}
       SKIP_RATE_LIMIT: ${{ inputs.skip_rate_limit && 'true' || 'false' }}
+      # Variable del repo (Settings → Variables): false cuando se oculte Swagger en producción
+      EXPECT_SWAGGER: ${{ vars.EXPECT_SWAGGER || 'true' }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
