@@ -640,6 +640,30 @@ for (const id of cleanup) {
 describe(
   '11. Rate limiting (último: bloquea el login ~1 minuto desde esta IP)',
 );
+await check(
+  'una IP falsa en X-Forwarded-For no evita el límite (TRUST_PROXY_HOPS bien configurado)',
+  async () => {
+    if (SKIP_RATE_LIMIT) return 'omitida (SKIP_RATE_LIMIT=true)';
+    // Cada intento declara una IP distinta. Si la app le creyera a esa cabecera,
+    // cada intento contaría como un cliente nuevo y nunca habría 429.
+    const codes = [];
+    for (let i = 1; i <= 12; i++) {
+      codes.push(
+        (
+          await api('POST', '/auth/login', {
+            body: { email: 'fuerza@bruta.com', password: 'xxxxxxx' },
+            headers: { 'X-Forwarded-For': `198.51.100.${i}` },
+          })
+        ).status,
+      );
+    }
+    expect(
+      codes.includes(429),
+      `nunca devolvió 429: la app usa la IP que manda el cliente (${codes.join(' ')})`,
+    );
+    return codes.join(' ');
+  },
+);
 await check('429 tras 10 intentos de login por minuto', async () => {
   if (SKIP_RATE_LIMIT) return 'omitida (SKIP_RATE_LIMIT=true)';
   const codes = [];
