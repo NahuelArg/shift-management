@@ -1,4 +1,5 @@
 import apiClient from './apiClient';
+import { invalidateAdminBusinesses } from './adminBusinessCache';
 
 /**
  * Service: Relación entre Business y Service
@@ -54,6 +55,7 @@ const response = await apiClient.get(`/business`);
   async create(data: CreateBusinessDto): Promise<Business> {
     
     const response = await apiClient.post(`/business`, data);
+    invalidateAdminBusinesses();
     return response.data;
   },
 
@@ -66,11 +68,13 @@ const response = await apiClient.get(`/business`);
 
   async update(id: string, data: UpdateBusinessDto): Promise<Business> {
     const response = await apiClient.put(`/business/${id}`, data);
+    invalidateAdminBusinesses();
     return response.data;
   },
 
   async delete(id: string): Promise<Business> {
     const response = await apiClient.delete(`/business/${id}`);
+    invalidateAdminBusinesses();
     return response.data;
   },
 };

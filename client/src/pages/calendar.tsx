@@ -6,6 +6,7 @@ import BookingForm from '../components/bookingManagement/BookingForm';
 import StatusBadge, { bookingStatusVariant } from '../components/ui/StatusBadge';
 import Modal from '../components/ui/Modal';
 import { useToast } from '../components/ui/Toast';
+import { getAdminBusinesses } from '../services/adminBusinessCache';
 
 interface CalendarBooking {
   id: string;
@@ -164,8 +165,8 @@ const Calendar: React.FC = () => {
   // Fetch business + employees for this admin
   useEffect(() => {
     if (!token) return;
-    apiClient.get('/admin/me').then(res => {
-      const biz = res.data.businesses?.[0];
+    getAdminBusinesses().then(list => {
+      const biz = list[0];
       if (!biz) return;
       setBusinessId(biz.id);
       apiClient.get('/admin/employees', { params: { businessId: biz.id, page: 1, limit: 200 } })

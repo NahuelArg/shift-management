@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { apiClient } from '../services/apiClient';
+import { getAdminBusinesses } from '../services/adminBusinessCache';
 import { createBooking } from '../services/bookingService';
 import BookingForm from '../components/bookingManagement/BookingForm';
 import type { Business } from '../services/businessService';
@@ -81,9 +82,8 @@ const Admin: React.FC = () => {
 
   useEffect(() => {
     if (!user) return;
-    apiClient.get('/admin/me')
-      .then(res => {
-        const biz = res.data.businesses || [];
+    getAdminBusinesses<Business>()
+      .then(biz => {
         setBusinesses(biz);
         if (biz.length > 0) setSelectedBusiness(biz[0].id);
       })
@@ -107,7 +107,7 @@ const Admin: React.FC = () => {
           params: { businessId, userId: user?.id, from: today, to: today, groupBy: 'day' },
         }),
         apiClient.get('/admin/employees', { params: { businessId, page: 1, limit: 1 } }),
-        apiClient.get('/bookings'),
+        apiClient.get('/bookings', { params: { businessId, limit: 5 } }),
       ]);
 
       if (metricsRes.status === 'fulfilled') setMetrics(metricsRes.value.data);
@@ -117,10 +117,8 @@ const Admin: React.FC = () => {
       }
       if (employeesRes.status === 'fulfilled') setTotalEmployees(employeesRes.value.data.total ?? 0);
       if (bookingsRes.status === 'fulfilled') {
-        const sorted = [...bookingsRes.value.data]
-          .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-          .slice(0, 5);
-        setRecentBookings(sorted);
+        // El backend ya devuelve las 5 más recientes ordenadas
+        setRecentBookings(bookingsRes.value.data);
       }
     } catch {
       // individual errors handled via allSettled

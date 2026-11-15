@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { jwtDecode } from 'jwt-decode';
+import { invalidateAdminBusinesses } from '../services/adminBusinessCache';
 
 interface User {
   id: string;
@@ -65,6 +66,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUser(null);
     localStorage.removeItem('token');
     localStorage.removeItem('user');
+    invalidateAdminBusinesses();
   };
 
   const redirectByRoleCtx = () => redirectByRole(user?.role ?? 'CLIENT');

@@ -156,8 +156,10 @@ describe('BookingsService', () => {
     });
   })
   describe('getBookingByQuery', () => {
-    it('should filter by date range', async () => {
-      const filters = { date: '2025-01-01' };
+    const ownerId = 'admin1';
+
+    it('should filter by date range and owner', async () => {
+      const filters = { ownerId, date: '2025-01-01' };
       prisma.booking.findMany.mockResolvedValue([mockBooking]);
 
       await service.getBookingByQuery(filters);
@@ -166,33 +168,50 @@ describe('BookingsService', () => {
       startOfDay.setHours(0, 0, 0, 0);
       const endOfDay = new Date('2025-01-01');
       endOfDay.setHours(23, 59, 59, 999);
-      expect(prisma.booking.findMany).toHaveBeenCalledWith({
-        where: {
-          date: { gte: startOfDay, lte: endOfDay }
-        }
-      });
+      expect(prisma.booking.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: {
+            business: { ownerId },
+            date: { gte: startOfDay, lte: endOfDay },
+          },
+        }),
+      );
+    });
+
+    it('should only return bookings from businesses owned by the admin', async () => {
+      prisma.booking.findMany.mockResolvedValue([mockBooking]);
+      await service.getBookingByQuery({ ownerId });
+      const args = prisma.booking.findMany.mock.calls[0][0] as any;
+      expect(args.where.business).toEqual({ ownerId });
+      expect(args.take).toBeUndefined();
+    });
+
+    it('should return the most recent N bookings when limit is provided', async () => {
+      prisma.booking.findMany.mockResolvedValue([mockBooking]);
+      await service.getBookingByQuery({ ownerId, businessId: 'b1', limit: 5 });
+      expect(prisma.booking.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { business: { ownerId }, businessId: 'b1' },
+          orderBy: { date: 'desc' },
+          take: 5,
+        }),
+      );
     });
 
     it('should return an array of bookings matching the userId query', async () => {
-      const filters = { userId: 'user1' };
+      const filters = { ownerId, userId: 'user1' };
       prisma.booking.findMany.mockResolvedValue([mockBooking]);
       const result = await service.getBookingByQuery(filters);
       expect(result).toEqual([mockBooking]);
     });
     it('should return an array of bookings matching multiple queries', async () => {
-      const filters = { status: 'PENDING' as BookingStatus, date: new Date().toISOString(), userId: 'user1' };
-      prisma.booking.findMany.mockResolvedValue([mockBooking]);
-      const result = await service.getBookingByQuery(filters);
-      expect(result).toEqual([mockBooking]);
-    });
-    it('should return an array of bookings matching no queries', async () => {
-      const filters = {};
+      const filters = { ownerId, status: 'PENDING' as BookingStatus, date: new Date().toISOString(), userId: 'user1' };
       prisma.booking.findMany.mockResolvedValue([mockBooking]);
       const result = await service.getBookingByQuery(filters);
       expect(result).toEqual([mockBooking]);
     });
     it('should return an array of booking matching the status query', async () => {
-      const filters = { status: 'PENDING' as BookingStatus };
+      const filters = { ownerId, status: 'PENDING' as BookingStatus };
       prisma.booking.findMany.mockResolvedValue([mockBooking]);
       const result = await service.getBookingByQuery(filters);
       expect(result).toEqual([mockBooking]);
