@@ -92,6 +92,7 @@ const BusinessPage: React.FC = () => {
     try {
       await businessService.delete(id);
       setBusinesses(prev => prev.filter(b => b.id !== id));
+      if (selectedBusiness?.id === id) setSelectedBusiness(null);
       toast('Negocio eliminado', 'success');
     } catch (err: any) {
       toast(err.response?.data?.message || 'Error al eliminar', 'error');
@@ -149,9 +150,15 @@ const BusinessPage: React.FC = () => {
         <Button leftIcon={<PlusIcon />} onClick={openCreate}>Nuevo negocio</Button>
       </div>
 
+      {/*
+        Patrón master-detail responsive:
+        - < lg: se muestra la lista O el detalle (pantalla completa, con botón "Volver")
+        - ≥ lg: lista y detalle lado a lado
+      */}
       <div className="flex gap-4 flex-1 min-h-0">
         {/* Left — business list */}
-        <aside className="w-64 shrink-0 bg-surface rounded-xl shadow-card border border-border flex flex-col overflow-hidden">
+        <aside className={`w-full lg:w-64 shrink-0 bg-surface rounded-xl shadow-card border border-border flex-col overflow-hidden
+          ${selectedBusiness ? 'hidden lg:flex' : 'flex'}`}>
           <div className="px-4 py-3 border-b border-border flex items-center justify-between shrink-0">
             <p className="text-xs font-bold text-content-3 uppercase tracking-wider">
               Mis negocios ({businesses.length})
@@ -189,14 +196,23 @@ const BusinessPage: React.FC = () => {
         {/* Right — detail */}
         {selectedBusiness ? (
           <div className="flex-1 min-w-0 overflow-y-auto space-y-4 animate-fade-in">
+            {/* Volver a la lista (solo cuando no hay espacio para las dos columnas) */}
+            <button
+              onClick={() => setSelectedBusiness(null)}
+              className="lg:hidden flex items-center gap-1.5 text-sm font-medium text-content-2 hover:text-content transition-colors"
+            >
+              <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>
+              Mis negocios
+            </button>
+
             {/* Header */}
-            <div className="flex items-start justify-between bg-surface rounded-xl shadow-card border border-border p-5">
-              <div className="flex items-center gap-4">
-                <div className="w-14 h-14 rounded-2xl bg-info-light border border-info/20 flex items-center justify-center shrink-0">
+            <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 bg-surface rounded-xl shadow-card border border-border p-4 sm:p-5">
+              <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+                <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-info-light border border-info/20 flex items-center justify-center shrink-0">
                   <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="1.75" viewBox="0 0 24 24" className="text-info"><path strokeLinecap="round" strokeLinejoin="round" d="M3 21h18M3 7l9-4 9 4M4 7v14M20 7v14M9 21V9m0 0h6m-6 0v12m6-12v12"/></svg>
                 </div>
-                <div>
-                  <h3 className="text-xl font-bold text-content">{selectedBusiness.name}</h3>
+                <div className="min-w-0">
+                  <h3 className="text-lg sm:text-xl font-bold text-content break-words">{selectedBusiness.name}</h3>
                   <p className="text-sm text-content-3">
                     {new Date(selectedBusiness.createdAt).toLocaleDateString('es-AR', { day: 'numeric', month: 'long', year: 'numeric' })}
                   </p>
@@ -211,7 +227,8 @@ const BusinessPage: React.FC = () => {
                 </button>
                 <button
                   onClick={() => handleDelete(selectedBusiness.id)}
-                  className="w-8 h-8 flex items-center justify-center rounded-lg border border-border text-content-3 hover:border-danger hover:text-danger hover:bg-danger-light transition-colors"
+                  aria-label="Eliminar negocio"
+                  className="w-9 h-9 flex items-center justify-center rounded-lg border border-border text-content-3 hover:border-danger hover:text-danger hover:bg-danger-light transition-colors"
                 >
                   <TrashIcon />
                 </button>
@@ -220,7 +237,7 @@ const BusinessPage: React.FC = () => {
 
             {/* Services */}
             <div className="bg-surface rounded-xl shadow-card border border-border overflow-hidden">
-              <div className="px-5 py-3 border-b border-border flex items-center justify-between">
+              <div className="px-4 sm:px-5 py-3 border-b border-border flex items-center justify-between">
                 <p className="text-sm font-semibold text-content">Servicios</p>
                 <Button size="sm" leftIcon={<PlusIcon />} onClick={() => setShowServiceForm(v => !v)}>
                   {showServiceForm ? 'Cancelar' : 'Añadir'}
@@ -228,7 +245,7 @@ const BusinessPage: React.FC = () => {
               </div>
 
               {showServiceForm && (
-                <form onSubmit={handleCreateService} className="p-5 border-b border-border bg-surface-2 flex flex-col gap-3">
+                <form onSubmit={handleCreateService} className="p-4 sm:p-5 border-b border-border bg-surface-2 flex flex-col gap-3">
                   <Input label="Nombre" value={serviceForm.name} onChange={e => setServiceForm(p => ({ ...p, name: e.target.value }))} required />
                   <div className="grid grid-cols-2 gap-3">
                     <Input label="Precio ($)" type="number" min="0" step="0.01" value={serviceForm.price} onChange={e => setServiceForm(p => ({ ...p, price: e.target.value }))} />
@@ -244,12 +261,12 @@ const BusinessPage: React.FC = () => {
               ) : (
                 <div className="divide-y divide-border">
                   {businessServices.map(s => (
-                    <div key={s.id} className="px-5 py-3 flex items-center justify-between gap-3 hover:bg-surface-2 transition-colors">
-                      <div>
-                        <p className="font-medium text-content text-sm">{s.name}</p>
+                    <div key={s.id} className="px-4 sm:px-5 py-3 flex items-center justify-between gap-3 hover:bg-surface-2 transition-colors">
+                      <div className="min-w-0">
+                        <p className="font-medium text-content text-sm break-words">{s.name}</p>
                         <p className="text-xs text-content-3 font-mono">{s.durationMin} min · ${s.price?.toLocaleString('es-AR')}</p>
                       </div>
-                      <button onClick={() => handleDeleteService(s.id)} className="w-7 h-7 flex items-center justify-center rounded-md border border-border text-content-3 hover:border-danger hover:text-danger hover:bg-danger-light transition-colors"><TrashIcon /></button>
+                      <button onClick={() => handleDeleteService(s.id)} aria-label="Eliminar servicio" className="w-9 h-9 sm:w-7 sm:h-7 shrink-0 flex items-center justify-center rounded-md border border-border text-content-3 hover:border-danger hover:text-danger hover:bg-danger-light transition-colors"><TrashIcon /></button>
                     </div>
                   ))}
                 </div>
@@ -257,7 +274,7 @@ const BusinessPage: React.FC = () => {
             </div>
           </div>
         ) : (
-          <div className="flex-1 flex items-center justify-center text-content-3 text-sm bg-surface rounded-xl shadow-card border border-border">
+          <div className="hidden lg:flex flex-1 items-center justify-center text-content-3 text-sm bg-surface rounded-xl shadow-card border border-border">
             Seleccioná un negocio para ver el detalle
           </div>
         )}
