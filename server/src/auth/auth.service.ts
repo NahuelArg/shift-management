@@ -13,7 +13,8 @@ import { UserDto } from '../users/dto/UserDto.dto';
 import { Role } from '@prisma/client';
 
 // Hash bcrypt válido de una contraseña aleatoria, usado solo para igualar tiempos
-const DUMMY_HASH = '$2b$10$CwTycUXWue0Thq9StjUM0uJ8.6YVYmFQ7RnhrhQ5Gf7aJ8kPq3eU6';
+const DUMMY_HASH =
+  '$2b$10$CwTycUXWue0Thq9StjUM0uJ8.6YVYmFQ7RnhrhQ5Gf7aJ8kPq3eU6';
 
 @Injectable()
 export class AuthService {

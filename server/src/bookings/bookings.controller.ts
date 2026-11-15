@@ -60,11 +60,12 @@ export class BookingsController {
     });
   }
 
-
   // ✅ GET bookings assigned to employee
   @Get('my-assignments')
   @Roles('EMPLOYEE')
-  @ApiOperation({ summary: 'Get bookings assigned to current employee (EMPLOYEE)' })
+  @ApiOperation({
+    summary: 'Get bookings assigned to current employee (EMPLOYEE)',
+  })
   @ApiResponse({ status: 200, type: [BookingDto] })
   async getMyAssignments(@Request() req: RequestWithUser): Promise<Booking[]> {
     return this.bookingsService.getBookingsByEmployee(req.user.userId);
@@ -97,12 +98,12 @@ export class BookingsController {
     });
   }
 
-
   // ✅ PUT update a booking (just own or any if ADMIN)
   @Put(':id')
   @Roles('ADMIN')
   @ApiOperation({
-    summary: 'Reassign employee or adjust price of a booking (ADMIN, own businesses)',
+    summary:
+      'Reassign employee or adjust price of a booking (ADMIN, own businesses)',
   })
   async updateBooking(
     @Param('id') id: string,
@@ -141,10 +142,14 @@ export class BookingsController {
     @Query('date') date: string,
     @Query('endTime') endTime: string,
   ) {
-      if (!businessId || !date || !endTime) {
-        throw new BadRequestException('Missing required query parameters');
-      }
-    return this.bookingsService.findAvailableEmployee(businessId, new Date(date), new Date(endTime));
+    if (!businessId || !date || !endTime) {
+      throw new BadRequestException('Missing required query parameters');
+    }
+    return this.bookingsService.findAvailableEmployee(
+      businessId,
+      new Date(date),
+      new Date(endTime),
+    );
   }
 
   // ✅ DELETE a booking (just own or any if ADMIN)
@@ -159,4 +164,3 @@ export class BookingsController {
     return this.bookingsService.delete(id, req.user);
   }
 }
-

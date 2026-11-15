@@ -35,7 +35,7 @@ const Login: React.FC = () => {
     try {
       const data = await loginService(email, password);
       await login(data.accessToken, data.user);
-      navigate(redirectByRole(data.user.role));
+      void navigate(redirectByRole(data.user.role));
     } catch (err: unknown) {
       if (!navigator.onLine) {
         setError('Sin conexión a internet. Verificá tu red.');

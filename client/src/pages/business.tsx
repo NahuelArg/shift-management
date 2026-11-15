@@ -11,6 +11,7 @@ import Modal from '../components/ui/Modal';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
 import { useToast } from '../components/ui/Toast';
+import { getErrorMessage } from '../services/apiError';
 
 const PlusIcon = () => (
   <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
@@ -45,12 +46,12 @@ const BusinessPage: React.FC = () => {
   const [serviceForm, setServiceForm] = useState({ name: '', description: '', price: '', durationMin: '' });
   const [serviceSubmitting, setServiceSubmitting] = useState(false);
 
-  useEffect(() => { fetchBusinesses(); }, [user?.id]);
+  useEffect(() => { void fetchBusinesses(); }, [user?.id]);
 
   const fetchBusinesses = async () => {
     setLoading(true);
     try { setBusinesses(await businessService.getAll()); }
-    catch (err: any) { toast(err.response?.data?.message || 'Error al cargar negocios', 'error'); }
+    catch (err) { toast(getErrorMessage(err, 'Error al cargar negocios'), 'error'); }
     finally { setLoading(false); }
   };
 
@@ -79,9 +80,9 @@ const BusinessPage: React.FC = () => {
         toast('Negocio creado', 'success');
       }
       setShowModal(false);
-      fetchBusinesses();
-    } catch (err: any) {
-      toast(err.response?.data?.message || 'Error al guardar', 'error');
+      void fetchBusinesses();
+    } catch (err) {
+      toast(getErrorMessage(err, 'Error al guardar'), 'error');
     } finally {
       setSubmitting(false);
     }
@@ -94,8 +95,8 @@ const BusinessPage: React.FC = () => {
       setBusinesses(prev => prev.filter(b => b.id !== id));
       if (selectedBusiness?.id === id) setSelectedBusiness(null);
       toast('Negocio eliminado', 'success');
-    } catch (err: any) {
-      toast(err.response?.data?.message || 'Error al eliminar', 'error');
+    } catch (err) {
+      toast(getErrorMessage(err, 'Error al eliminar'), 'error');
     }
   };
 
@@ -122,8 +123,8 @@ const BusinessPage: React.FC = () => {
       setServiceForm({ name: '', description: '', price: '', durationMin: '' });
       setShowServiceForm(false);
       setBusinessServices(await serviceService.getByBusinessId(selectedBusiness.id));
-    } catch (err: any) {
-      toast(err.response?.data?.message || 'Error al crear servicio', 'error');
+    } catch (err) {
+      toast(getErrorMessage(err, 'Error al crear servicio'), 'error');
     } finally {
       setServiceSubmitting(false);
     }
@@ -135,8 +136,8 @@ const BusinessPage: React.FC = () => {
       await serviceService.delete(serviceId, selectedBusiness!.id);
       setBusinessServices(prev => prev.filter(s => s.id !== serviceId));
       toast('Servicio eliminado', 'success');
-    } catch (err: any) {
-      toast(err.response?.data?.message || 'Error al eliminar', 'error');
+    } catch (err) {
+      toast(getErrorMessage(err, 'Error al eliminar'), 'error');
     }
   };
 
@@ -175,7 +176,7 @@ const BusinessPage: React.FC = () => {
             ) : businesses.map(b => (
               <button
                 key={b.id}
-                onClick={() => { setSelectedBusiness(b); openServices(b); }}
+                onClick={() => { setSelectedBusiness(b); void openServices(b); }}
                 className={`w-full flex items-center gap-3 p-3 rounded-xl mb-1 text-left transition-all
                   ${selectedBusiness?.id === b.id
                     ? 'bg-info/10 border-l-2 border-info'

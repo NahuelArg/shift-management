@@ -15,9 +15,7 @@ import { toMinutes } from '../utils/toMinutes';
 
 @Injectable()
 export class BookingsService {
-  constructor(
-    private prisma: PrismaService,
-  ) {}
+  constructor(private prisma: PrismaService) {}
 
   async findAll(): Promise<Booking[]> {
     return this.prisma.booking.findMany();
@@ -54,7 +52,9 @@ export class BookingsService {
       userId = actor.userId;
     } else {
       if (actor.role === 'ADMIN' && business.ownerId !== actor.userId) {
-        throw new ForbiddenException('You can only book in your own businesses');
+        throw new ForbiddenException(
+          'You can only book in your own businesses',
+        );
       }
       if (actor.role === 'EMPLOYEE') {
         const me = await this.prisma.user.findUnique({
@@ -62,7 +62,9 @@ export class BookingsService {
           select: { businessId: true },
         });
         if (me?.businessId !== businessId) {
-          throw new ForbiddenException('You can only book in your own business');
+          throw new ForbiddenException(
+            'You can only book in your own business',
+          );
         }
       }
       userId = data.userId ?? null; // null = walk-in
@@ -81,7 +83,8 @@ export class BookingsService {
     const service = await this.prisma.service.findUnique({
       where: { id: serviceId },
     });
-    if (!service) throw new BadRequestException('Service not found');
+    if (!service || !service.active)
+      throw new BadRequestException('Service not found');
     if (service.businessId !== businessId) {
       throw new BadRequestException('Service does not belong to this business');
     }
@@ -146,7 +149,12 @@ export class BookingsService {
       // ── Empleado ──────────────────────────────────────────────────────────
       let finalEmployeeId: string | null = employeeId || null;
       if (!finalEmployeeId) {
-        const available = await this.findAvailableEmployee(businessId, dateUtc, endTime, tx);
+        const available = await this.findAvailableEmployee(
+          businessId,
+          dateUtc,
+          endTime,
+          tx,
+        );
         if (!available || available.length === 0) {
           throw new BadRequestException(
             'No available employees for the selected time slot',
@@ -257,7 +265,11 @@ export class BookingsService {
 
     if (dto.employeeId) {
       const employee = await this.prisma.user.findFirst({
-        where: { id: dto.employeeId, businessId: booking.businessId, role: 'EMPLOYEE' },
+        where: {
+          id: dto.employeeId,
+          businessId: booking.businessId,
+          role: 'EMPLOYEE',
+        },
       });
       if (!employee) {
         throw new BadRequestException('Employee not found in this business');
@@ -372,11 +384,18 @@ export class BookingsService {
           throw new ForbiddenException('Not authorized to update this booking');
         }
         if (status !== BookingStatus.CANCELLED) {
-          throw new ForbiddenException('Clients can only cancel their bookings');
+          throw new ForbiddenException(
+            'Clients can only cancel their bookings',
+          );
         }
-        const cancellable: BookingStatus[] = [BookingStatus.PENDING, BookingStatus.CONFIRMED];
+        const cancellable: BookingStatus[] = [
+          BookingStatus.PENDING,
+          BookingStatus.CONFIRMED,
+        ];
         if (!cancellable.includes(booking.status)) {
-          throw new BadRequestException('This booking can no longer be cancelled');
+          throw new BadRequestException(
+            'This booking can no longer be cancelled',
+          );
         }
         break;
       }
@@ -395,10 +414,10 @@ export class BookingsService {
   }
   /**
    * Encuentra un empleado disponible para el negocio y horario dado
-   * @param businessId 
-   * @param startTime 
-   * @param endTime 
-   * @returns 
+   * @param businessId
+   * @param startTime
+   * @param endTime
+   * @returns
    */
   async findAvailableEmployee(
     businessId: string,
@@ -419,18 +438,18 @@ export class BookingsService {
     if (employees.length === 0) {
       return []; // No hay empleados en el negocio
     }
-    const employeeIds = employees.map(e => e.id)
-  
+    const employeeIds = employees.map((e) => e.id);
+
     const conflictingBookings = await db.booking.findMany({
-        where: {
-          employeeId: {in:employeeIds},
-          status: { not: 'CANCELLED' },
-          date: { lt: endTime },
-          endTime: { gt: startTime },
-        },
-      })
-      const busyIds = new Set(conflictingBookings.map(b=>b.employeeId))
-      return employees.filter(e=> !busyIds.has(e.id))
+      where: {
+        employeeId: { in: employeeIds },
+        status: { not: 'CANCELLED' },
+        date: { lt: endTime },
+        endTime: { gt: startTime },
+      },
+    });
+    const busyIds = new Set(conflictingBookings.map((b) => b.employeeId));
+    return employees.filter((e) => !busyIds.has(e.id));
   }
   /**
    * Get all bookings assigned to a specific employee

@@ -1,9 +1,12 @@
-import { DeepMockProxy, mockDeep } from 'jest-mock-extended'
+import { DeepMockProxy, mockDeep } from 'jest-mock-extended';
 import { Test, TestingModule } from '@nestjs/testing';
 import { SchedulesService } from './schedules.service';
-import { PrismaService } from '../../prisma/prisma.service'
-import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
-import { UpdateScheduleDto } from './dto/updateSchedules.dto';
+import { PrismaService } from '../../prisma/prisma.service';
+import {
+  BadRequestException,
+  ForbiddenException,
+  NotFoundException,
+} from '@nestjs/common';
 
 describe('SchedulesService', () => {
   let prisma: DeepMockProxy<PrismaService>;
@@ -12,150 +15,264 @@ describe('SchedulesService', () => {
 
   beforeEach(async () => {
     module = await Test.createTestingModule({
-      providers: [SchedulesService,
+      providers: [
+        SchedulesService,
         {
           provide: PrismaService,
-          useValue: mockDeep<PrismaService>()
-        }
+          useValue: mockDeep<PrismaService>(),
+        },
       ],
     }).compile();
     prisma = module.get<DeepMockProxy<PrismaService>>(PrismaService);
     service = module.get<SchedulesService>(SchedulesService);
   });
   afterEach(async () => {
-    await module.close()
-  })
+    await module.close();
+  });
 
   it('should be defined', () => {
     expect(service).toBeDefined();
-  })
+  });
   describe('FindAll', () => {
     it('should throw BadRequestException if userId is not provided', async () => {
-      await expect(service.findAll(null as any)).rejects.toThrow(BadRequestException);
-    })
+      await expect(service.findAll(null as any)).rejects.toThrow(
+        BadRequestException,
+      );
+    });
     it('should get all owner schedules', async () => {
-      prisma.business.findMany.mockResolvedValue([{ id: 'biz-id' }] as any)
-      prisma.schedule.findMany.mockResolvedValue([{ id: 'schedule-id', dayOfWeek: 1, from: '10:00', to: '12:30', businessId: 'biz-213' }] as any)
-      const result = await service.findAll('userId-123')
-      expect(result).toEqual(
-        [{
-          id: 'schedule-id',
-          dayOfWeek: 1,
-          from: '10:00',
-          to: '12:30',
-          businessId: 'biz-213'
-        }]
-      )
-    })
-  });
-  describe('FindOne', () => {
-    it('should get schedule by id', async () => {
-      prisma.schedule.findFirst.mockResolvedValue({ id: 'schedule-id', dayOfWeek: 1, from: '10:00', to: '12:30', businessId: 'biz-213' } as any)
-      const result = await service.findOne('schedule-id', 'owner-1')
-      expect(prisma.schedule.findFirst).toHaveBeenCalledWith({ where: { id: 'schedule-id', business: { ownerId: 'owner-1' } } })
-      expect(result).toEqual(
+      prisma.business.findMany.mockResolvedValue([{ id: 'biz-id' }] as any);
+      prisma.schedule.findMany.mockResolvedValue([
         {
           id: 'schedule-id',
           dayOfWeek: 1,
           from: '10:00',
           to: '12:30',
-          businessId: 'biz-213'
-        }
-      )
-    })
+          businessId: 'biz-213',
+        },
+      ] as any);
+      const result = await service.findAll('userId-123');
+      expect(result).toEqual([
+        {
+          id: 'schedule-id',
+          dayOfWeek: 1,
+          from: '10:00',
+          to: '12:30',
+          businessId: 'biz-213',
+        },
+      ]);
+    });
+  });
+  describe('FindOne', () => {
+    it('should get schedule by id', async () => {
+      prisma.schedule.findFirst.mockResolvedValue({
+        id: 'schedule-id',
+        dayOfWeek: 1,
+        from: '10:00',
+        to: '12:30',
+        businessId: 'biz-213',
+      } as any);
+      const result = await service.findOne('schedule-id', 'owner-1');
+      expect(prisma.schedule.findFirst).toHaveBeenCalledWith({
+        where: { id: 'schedule-id', business: { ownerId: 'owner-1' } },
+      });
+      expect(result).toEqual({
+        id: 'schedule-id',
+        dayOfWeek: 1,
+        from: '10:00',
+        to: '12:30',
+        businessId: 'biz-213',
+      });
+    });
     it('should throw BadRequestException if id is not provided', async () => {
-      await expect(service.findOne(null as any, 'owner-1')).rejects.toThrow(BadRequestException);
-    })
+      await expect(service.findOne(null as any, 'owner-1')).rejects.toThrow(
+        BadRequestException,
+      );
+    });
     it('should throw NotFoundException if schedule id is not found', async () => {
-      prisma.schedule.findFirst.mockResolvedValue(null)
-      await expect(service.findOne('schedule-123', 'owner-1')).rejects.toThrow(NotFoundException);
-    })
+      prisma.schedule.findFirst.mockResolvedValue(null);
+      await expect(service.findOne('schedule-123', 'owner-1')).rejects.toThrow(
+        NotFoundException,
+      );
+    });
   });
   describe('Create', () => {
     it('should throw BadRequestException if fromMinutes > or = than toMinutes', async () => {
-      prisma.business.findFirst.mockResolvedValue({ id: 'biz1' } as any)
-      await expect(service.create({ from: '10:00', to: '09:00', dayOfWeek: 1, businessId: 'biz1' }, 'owner-1')).rejects.toThrow(BadRequestException);
-    })
+      prisma.business.findFirst.mockResolvedValue({ id: 'biz1' } as any);
+      await expect(
+        service.create(
+          { from: '10:00', to: '09:00', dayOfWeek: 1, businessId: 'biz1' },
+          'owner-1',
+        ),
+      ).rejects.toThrow(BadRequestException);
+    });
     it('should forbid creating schedules in a business the admin does not own', async () => {
-      prisma.business.findFirst.mockResolvedValue(null)
-      await expect(service.create({ from: '09:00', to: '18:00', dayOfWeek: 1, businessId: 'biz-ajeno' }, 'owner-1')).rejects.toThrow(ForbiddenException);
-      expect(prisma.schedule.create).not.toHaveBeenCalled()
-    })
+      prisma.business.findFirst.mockResolvedValue(null);
+      await expect(
+        service.create(
+          { from: '09:00', to: '18:00', dayOfWeek: 1, businessId: 'biz-ajeno' },
+          'owner-1',
+        ),
+      ).rejects.toThrow(ForbiddenException);
+      expect(prisma.schedule.create).not.toHaveBeenCalled();
+    });
     it('should create a schedule', async () => {
-      prisma.schedule.create.mockResolvedValue({ id: 'schedule1', from: '17:00', to: '19:00', dayOfWeek: 1, businessId: 'biz1' })
-      prisma.business.findFirst.mockResolvedValue({ id: 'biz1' } as any)
-      const result = await service.create({ from: '17:00', to: '19:00', dayOfWeek: 1, businessId: 'biz1' }, 'owner-1')
+      prisma.schedule.create.mockResolvedValue({
+        id: 'schedule1',
+        from: '17:00',
+        to: '19:00',
+        dayOfWeek: 1,
+        businessId: 'biz1',
+      });
+      prisma.business.findFirst.mockResolvedValue({ id: 'biz1' } as any);
+      const result = await service.create(
+        { from: '17:00', to: '19:00', dayOfWeek: 1, businessId: 'biz1' },
+        'owner-1',
+      );
       expect(result).toEqual({
         id: 'schedule1',
         from: '17:00',
         to: '19:00',
         dayOfWeek: 1,
-        businessId: 'biz1'
-      })
-    })
+        businessId: 'biz1',
+      });
+    });
   });
   describe('Delete', () => {
     it('should throw BadRequestException if id is not provided', async () => {
-      await expect(service.delete(null as any, 'userId')).rejects.toThrow(BadRequestException)
-    })
+      await expect(service.delete(null as any, 'userId')).rejects.toThrow(
+        BadRequestException,
+      );
+    });
     it('should throw BadRequestException if userId is not provided', async () => {
-      await expect(service.delete('schedule-id', null as any)).rejects.toThrow(BadRequestException)
-    })
+      await expect(service.delete('schedule-id', null as any)).rejects.toThrow(
+        BadRequestException,
+      );
+    });
     it('should throw NotFoundException  if schedule not found', async () => {
-      await expect(service.delete('schedule-id2', 'user2')).rejects.toThrow(NotFoundException)
-    })
+      await expect(service.delete('schedule-id2', 'user2')).rejects.toThrow(
+        NotFoundException,
+      );
+    });
     it('should throw NotFoundException  if business not found', async () => {
-      prisma.schedule.findUnique.mockResolvedValue({ id: 'schedule-id', businessId: 'biz-1' } as any);
-      await expect(service.delete('schedule-id2', 'user2')).rejects.toThrow(NotFoundException)
-    })
+      prisma.schedule.findUnique.mockResolvedValue({
+        id: 'schedule-id',
+        businessId: 'biz-1',
+      } as any);
+      await expect(service.delete('schedule-id2', 'user2')).rejects.toThrow(
+        NotFoundException,
+      );
+    });
     it('should throw ForbiddenException  if ownerId is not equal to businessId', async () => {
-      prisma.schedule.findUnique.mockResolvedValue({ id: 'schedule-id2' } as any)
-      prisma.business.findUnique.mockResolvedValue({ ownerId: 'user1' } as any)
-      await expect(service.delete('schedule-id2', 'user2')).rejects.toThrow(ForbiddenException)
-    })
+      prisma.schedule.findUnique.mockResolvedValue({
+        id: 'schedule-id2',
+      } as any);
+      prisma.business.findUnique.mockResolvedValue({ ownerId: 'user1' } as any);
+      await expect(service.delete('schedule-id2', 'user2')).rejects.toThrow(
+        ForbiddenException,
+      );
+    });
     it('should delete schedule', async () => {
-      prisma.schedule.findUnique.mockResolvedValue({ id: 'schedule-id' } as any)
-      prisma.business.findUnique.mockResolvedValue({ id: 'biz-1', ownerId: 'user2' } as any)
+      prisma.schedule.findUnique.mockResolvedValue({
+        id: 'schedule-id',
+      } as any);
+      prisma.business.findUnique.mockResolvedValue({
+        id: 'biz-1',
+        ownerId: 'user2',
+      } as any);
       await service.delete('schedule-id', 'user2');
       expect(prisma.schedule.delete).toHaveBeenCalledWith({
-        where: { id: 'schedule-id' }
+        where: { id: 'schedule-id' },
       });
-    })
+    });
   });
   describe('Update', () => {
     it('should throw BadRequestException if arg not provided', async () => {
-      await expect(service.update(null as any, { from: '10:00', to: '12:00' } as any, 'userId')).rejects.toThrow(BadRequestException)
-    })
+      await expect(
+        service.update(
+          null as any,
+          { from: '10:00', to: '12:00' } as any,
+          'userId',
+        ),
+      ).rejects.toThrow(BadRequestException);
+    });
     it('should throw BadRequestException if arg not provided', async () => {
-      await expect(service.update('schedule1', { from: '10:00', to: '12:00' } as any, null as any)).rejects.toThrow(BadRequestException)
-    })
+      await expect(
+        service.update(
+          'schedule1',
+          { from: '10:00', to: '12:00' } as any,
+          null as any,
+        ),
+      ).rejects.toThrow(BadRequestException);
+    });
     it('should throw NotFoundException  if schedule not found', async () => {
-      prisma.schedule.findUnique.mockResolvedValue( null as any);
-      await expect(service.update('schedule-id', { from: '10:00', to: '12:00' } as any, 'user2')).rejects.toThrow(NotFoundException)
-    })
+      prisma.schedule.findUnique.mockResolvedValue(null as any);
+      await expect(
+        service.update(
+          'schedule-id',
+          { from: '10:00', to: '12:00' } as any,
+          'user2',
+        ),
+      ).rejects.toThrow(NotFoundException);
+    });
     it('should throw BadRequestException if fromMinutes > or = than toMinutes', async () => {
-      prisma.schedule.findUnique.mockResolvedValue({ id: 'schedule-id' } as any)
-      prisma.business.findUnique.mockResolvedValue({ id: 'biz-1', ownerId: 'userId' } as any)
-      await expect(service.update('schedule-id1',{ from: '10:00', to: '09:00', dayOfWeek: 1, }, 'userId')).rejects.toThrow(BadRequestException);
-    })
+      prisma.schedule.findUnique.mockResolvedValue({
+        id: 'schedule-id',
+      } as any);
+      prisma.business.findUnique.mockResolvedValue({
+        id: 'biz-1',
+        ownerId: 'userId',
+      } as any);
+      await expect(
+        service.update(
+          'schedule-id1',
+          { from: '10:00', to: '09:00', dayOfWeek: 1 },
+          'userId',
+        ),
+      ).rejects.toThrow(BadRequestException);
+    });
     it('should throw NotFoundException  if business not found', async () => {
-      prisma.schedule.findUnique.mockResolvedValue({ id: 'schedule-id2' } as any);
+      prisma.schedule.findUnique.mockResolvedValue({
+        id: 'schedule-id2',
+      } as any);
       prisma.business.findUnique.mockResolvedValue(null as any);
-      await expect(service.update('schedule-id2', { from: '10:00', to: '12:00' } as any, 'user2')).rejects.toThrow(NotFoundException)
-    })
+      await expect(
+        service.update(
+          'schedule-id2',
+          { from: '10:00', to: '12:00' } as any,
+          'user2',
+        ),
+      ).rejects.toThrow(NotFoundException);
+    });
     it('should throw ForbiddenException  if ownerId is not equal to businessId', async () => {
-      prisma.schedule.findUnique.mockResolvedValue({ id: 'schedule-id2' } as any)
-      prisma.business.findUnique.mockResolvedValue({ ownerId: 'user1' } as any)
-      await expect(service.update('schedule-id2', { from: '10:00', to: '12:00' } as any, 'user2')).rejects.toThrow(ForbiddenException)
-    })
+      prisma.schedule.findUnique.mockResolvedValue({
+        id: 'schedule-id2',
+      } as any);
+      prisma.business.findUnique.mockResolvedValue({ ownerId: 'user1' } as any);
+      await expect(
+        service.update(
+          'schedule-id2',
+          { from: '10:00', to: '12:00' } as any,
+          'user2',
+        ),
+      ).rejects.toThrow(ForbiddenException);
+    });
     it('should update schedule', async () => {
-      prisma.schedule.findUnique.mockResolvedValue({ id: 'schedule-id' } as any)
-      prisma.business.findUnique.mockResolvedValue({ id: 'biz-1', ownerId: 'user2' } as any)
-      await service.update('schedule-id', {  from: '10:00', to: '12:00' } as any, 'user2');
+      prisma.schedule.findUnique.mockResolvedValue({
+        id: 'schedule-id',
+      } as any);
+      prisma.business.findUnique.mockResolvedValue({
+        id: 'biz-1',
+        ownerId: 'user2',
+      } as any);
+      await service.update(
+        'schedule-id',
+        { from: '10:00', to: '12:00' } as any,
+        'user2',
+      );
       expect(prisma.schedule.update).toHaveBeenCalledWith({
         where: { id: 'schedule-id' },
-        data: { from: '10:00', to: '12:00' }
+        data: { from: '10:00', to: '12:00' },
       });
-    })
+    });
   });
-})
+});

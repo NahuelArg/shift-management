@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { apiClient } from '../services/apiClient';
 import StatCard from '../components/ui/StatCard';
 import StatusBadge, { bookingStatusVariant } from '../components/ui/StatusBadge';
+import { getErrorMessage } from '../services/apiError';
 
 interface Booking {
   id: string;
@@ -49,8 +50,9 @@ const Dashboard: React.FC = () => {
     try {
       setLoading(true);
       setError(null);
-      const res = await apiClient.get('/bookings/my-bookings');
-      const transformed = res.data.map((b: any) => ({
+      // La API devuelve fechas ISO; startTime se deriva acá
+      const res = await apiClient.get<Omit<Booking, 'startTime'>[]>('/bookings/my-bookings');
+      const transformed: Booking[] = res.data.map(b => ({
         ...b,
         date:      new Date(b.date).toISOString().split('T')[0],
         startTime: new Date(b.date).toTimeString().slice(0, 5),
@@ -63,14 +65,14 @@ const Dashboard: React.FC = () => {
         confirmed: transformed.filter((b: Booking) => b.status === 'CONFIRMED').length,
         cancelled: transformed.filter((b: Booking) => b.status === 'CANCELLED').length,
       });
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Error al cargar las reservas');
+    } catch (err) {
+      setError(getErrorMessage(err, 'Error al cargar las reservas'));
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => { fetchBookings(); }, [token]);
+  useEffect(() => { void fetchBookings(); }, [token]);
 
   return (
     <div className="space-y-6">

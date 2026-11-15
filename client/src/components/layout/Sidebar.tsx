@@ -93,7 +93,7 @@ const Sidebar: React.FC = () => {
 
   const handleLogout = async () => {
     await logout();
-    navigate('/home');
+    void navigate('/home');
   };
 
   const visibleItems: NavItem[] = user ? (navByRole[user.role] ?? []) : [];

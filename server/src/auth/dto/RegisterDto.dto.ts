@@ -1,6 +1,12 @@
 import { NormalizeEmail } from '../../decorators/normalize-email.decorator';
 import { ApiProperty } from '@nestjs/swagger';
-import { IsEmail, IsNotEmpty, IsString, MaxLength, MinLength } from 'class-validator';
+import {
+  IsEmail,
+  IsNotEmpty,
+  IsString,
+  MaxLength,
+  MinLength,
+} from 'class-validator';
 
 /**
  * Registro público: solo cuentas LOCAL con contraseña y rol CLIENT.
@@ -19,7 +25,10 @@ export class RegisterDto {
   @IsEmail()
   email: string;
 
-  @ApiProperty({ description: 'Password (6-72 characters)', example: 'my_secure_password' })
+  @ApiProperty({
+    description: 'Password (6-72 characters)',
+    example: 'my_secure_password',
+  })
   @IsString()
   @MinLength(6)
   @MaxLength(72) // bcrypt ignora lo que pasa de 72 bytes

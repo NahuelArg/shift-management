@@ -29,7 +29,7 @@ import { BusinessWithServices } from './dto/businessWithService.dto';
 @ApiTags('Services')
 @Controller('services')
 export class ServicesController {
-  constructor(private readonly servicesService: ServicesService) { }
+  constructor(private readonly servicesService: ServicesService) {}
 
   @Get()
   @ApiBearerAuth()
@@ -37,7 +37,9 @@ export class ServicesController {
   @Roles('ADMIN')
   @ApiOperation({ summary: 'Get all services' })
   @ApiResponse({ status: 200, type: [ServiceDto] })
-  async findAll(@Request() req: RequestWithUser): Promise<BusinessWithServices[]> {
+  async findAll(
+    @Request() req: RequestWithUser,
+  ): Promise<BusinessWithServices[]> {
     return this.servicesService.findAll(req.user.userId);
   }
 
@@ -45,9 +47,11 @@ export class ServicesController {
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('EMPLOYEE')
-  @ApiOperation({ summary: 'Get services from employee\'s business (EMPLOYEE)' })
+  @ApiOperation({ summary: "Get services from employee's business (EMPLOYEE)" })
   @ApiResponse({ status: 200, type: [ServiceDto] })
-  async getMyBusinessServices(@Request() req: RequestWithUser): Promise<Service[]> {
+  async getMyBusinessServices(
+    @Request() req: RequestWithUser,
+  ): Promise<Service[]> {
     return this.servicesService.getServicesByEmployee(req.user.userId);
   }
 
@@ -64,11 +68,10 @@ export class ServicesController {
   async delete(
     @Param('id') id: string,
     @Request() req: RequestWithUser,
-    @Param('businessId') businessId: string)
-    : Promise<Service> {
+    @Param('businessId') businessId: string,
+  ): Promise<Service> {
     return this.servicesService.delete(id, req.user.userId, businessId);
   }
-
 
   @Get(':businessId')
   @ApiBearerAuth()
@@ -78,9 +81,12 @@ export class ServicesController {
   @ApiResponse({ status: 200, type: [ServiceDto] })
   async findById(
     @Param('businessId') businessId: string,
-    @Request() req: RequestWithUser)
-    : Promise<Service[]> {
-    return this.servicesService.getServicesByBusinessId(businessId, req.user.userId,);
+    @Request() req: RequestWithUser,
+  ): Promise<Service[]> {
+    return this.servicesService.getServicesByBusinessId(
+      businessId,
+      req.user.userId,
+    );
   }
 
   @Post()
@@ -91,9 +97,9 @@ export class ServicesController {
   @ApiResponse({ status: 201, type: ServiceDto })
   async create(
     @Request() req: RequestWithUser,
-    @Body() body: CreateServiceDto)
-    : Promise<Service> {
-      return this.servicesService.create(body,req.user.userId);
+    @Body() body: CreateServiceDto,
+  ): Promise<Service> {
+    return this.servicesService.create(body, req.user.userId);
   }
   @Put(':businessId/:id')
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -107,6 +113,11 @@ export class ServicesController {
     @Request() req: RequestWithUser,
     @Body() updateServiceDto: UpdateServiceDto,
   ): Promise<Service> {
-    return await this.servicesService.update(id, updateServiceDto, req.user.userId, businessId);
+    return await this.servicesService.update(
+      id,
+      updateServiceDto,
+      req.user.userId,
+      businessId,
+    );
   }
 }

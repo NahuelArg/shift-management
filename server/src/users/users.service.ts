@@ -1,18 +1,23 @@
-import { ConflictException, Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { User } from '@prisma/client';
 import { UpdateUserDto } from './dto/updateUser.dto';
 import { CreateUserDto } from './dto/CreateUserDto.dto';
-import * as bcrypt from 'bcrypt'
+import * as bcrypt from 'bcrypt';
 @Injectable()
 export class UsersService {
-  constructor(private prisma: PrismaService) { }
+  constructor(private prisma: PrismaService) {}
   async findAll(userId: string): Promise<Omit<User, 'password'>[]> {
     const businesses = await this.prisma.business.findMany({
       where: { ownerId: userId },
-      select: { id: true }
+      select: { id: true },
     });
-    const businessIds = businesses.map(b => b.id);
+    const businessIds = businesses.map((b) => b.id);
     return await this.prisma.user.findMany({
       where: { businessId: { in: businessIds } },
       select: {
@@ -25,57 +30,60 @@ export class UsersService {
         businessId: true,
         createdAt: true,
         updatedAt: true,
-      }
+      },
     });
   }
   async create(body: CreateUserDto): Promise<User> {
     const existing = await this.prisma.user.findUnique({
-      where: { email: body.email }
-    })
-    if (existing) throw new ConflictException('Email already in use')
+      where: { email: body.email },
+    });
+    if (existing) throw new ConflictException('Email already in use');
     if (body.authProvider === 'LOCAL' && !body.password) {
-      throw new BadRequestException('Password is required for local authentication');
+      throw new BadRequestException(
+        'Password is required for local authentication',
+      );
     }
     const hashedPassword = body.password
       ? await bcrypt.hash(body.password, 10)
-      : undefined
+      : undefined;
     return await this.prisma.user.create({
       data: {
         ...body,
         password: hashedPassword,
-        phone: body.phone ?? undefined
-      }
-    }
-    );
+        phone: body.phone ?? undefined,
+      },
+    });
   }
   async delete(id: string, userId: string): Promise<User> {
-    if (!id) throw new BadRequestException('args not provided')
-    const userToDelete = await this.prisma.user.findFirst(
-      {
-        where: {
-          id: id,
-          business: {
-            ownerId: userId
-          }
+    if (!id) throw new BadRequestException('args not provided');
+    const userToDelete = await this.prisma.user.findFirst({
+      where: {
+        id: id,
+        business: {
+          ownerId: userId,
         },
-      })
-    if (!userToDelete) throw new NotFoundException('user not found')
+      },
+    });
+    if (!userToDelete) throw new NotFoundException('user not found');
     return await this.prisma.user.delete({
       where: { id },
     });
   }
-  async update(id: string, updateUserDto: UpdateUserDto, userId: string): Promise<User> {
-    if (!id) throw new BadRequestException('args not provided')
-    const userToUpdate = await this.prisma.user.findFirst(
-      {
-        where: {
-          id: id,
-          business: {
-            ownerId: userId
-          }
+  async update(
+    id: string,
+    updateUserDto: UpdateUserDto,
+    userId: string,
+  ): Promise<User> {
+    if (!id) throw new BadRequestException('args not provided');
+    const userToUpdate = await this.prisma.user.findFirst({
+      where: {
+        id: id,
+        business: {
+          ownerId: userId,
         },
-      })
-    if (!userToUpdate) throw new NotFoundException('user not found')
+      },
+    });
+    if (!userToUpdate) throw new NotFoundException('user not found');
     const { password, ...rest } = updateUserDto;
     return await this.prisma.user.update({
       where: { id },

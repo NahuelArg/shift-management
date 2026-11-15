@@ -10,7 +10,10 @@ describe('HealthService', () => {
   beforeEach(async () => {
     jest.clearAllMocks();
     const module: TestingModule = await Test.createTestingModule({
-      providers: [HealthService, { provide: PrismaService, useValue: prismaMock }],
+      providers: [
+        HealthService,
+        { provide: PrismaService, useValue: prismaMock },
+      ],
     }).compile();
 
     service = module.get(HealthService);

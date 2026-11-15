@@ -36,7 +36,7 @@ import { UpdateEmployeeDto } from './DTO/updateEmployeeDto.dto';
 @Controller('admin')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class AdminController {
-  constructor(private readonly adminService: AdminService) { }
+  constructor(private readonly adminService: AdminService) {}
 
   @Get('me')
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -199,11 +199,6 @@ export class AdminController {
     @Param('employeeId') employeeId: string,
     @Body() dto: UpdateEmployeeDto,
   ) {
-    return this.adminService.updateEmployee(
-      dto,
-      req.user.userId,
-      employeeId,
-    );
+    return this.adminService.updateEmployee(dto, req.user.userId, employeeId);
   }
-
 }

@@ -21,7 +21,9 @@ export class HealthController {
   head(): void {}
 
   @Get('db')
-  @ApiOperation({ summary: 'Readiness check: ejecuta SELECT 1 en la base de datos' })
+  @ApiOperation({
+    summary: 'Readiness check: ejecuta SELECT 1 en la base de datos',
+  })
   @ApiResponse({ status: 200, description: 'Servidor y base de datos activos' })
   @ApiResponse({ status: 503, description: 'La base de datos no responde' })
   checkDatabase() {

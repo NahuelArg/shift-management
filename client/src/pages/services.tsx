@@ -7,6 +7,7 @@ import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
 import Select from '../components/ui/Select';
 import { useToast } from '../components/ui/Toast';
+import { getErrorMessage } from '../services/apiError';
 
 const ScissorsIcon = () => <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.75" viewBox="0 0 24 24"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path strokeLinecap="round" d="M20 4L8.12 15.88M14.47 14.48L20 20M8.12 8.12L12 12"/></svg>;
 const CoinIcon    = () => <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.75" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path strokeLinecap="round" d="M12 7v1m0 8v1m-3-5h6m-6 0a3 3 0 006 0"/></svg>;
@@ -43,16 +44,16 @@ const Services: React.FC = () => {
   const [filterBusiness, setFilterBusiness] = useState('all');
 
   useEffect(() => {
-    fetchServices();
-    fetchBusinesses();
+    void fetchServices();
+    void fetchBusinesses();
   }, []);
 
   const fetchServices = async () => {
     setLoading(true);
     try {
       setServices(await serviceService.getAll());
-    } catch (err: any) {
-      toast(err.response?.data?.message || 'Error al cargar servicios', 'error');
+    } catch (err) {
+      toast(getErrorMessage(err, 'Error al cargar servicios'), 'error');
     } finally {
       setLoading(false);
     }
@@ -91,9 +92,9 @@ const Services: React.FC = () => {
         toast('Servicio creado', 'success');
       }
       setShowModal(false);
-      fetchServices();
-    } catch (err: any) {
-      toast(err.response?.data?.message || 'Error al guardar el servicio', 'error');
+      void fetchServices();
+    } catch (err) {
+      toast(getErrorMessage(err, 'Error al guardar el servicio'), 'error');
     } finally {
       setSubmitting(false);
     }
@@ -107,8 +108,8 @@ const Services: React.FC = () => {
       await serviceService.delete(id, svc.businessId);
       setServices(prev => prev.filter(s => s.id !== id));
       toast('Servicio eliminado', 'success');
-    } catch (err: any) {
-      toast(err.response?.data?.message || 'Error al eliminar', 'error');
+    } catch (err) {
+      toast(getErrorMessage(err, 'Error al eliminar'), 'error');
     }
   };
 

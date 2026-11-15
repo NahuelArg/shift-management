@@ -8,7 +8,7 @@ import {
   UseGuards,
   BadRequestException,
   Put,
-  Request
+  Request,
 } from '@nestjs/common';
 import { SchedulesService } from './schedules.service';
 import {
@@ -25,7 +25,6 @@ import { ScheduleDto } from './dto/schedulesDto.dto';
 import { CreateScheduleDto } from './dto/create-schedule.dto';
 import { UpdateScheduleDto } from './dto/updateSchedules.dto';
 import { RequestWithUser } from '../types/express-request.interface';
-
 
 @ApiTags('Schedules')
 @Controller('schedules')
@@ -44,8 +43,8 @@ export class SchedulesController {
   })
   async delete(
     @Request() req: RequestWithUser,
-    @Param('id') id: string):
-     Promise<Schedule> {
+    @Param('id') id: string,
+  ): Promise<Schedule> {
     return this.schedulesService.delete(id, req.user.userId);
   }
 
@@ -59,8 +58,8 @@ export class SchedulesController {
     description: 'List of schedules',
     type: [ScheduleDto],
   })
-  async findAll(@Request() req:RequestWithUser): Promise<Schedule[]> {
-    const userId = req.user.userId 
+  async findAll(@Request() req: RequestWithUser): Promise<Schedule[]> {
+    const userId = req.user.userId;
     return this.schedulesService.findAll(userId);
   }
 
@@ -116,7 +115,11 @@ export class SchedulesController {
     @Param('id') id: string,
     @Body() updateScheduleDto: UpdateScheduleDto,
   ): Promise<Schedule> {
-    const schedule = await this.schedulesService.update(id, updateScheduleDto, req.user.userId);
+    const schedule = await this.schedulesService.update(
+      id,
+      updateScheduleDto,
+      req.user.userId,
+    );
     if (!schedule) {
       throw new BadRequestException('Schedule not found');
     }

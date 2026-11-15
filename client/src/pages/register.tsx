@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import Input from '../components/ui/Input';
 import Button from '../components/ui/Button';
+import { getErrorMessage } from '../services/apiError';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
@@ -22,9 +23,9 @@ const Register: React.FC = () => {
     setLoading(true);
     try {
       await axios.post(`${API_BASE_URL}/auth/register`, form);
-      navigate('/login');
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Error al registrarse. Intentá de nuevo.');
+      void navigate('/login');
+    } catch (err) {
+      setError(getErrorMessage(err, 'Error al registrarse. Intentá de nuevo.'));
     } finally {
       setLoading(false);
     }

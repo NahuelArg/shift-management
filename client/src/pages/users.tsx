@@ -9,6 +9,7 @@ import Input from '../components/ui/Input';
 import Select from '../components/ui/Select';
 import { useToast } from '../components/ui/Toast';
 import { getAdminBusinesses } from '../services/adminBusinessCache';
+import { getErrorMessage } from '../services/apiError';
 
 
 const PlusIcon = () => (
@@ -45,7 +46,8 @@ const Users: React.FC = () => {
   const [newEmployee, setNewEmployee] = useState({ name: '', email: '', password: '', businessId: '' });
   const [createLoading, setCreateLoading] = useState(false);
 
-  const [editEmployee, setEditEmployee] = useState<any | null>(null);
+  // Empleado en edición; `password` vacío = no cambiarla
+  const [editEmployee, setEditEmployee] = useState<(Employee & { password: string }) | null>(null);
   const [editLoading, setEditLoading] = useState(false);
 
   useEffect(() => {
@@ -58,7 +60,7 @@ const Users: React.FC = () => {
           setNewEmployee(e => ({ ...e, businessId: biz[0].id }));
         }
       })
-      .catch(err => toast(err.response?.data?.message || 'Error al cargar negocios', 'error'));
+      .catch(err => toast(getErrorMessage(err, 'Error al cargar negocios'), 'error'));
   }, [user?.id]);
 
   const fetchEmployees = async () => {
@@ -70,14 +72,14 @@ const Users: React.FC = () => {
       });
       setEmployees(res.data.employees);
       setTotalEmployees(res.data.total);
-    } catch (err: any) {
-      toast(err.response?.data?.message || 'Error al cargar empleados', 'error');
+    } catch (err) {
+      toast(getErrorMessage(err, 'Error al cargar empleados'), 'error');
     } finally {
       setLoadingEmployees(false);
     }
   };
 
-  useEffect(() => { fetchEmployees(); }, [selectedBusiness, search, page]);
+  useEffect(() => { void fetchEmployees(); }, [selectedBusiness, search, page]);
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -87,9 +89,9 @@ const Users: React.FC = () => {
       toast('Empleado creado', 'success');
       setShowCreate(false);
       setNewEmployee({ name: '', email: '', password: '', businessId: selectedBusiness });
-      fetchEmployees();
-    } catch (err: any) {
-      toast(err.response?.data?.message || 'Error al crear empleado', 'error');
+      void fetchEmployees();
+    } catch (err) {
+      toast(getErrorMessage(err, 'Error al crear empleado'), 'error');
     } finally {
       setCreateLoading(false);
     }
@@ -97,6 +99,7 @@ const Users: React.FC = () => {
 
   const handleEdit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!editEmployee) return;
     setEditLoading(true);
     try {
       await apiClient.put(`/admin/employee/${editEmployee.id}`, {
@@ -105,9 +108,9 @@ const Users: React.FC = () => {
       });
       toast('Empleado actualizado', 'success');
       setEditEmployee(null);
-      fetchEmployees();
-    } catch (err: any) {
-      toast(err.response?.data?.message || 'Error al actualizar', 'error');
+      void fetchEmployees();
+    } catch (err) {
+      toast(getErrorMessage(err, 'Error al actualizar'), 'error');
     } finally {
       setEditLoading(false);
     }
@@ -276,7 +279,7 @@ const Users: React.FC = () => {
                   Editar empleado
                 </button>
                 <button
-                  onClick={() => { handleDelete(selectedEmployee.id); setSelectedEmployee(null); }}
+                  onClick={() => { void handleDelete(selectedEmployee.id); setSelectedEmployee(null); }}
                   className="w-full py-2 rounded-lg border border-border text-sm font-medium text-danger-text hover:bg-danger-light transition-colors"
                 >
                   Eliminar
@@ -307,9 +310,9 @@ const Users: React.FC = () => {
       <Modal open={!!editEmployee} onClose={() => setEditEmployee(null)} title="Editar empleado" size="sm">
         {editEmployee && (
           <form onSubmit={handleEdit} className="flex flex-col gap-4">
-            <Input label="Nombre" value={editEmployee.name} onChange={e => setEditEmployee((p: any) => ({ ...p, name: e.target.value }))} required />
-            <Input label="Email" type="email" value={editEmployee.email} onChange={e => setEditEmployee((p: any) => ({ ...p, email: e.target.value }))} required />
-            <Input label="Nueva contraseña (opcional)" type="password" value={editEmployee.password} onChange={e => setEditEmployee((p: any) => ({ ...p, password: e.target.value }))} />
+            <Input label="Nombre" value={editEmployee.name} onChange={e => setEditEmployee(p => p && { ...p, name: e.target.value })} required />
+            <Input label="Email" type="email" value={editEmployee.email} onChange={e => setEditEmployee(p => p && { ...p, email: e.target.value })} required />
+            <Input label="Nueva contraseña (opcional)" type="password" value={editEmployee.password} onChange={e => setEditEmployee(p => p && { ...p, password: e.target.value })} />
             <Button type="submit" loading={editLoading}>Guardar cambios</Button>
           </form>
         )}

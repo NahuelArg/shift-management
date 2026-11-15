@@ -11,7 +11,8 @@ import { SchedulesModule } from './schedules/schedules.module';
 import { AuthModule } from './auth/auth.module';
 import { AdminModule } from './admin/admin.module';
 import { HealthModule } from './health/health.module';
-import { APP_GUARD } from '@nestjs/core';
+import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
+import { DecimalToNumberInterceptor } from './common/decimal-to-number.interceptor';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 
 @Module({
@@ -29,9 +30,11 @@ import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
     HealthModule,
   ],
   controllers: [AppController],
-  providers: [AppService, {
-    provide: APP_GUARD,
-    useClass: ThrottlerGuard
-  }],
+  providers: [
+    AppService,
+    { provide: APP_GUARD, useClass: ThrottlerGuard },
+    // Dinero: DECIMAL en la base, number en las respuestas JSON
+    { provide: APP_INTERCEPTOR, useClass: DecimalToNumberInterceptor },
+  ],
 })
-export class AppModule { }
+export class AppModule {}
