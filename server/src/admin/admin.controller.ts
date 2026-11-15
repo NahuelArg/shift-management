@@ -8,6 +8,7 @@ import {
   Put,
   Param,
   NotFoundException,
+  ForbiddenException,
   Query,
   Delete,
 } from '@nestjs/common';
@@ -35,7 +36,7 @@ import { UpdateEmployeeDto } from './DTO/updateEmployeeDto.dto';
 @Controller('admin')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class AdminController {
-  constructor(private readonly adminService: AdminService) { }
+  constructor(private readonly adminService: AdminService) {}
 
   @Get('me')
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -156,7 +157,12 @@ export class AdminController {
   async updateUser(
     @Param('id') id: string,
     @Body() updateAdminDto: UpdateAdminDto,
+    @Request() req: RequestWithUser,
   ): Promise<UserDto> {
+    // Un admin solo puede editar su propio perfil (antes podía editar a cualquier usuario)
+    if (id !== req.user.userId) {
+      throw new ForbiddenException('You can only update your own profile');
+    }
     const admin = await this.adminService.updateAdmin(id, updateAdminDto);
     if (!admin) {
       throw new NotFoundException('Admin not found');
@@ -193,11 +199,6 @@ export class AdminController {
     @Param('employeeId') employeeId: string,
     @Body() dto: UpdateEmployeeDto,
   ) {
-    return this.adminService.updateEmployee(
-      dto,
-      req.user.userId,
-      employeeId,
-    );
+    return this.adminService.updateEmployee(dto, req.user.userId, employeeId);
   }
-
 }

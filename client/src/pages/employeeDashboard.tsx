@@ -8,6 +8,7 @@ import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
 import Select from '../components/ui/Select';
 import { useToast } from '../components/ui/Toast';
+import { getErrorMessage } from '../services/apiError';
 
 interface Booking {
   id: string;
@@ -82,8 +83,8 @@ const EmployeeDashboard: React.FC = () => {
   const fetchBookings = async () => {
     try {
       setLoading(true);
-      const res = await apiClient.get('/bookings/my-assignments');
-      const transformed = res.data.map((b: any) => ({
+      const res = await apiClient.get<Omit<Booking, 'startTime'>[]>('/bookings/my-assignments');
+      const transformed: Booking[] = res.data.map(b => ({
         ...b,
         date:      new Date(b.date).toISOString().split('T')[0],
         startTime: new Date(b.date).toTimeString().slice(0, 5),
@@ -97,14 +98,14 @@ const EmployeeDashboard: React.FC = () => {
         confirmed: transformed.filter((b: Booking) => b.status === 'CONFIRMED').length,
         completed: transformed.filter((b: Booking) => b.status === 'COMPLETED').length,
       });
-    } catch (err: any) {
-      toast(err.response?.data?.message || 'Error al cargar los turnos', 'error');
+    } catch (err) {
+      toast(getErrorMessage(err, 'Error al cargar los turnos'), 'error');
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => { if (user && token) fetchBookings(); }, [user, token]);
+  useEffect(() => { if (user && token) void fetchBookings(); }, [user, token]);
 
   const updateStatus = async (id: string, status: string) => {
     setUpdatingStatus(id);
@@ -151,7 +152,7 @@ const EmployeeDashboard: React.FC = () => {
       .catch(() => setAvailableEmps([]));
   }, [formData.serviceId, formData.date, formData.startTime, services]);
 
-  const openModal = () => { setShowCreateModal(true); loadServices(); };
+  const openModal = () => { setShowCreateModal(true); void loadServices(); };
   const closeModal = () => {
     setShowCreateModal(false);
     setSelectedClient(null); setSearchQuery(''); setSearchResults([]);
@@ -186,8 +187,8 @@ const EmployeeDashboard: React.FC = () => {
       toast('Turno creado exitosamente', 'success');
       await fetchBookings();
       closeModal();
-    } catch (err: any) {
-      toast(err.response?.data?.message || 'Error al crear el turno', 'error');
+    } catch (err) {
+      toast(getErrorMessage(err, 'Error al crear el turno'), 'error');
     } finally {
       setCreating(false);
     }
@@ -399,7 +400,7 @@ const EmployeeDashboard: React.FC = () => {
               <div className="relative">
                 <Input
                   value={searchQuery}
-                  onChange={e => { setSearchQuery(e.target.value); searchUsers(e.target.value); }}
+                  onChange={e => { setSearchQuery(e.target.value); void searchUsers(e.target.value); }}
                   placeholder="Buscar por email…"
                   disabled={creating}
                   leftIcon={searchLoading

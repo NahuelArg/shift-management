@@ -34,29 +34,34 @@ enum PaymentStatus {
 }
 
 model User {
-  id                      String          @id @default(uuid())
-  name                    String
-  password                String?
-  email                   String          @unique
-  phone                   String?
-  role                    Role            @default(CLIENT)
-  authProvider            AuthProvider    @default(LOCAL)
-  createdAt               DateTime        @default(now())
-  updatedAt               DateTime        @updatedAt
-  businesses              Business[]      @relation("BusinessOwner")
-  bookings                Booking[]
-  employeeBookings        Booking[]       @relation("EmployeeBookings")
-  business                Business?       @relation("BusinessEmployees", fields: [businessId], references: [id], onDelete: Cascade)
-  businessId              String?
-  CashRegistersOpened     CashRegister[]  @relation("CashRegisterOpenedBy")
-  CashRegistersClosed     CashRegister[]  @relation("CashRegisterClosedBy")
-  CashMovements           CashMovement[]  @relation("CashMovementCreatedBy")
-  CashClosings            CashClosing[]   @relation("CashClosingClosedBy")
+  id                  String         @id @default(uuid())
+  name                String
+  password            String?
+  email               String         @unique
+  phone               String?
+  role                Role           @default(CLIENT)
+  authProvider        AuthProvider   @default(LOCAL)
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
+  businesses          Business[]     @relation("BusinessOwner")
+  bookings            Booking[]
+  employeeBookings    Booking[]      @relation("EmployeeBookings")
+  business            Business?      @relation("BusinessEmployees", fields: [businessId], references: [id], onDelete: Cascade)
+  businessId          String?
+  CashRegistersOpened CashRegister[] @relation("CashRegisterOpenedBy")
+  CashRegistersClosed CashRegister[] @relation("CashRegisterClosedBy")
+  CashMovements       CashMovement[] @relation("CashMovementCreatedBy")
+  CashClosings        CashClosing[]  @relation("CashClosingClosedBy")
+
+  @@index([businessId])
 }
 
 model Business {
   id            String         @id @default(uuid())
   name          String
+  // Zona horaria IANA del negocio: se usa para validar el horario de atención
+  // (antes se usaba la que mandaba el cliente, que podía falsearla)
+  timezone      String         @default("Europe/Madrid")
   owner         User           @relation("BusinessOwner", fields: [ownerId], references: [id])
   ownerId       String
   services      Service[]
@@ -66,6 +71,8 @@ model Business {
   cashRegisters CashRegister[]
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
+
+  @@index([ownerId])
 }
 
 model Service {
@@ -73,12 +80,15 @@ model Service {
   name        String
   description String?
   durationMin Int       @default(30)
-  price       Float
+  price       Decimal   @db.Decimal(12, 2)
   business    Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
   businessId  String
   bookings    Booking[]
+  // Soft delete: un servicio "borrado" se desactiva para conservar el historial
+  // de reservas y cobros (antes el borrado en cascada eliminaba esas reservas)
+  active      Boolean   @default(true)
 
-    @@index([businessId])  
+  @@index([businessId])
 }
 
 model Schedule {
@@ -88,15 +98,19 @@ model Schedule {
   to         String // "17:00"
   business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
   businessId String
+
   @@index([businessId, dayOfWeek])
 }
 
 model Booking {
   id            String         @id @default(uuid())
-  user          User?          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // Borrar un cliente ya no borra su historial de reservas: quedan sin cliente (como un walk-in)
+  user          User?          @relation(fields: [userId], references: [id], onDelete: SetNull)
   userId        String?
   timezone      String         @default("UTC")
-  service       Service        @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  // NoAction (no Restrict): impide borrar un servicio con reservas, pero deja que el
+  // borrado en cascada de un Business elimine reservas y servicios en la misma sentencia
+  service       Service        @relation(fields: [serviceId], references: [id], onDelete: NoAction)
   serviceId     String
   business      Business       @relation(fields: [businessId], references: [id], onDelete: Cascade)
   businessId    String
@@ -104,26 +118,28 @@ model Booking {
   employeeId    String?
   date          DateTime
   endTime       DateTime
-  finalPrice    Float
+  finalPrice    Decimal        @db.Decimal(12, 2)
   status        BookingStatus  @default(PENDING)
   paymentStatus PaymentStatus  @default(PENDING)
   paymentMethod PaymentMethod?
   cashMovement  CashMovement[]
   createdAt     DateTime       @default(now())
 
-  @@index([userId])  
+  @@index([userId])
   @@index([employeeId])
+  @@index([serviceId])
   @@index([businessId, date])
   @@index([paymentStatus])
 }
 
 //Cash Register enums
 
-enum CashRegisterStatus{
+enum CashRegisterStatus {
   OPEN
   CLOSED
 }
-enum CashMovementType{
+
+enum CashMovementType {
   OPENING
   SALE
   EXPENSE
@@ -132,18 +148,19 @@ enum CashMovementType{
   CLOSING
 }
 
-enum PaymentMethod{
+enum PaymentMethod {
   CASH
   CARD
   TRANSFER
   MIXED
 }
+
 model CashRegister {
   id             String             @id @default(uuid())
   name           String
   business       Business           @relation(fields: [businessId], references: [id], onDelete: Cascade)
   businessId     String
-  currentBalance Float              @default(0)
+  currentBalance Decimal            @default(0) @db.Decimal(12, 2)
   status         CashRegisterStatus @default(CLOSED)
   openedAt       DateTime?
   OpenedBy       User?              @relation("CashRegisterOpenedBy", fields: [openedById], references: [id], onDelete: SetNull)
@@ -157,44 +174,49 @@ model CashRegister {
   updatedAt      DateTime           @updatedAt
 
   @@index([businessId, status])
+  @@index([openedById])
+  @@index([closedById])
 }
 
 model CashMovement {
-  id              String           @id @default(uuid())
-  cashRegister    CashRegister     @relation(fields: [cashRegisterId], references: [id], onDelete: Cascade)
-  cashRegisterId  String
-  type            CashMovementType
-  amount          Float
-  paymentMethod   PaymentMethod    @default(CASH)
-  booking         Booking?         @relation(fields: [bookingId], references: [id], onDelete: SetNull)
-  bookingId       String?
-  description     String?
-  metadata        Json?
-  CreatedBy       User             @relation("CashMovementCreatedBy", fields: [createdById], references: [id], onDelete: Cascade)
-  createdById     String
-  createdAt       DateTime         @default(now())
+  id             String           @id @default(uuid())
+  cashRegister   CashRegister     @relation(fields: [cashRegisterId], references: [id], onDelete: Cascade)
+  cashRegisterId String
+  type           CashMovementType
+  amount         Decimal          @db.Decimal(12, 2)
+  paymentMethod  PaymentMethod    @default(CASH)
+  booking        Booking?         @relation(fields: [bookingId], references: [id], onDelete: SetNull)
+  bookingId      String?
+  description    String?
+  metadata       Json?
+  CreatedBy      User             @relation("CashMovementCreatedBy", fields: [createdById], references: [id], onDelete: Cascade)
+  createdById    String
+  createdAt      DateTime         @default(now())
 
   @@index([cashRegisterId, createdAt])
   @@index([type])
+  @@index([bookingId])
+  @@index([createdById])
 }
 
 model CashClosing {
   id              String       @id @default(uuid())
   cashRegister    CashRegister @relation(fields: [cashRegisterId], references: [id], onDelete: Cascade)
   cashRegisterId  String
-  openingBalance  Float
-  expectedBalance Float
-  actualBalance   Float
-  difference      Float
-  totalSales      Float
-  totalExpenses   Float
-  totalCash       Float
-  totalCard       Float
-  totalTransfer   Float
+  openingBalance  Decimal      @db.Decimal(12, 2)
+  expectedBalance Decimal      @db.Decimal(12, 2)
+  actualBalance   Decimal      @db.Decimal(12, 2)
+  difference      Decimal      @db.Decimal(12, 2)
+  totalSales      Decimal      @db.Decimal(12, 2)
+  totalExpenses   Decimal      @db.Decimal(12, 2)
+  totalCash       Decimal      @db.Decimal(12, 2)
+  totalCard       Decimal      @db.Decimal(12, 2)
+  totalTransfer   Decimal      @db.Decimal(12, 2)
   notes           String?
   ClosedBy        User         @relation("CashClosingClosedBy", fields: [closedById], references: [id], onDelete: Cascade)
   closedById      String
   closedAt        DateTime     @default(now())
 
   @@index([cashRegisterId, closedAt])
+  @@index([closedById])
 }

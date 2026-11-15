@@ -1,4 +1,6 @@
+import { isAxiosError } from 'axios';
 import axios from "axios";
+import { getErrorMessage } from './apiError';
 
 export interface LoginResponse {
   accessToken: string;
@@ -23,13 +25,15 @@ export async function login(email: string, password: string): Promise<LoginRespo
     );
   
     return response.data;
-  } catch (error: any) {
-    if (error.response) {
-      // Crear un error personalizado que incluya tanto el mensaje como el código de estado
-      const customError = new Error(error.response.data.message || "Error en login");
-      customError.name = "AuthError";
-      (customError as any).status = error.response.status;
-      (customError as any).responseData = error.response.data;
+  } catch (error) {
+    if (isAxiosError(error) && error.response) {
+      // Error con el mensaje y el código de estado (login.tsx traduce 401/429)
+      const customError: Error & { status?: number; responseData?: unknown } = new Error(
+        getErrorMessage(error, 'Error en login'),
+      );
+      customError.name = 'AuthError';
+      customError.status = error.response.status;
+      customError.responseData = error.response.data;
       throw customError;
     }
     // Si es un error de red u otro tipo

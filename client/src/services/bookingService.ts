@@ -1,5 +1,7 @@
+import { isAxiosError } from 'axios';
 import apiClient from './apiClient';
 import { type CreateBookingData, type BookingData } from '../components/bookingManagement/BookingForm';
+import { getErrorMessage } from './apiError';
 export async function createBooking(bookingData: CreateBookingData) {
   const dataWithTimezone = {
     ...bookingData,
@@ -8,9 +10,9 @@ export async function createBooking(bookingData: CreateBookingData) {
   try {
     const response = await apiClient.post('/bookings', dataWithTimezone)
     return response.data;
-  } catch (error: any) {
-    if (error.response) {
-      throw new Error(error.response.data.message || 'Error creating booking');
+  } catch (error) {
+    if (isAxiosError(error) && error.response) {
+      throw new Error(getErrorMessage(error, 'Error creating booking'));
     }
     throw new Error('Network error while creating booking');
   }
@@ -23,9 +25,9 @@ export async function updateBookingStatus(bookingId: string, status: string) {
       { status },
     );
     return response.data;
-  } catch (error: any) {
-    if (error.response) {
-      throw new Error(error.response.data.message || 'Error updating booking status');
+  } catch (error) {
+    if (isAxiosError(error) && error.response) {
+      throw new Error(getErrorMessage(error, 'Error updating booking status'));
     }
     throw new Error('Network error while updating booking status');
   }
@@ -39,9 +41,9 @@ export async function updateBooking(bookingId: string, bookingData: Partial<Book
       bookingData,
     );
     return response.data;
-  } catch (error: any) {
-    if (error.response) {
-      throw new Error(error.response.data.message || 'Error updating booking');
+  } catch (error) {
+    if (isAxiosError(error) && error.response) {
+      throw new Error(getErrorMessage(error, 'Error updating booking'));
     }
     throw new Error('Network error while updating booking');
   }
@@ -53,9 +55,9 @@ export async function getBooking(bookingId: string) {
 
     });
     return response.data;
-  } catch (error: any) {
-    if (error.response) {
-      throw new Error(error.response.data.message || 'Error fetching booking');
+  } catch (error) {
+    if (isAxiosError(error) && error.response) {
+      throw new Error(getErrorMessage(error, 'Error fetching booking'));
     }
     throw new Error('Network error while fetching booking');
   }
@@ -72,9 +74,9 @@ export async function getBookings(filters?: {
 
     });
     return response.data;
-  } catch (error: any) {
-    if (error.response) {
-      throw new Error(error.response.data.message || 'Error fetching bookings');
+  } catch (error) {
+    if (isAxiosError(error) && error.response) {
+      throw new Error(getErrorMessage(error, 'Error fetching bookings'));
     }
     throw new Error('Network error while fetching bookings');
   }

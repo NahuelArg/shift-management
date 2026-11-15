@@ -88,7 +88,7 @@ Bookings · Employees · Services · Analytics — all in one place
 | **Frontend** | React 19, TypeScript, Vite, Tailwind CSS, React Router v7 |
 | **Backend** | NestJS 11, TypeScript, Passport JWT, class-validator |
 | **ORM / DB** | Prisma 6, PostgreSQL 16 |
-| **Auth** | JWT + bcrypt, Passport strategies (Google/Apple ready) |
+| **Auth** | JWT + bcrypt, rate limiting on login/register |
 | **Docs** | Swagger / OpenAPI |
 | **Testing** | Jest 29, ts-jest, Supertest |
 | **Deploy** | Vercel (frontend), Render (backend), Supabase (DB) |
@@ -361,12 +361,12 @@ All issues were tracked via GitHub Issues → PR → merge to main.
 
 ## Roadmap
 
-- [ ] Per-business timezone configuration (currently uses browser timezone)
+- [x] Per-business timezone (`Business.timezone`, UI editing pending)
 - [ ] Email notifications on booking creation / cancellation
-- [ ] Google / Apple OAuth login (Passport strategies already implemented, integration pending)
+- [ ] Google / Apple OAuth login (pending)
 - [ ] Online payment integration
 - [ ] Full cash register module (CashRegister, movements, and closings)
-- [ ] API rate limiting
+- [x] API rate limiting
 
 ---
 

@@ -7,8 +7,8 @@ const LogoutButton: React.FC = () => {
   const navigate = useNavigate();
 
   const handleLogout = () => {
-    logout();
-    navigate("/home");
+    void logout();
+    void navigate("/home");
   };
 
   return (

@@ -5,9 +5,9 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { Business, } from '@prisma/client';
+import { Business } from '@prisma/client';
 import { UpdateBusinessDto } from './dto/updateBusiness.dto';
-import { PublicBusinessDto } from "./dto/PublicBusinessDto.dto";
+import { PublicBusinessDto } from './dto/PublicBusinessDto.dto';
 
 const PUBLIC_OWNER_SELECT = {
   select: {
@@ -16,10 +16,10 @@ const PUBLIC_OWNER_SELECT = {
     email: true,
     role: true,
   },
-} as const
+} as const;
 @Injectable()
 export class BusinessService {
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(private readonly prisma: PrismaService) {}
 
   /**
    * Obtener TODOS los negocios del usuario
@@ -32,7 +32,7 @@ export class BusinessService {
     }
     const businesses = await this.prisma.business.findMany({
       where: { ownerId: userId },
-      include: { services: true, },
+      include: { services: { where: { active: true } } },
       orderBy: { createdAt: 'desc' },
     });
     return businesses;
@@ -49,6 +49,7 @@ export class BusinessService {
         id: true,
         name: true,
         services: {
+          where: { active: true },
           select: {
             id: true,
             name: true,
@@ -64,7 +65,10 @@ export class BusinessService {
     if (businesses.length === 0) {
       throw new NotFoundException('Businesses not found');
     }
-    return businesses
+    return businesses.map((b) => ({
+      ...b,
+      services: b.services.map((s) => ({ ...s, price: s.price.toNumber() })),
+    }));
   }
 
   /**
@@ -91,23 +95,18 @@ export class BusinessService {
     }
 
     if (business.ownerId !== userId) {
-      throw new ForbiddenException(
-        'You do not have access to this business',
-      );
+      throw new ForbiddenException('You do not have access to this business');
     }
 
     return business;
   }
 
   /**
-    * Create a business with role validation and owner existence check
-    * Use by POST /business
-    * Return: Business
-    */
-  async create(data: {
-    name: string;
-    ownerId: string;
-  }): Promise<Business> {
+   * Create a business with role validation and owner existence check
+   * Use by POST /business
+   * Return: Business
+   */
+  async create(data: { name: string; ownerId: string }): Promise<Business> {
     const owner = await this.prisma.user.findUnique({
       where: { id: data.ownerId },
       select: { role: true },
@@ -124,7 +123,7 @@ export class BusinessService {
     }
 
     return await this.prisma.business.create({
-      data:{
+      data: {
         name: data.name,
         ownerId: data.ownerId,
       },
@@ -137,7 +136,7 @@ export class BusinessService {
    *  Update business
    * Verify that the user is the owner before allowing update
    * Use by PUT /business/:id
-   * Return: Business 
+   * Return: Business
    */
   async update(
     businessId: string,
@@ -159,25 +158,21 @@ export class BusinessService {
     }
 
     return this.prisma.business.update({
-      where: { id:businessId },
+      where: { id: businessId },
       data: updateData,
       include: {
-        owner: PUBLIC_OWNER_SELECT
-      }
+        owner: PUBLIC_OWNER_SELECT,
+      },
     });
   }
 
-
   /**
-  *  Delete with ownership validation
-  * Verify before to delete the user is owner of the business
-  */
-  async delete(
-    businessId: string,
-    userId: string,
-  ): Promise<Business> {
+   *  Delete with ownership validation
+   * Verify before to delete the user is owner of the business
+   */
+  async delete(businessId: string, userId: string): Promise<Business> {
     const business = await this.prisma.business.findUnique({
-      where: { id:businessId },
+      where: { id: businessId },
     });
 
     if (!business) {

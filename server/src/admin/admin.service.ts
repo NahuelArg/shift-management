@@ -9,17 +9,16 @@ import {
 import { PrismaService } from '../../prisma/prisma.service';
 import * as bcrypt from 'bcrypt';
 import { UpdateAdminDto } from './DTO/updateAdmin.dto';
-import { User, Role, AuthProvider } from '@prisma/client';
+import { User, Role, AuthProvider, Prisma } from '@prisma/client';
 import MetricsResponse from './DTO/metricsDto.dto';
 import { convertBigIntToString } from '../utils/convertBigIntToString';
 import { CreateAdminDto } from './DTO/createAdminDto.dto';
 import { CreateEmployeeDto } from './DTO/createEmployeeDto.dto';
 import { UpdateEmployeeDto } from './DTO/updateEmployeeDto.dto';
 
-
 @Injectable()
 export class AdminService {
-  constructor(private prisma: PrismaService) { }
+  constructor(private prisma: PrismaService) {}
   private readonly logger = new Logger(AdminService.name);
   async createAdmin(dto: CreateAdminDto) {
     const { email, password, name, authProvider, role } = dto;
@@ -35,7 +34,6 @@ export class AdminService {
     if (existingUser) {
       throw new ConflictException('Email already exists');
     }
-
 
     let hashedPassword: string | null = null;
 
@@ -70,7 +68,7 @@ export class AdminService {
     const business = await this.prisma.business.findFirst({
       where: {
         id: businessId,
-        ownerId: userId
+        ownerId: userId,
       },
     });
 
@@ -94,27 +92,28 @@ export class AdminService {
 
     const businessIds = userWithBusinesses.businesses.map((b) => b.id);
 
-    const [totalUser, totalSchedules, totalBookings, totalServices] = await Promise.all([
-      this.prisma.user.count({
-        where: { businesses: { some: { id: { in: businessIds } } } },
-      }),
-      this.prisma.schedule.count({
-        where: { businessId: { in: businessIds } },
-      }),
-      this.prisma.booking.count({
-        where: { businessId: { in: businessIds } },
-      }),
-      this.prisma.service.count({
-        where: { businessId: { in: businessIds } },
-      }),
-    ])
+    const [totalUser, totalSchedules, totalBookings, totalServices] =
+      await Promise.all([
+        this.prisma.user.count({
+          where: { businesses: { some: { id: { in: businessIds } } } },
+        }),
+        this.prisma.schedule.count({
+          where: { businessId: { in: businessIds } },
+        }),
+        this.prisma.booking.count({
+          where: { businessId: { in: businessIds } },
+        }),
+        this.prisma.service.count({
+          where: { businessId: { in: businessIds } },
+        }),
+      ]);
 
     return {
       totalUser,
       totalSchedules,
       totalBookings,
       totalServices,
-      totalBusiness: businessIds.length
+      totalBusiness: businessIds.length,
     };
   }
   /**
@@ -200,13 +199,13 @@ export class AdminService {
     const bookingByService = allBookings.map((b) => ({
       serviceName: b.service.name,
       date: b.date.toISOString(),
-      finalPrice: b.finalPrice,
+      finalPrice: b.finalPrice.toNumber(),
       status: b.status,
       timezone: b.timezone,
     }));
     const result = {
       totalBookings,
-      totalRevenue: totalRevenue._sum.finalPrice || 0,
+      totalRevenue: totalRevenue._sum.finalPrice?.toNumber() ?? 0,
       bookingsByGroup,
       bookingByService,
       groupFormat:
@@ -225,9 +224,8 @@ export class AdminService {
       where: { id: userId },
       include: {
         businesses: true,
-      }
-    }
-    );
+      },
+    });
     if (!user) throw new NotFoundException('Admin not found');
 
     return user;
@@ -262,11 +260,11 @@ export class AdminService {
       businessId: { in: businessIds },
       ...(search
         ? {
-          OR: [
-            { name: { contains: search } },
-            { email: { contains: search } },
-          ],
-        }
+            OR: [
+              { name: { contains: search } },
+              { email: { contains: search } },
+            ],
+          }
         : {}),
     };
     const page = Number(params.page) || 1;
@@ -304,8 +302,8 @@ export class AdminService {
         id: employeeId,
         role: 'EMPLOYEE',
         business: {
-          ownerId: adminId
-        }
+          ownerId: adminId,
+        },
       },
     });
 
@@ -322,7 +320,8 @@ export class AdminService {
     const business = await this.prisma.business.findFirst({
       where: { id: businessId, ownerId: adminId },
     });
-    if (!business) throw new ForbiddenException('No puedes crear empleados en este negocio');
+    if (!business)
+      throw new ForbiddenException('No puedes crear empleados en este negocio');
 
     const existingUser = await this.prisma.user.findUnique({
       where: { email },
@@ -356,11 +355,15 @@ export class AdminService {
    * @returns Array de objetos con período, totalBookings y totalRevenue
    */
   private groupBookingsByPeriod(
-    bookings: { date: Date; status: string; finalPrice: number }[],
+    bookings: { date: Date; status: string; finalPrice: Prisma.Decimal }[],
     groupBy: 'day' | 'month' | 'year',
   ): { period: string; totalBookings: number; totalRevenue: number }[] {
     // Crear un mapa para agrupar
-    const groupMap = new Map<string, { count: number; revenue: number }>();
+    // Los ingresos se suman con Decimal (exacto) y se convierten a number al final
+    const groupMap = new Map<
+      string,
+      { count: number; revenue: Prisma.Decimal }
+    >();
 
     for (const booking of bookings) {
       // Formatear la fecha según el groupBy
@@ -381,14 +384,17 @@ export class AdminService {
       }
 
       // Obtener o inicializar el grupo
-      const group = groupMap.get(period) || { count: 0, revenue: 0 };
+      const group = groupMap.get(period) || {
+        count: 0,
+        revenue: new Prisma.Decimal(0),
+      };
 
       // Incrementar contador
       group.count++;
 
       // Sumar revenue solo si está completado (servicio realizado)
       if (booking.status === 'COMPLETED') {
-        group.revenue += booking.finalPrice;
+        group.revenue = group.revenue.plus(booking.finalPrice);
       }
 
       groupMap.set(period, group);
@@ -399,7 +405,7 @@ export class AdminService {
       .map(([period, data]) => ({
         period,
         totalBookings: data.count,
-        totalRevenue: data.revenue,
+        totalRevenue: data.revenue.toNumber(),
       }))
       .sort((a, b) => a.period.localeCompare(b.period));
   }
@@ -414,8 +420,8 @@ export class AdminService {
         id: employeeId,
         role: 'EMPLOYEE',
         business: {
-          ownerId: adminId
-        }
+          ownerId: adminId,
+        },
       },
     });
 
@@ -432,7 +438,7 @@ export class AdminService {
       }
     }
 
-    const updateData: any = {};
+    const updateData: Prisma.UserUpdateInput = {};
 
     if (dto.name) updateData.name = dto.name;
     if (dto.email) updateData.email = dto.email;

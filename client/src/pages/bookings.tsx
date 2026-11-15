@@ -6,6 +6,7 @@ import { apiClient } from '../services/apiClient';
 import BookingStatusButton from '../components/bookingManagement/BookingStatusButton';
 import StatusBadge, { bookingStatusVariant } from '../components/ui/StatusBadge';
 import { useToast } from '../components/ui/Toast';
+import { getErrorMessage } from '../services/apiError';
 
 interface Booking {
   id: string;
@@ -37,16 +38,16 @@ const Bookings = () => {
     }
   };
 
-  useEffect(() => { if (user) fetchBookings(); }, [user]);
+  useEffect(() => { if (user) void fetchBookings(); }, [user]);
 
   const handleCreate = async (data: CreateBookingData) => {
     try {
       await createBooking(data);
       toast('Reserva creada exitosamente', 'success');
       setShowForm(false);
-      fetchBookings();
-    } catch (err: any) {
-      toast(err.message || 'Error al crear la reserva', 'error');
+      void fetchBookings();
+    } catch (err) {
+      toast(getErrorMessage(err, 'Error al crear la reserva'), 'error');
       throw err;
     }
   };

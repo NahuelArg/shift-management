@@ -1,10 +1,14 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { login as loginService } from '../services/authService';
 import { redirectByRole } from '../context/AuthContext';
 import Input from '../components/ui/Input';
 import Button from '../components/ui/Button';
+
+// Panel de acceso rápido con cuentas demo. Se controla con VITE_DEMO_MODE para
+// poder apagarlo en un entorno con datos reales sin tocar código.
+const DEMO_MODE = import.meta.env.VITE_DEMO_MODE === 'true';
 
 const TEST_CREDENTIALS = [
   { email: 'admin1@test.com',    role: 'Admin' },
@@ -17,7 +21,11 @@ const Login: React.FC = () => {
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState<string | null>(null);
+  const [searchParams] = useSearchParams();
+  // El interceptor de apiClient redirige a /login?expired=1 ante un 401
+  const [error, setError] = useState<string | null>(() =>
+    searchParams.get('expired') ? 'Tu sesión expiró. Iniciá sesión de nuevo.' : null,
+  );
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -27,12 +35,17 @@ const Login: React.FC = () => {
     try {
       const data = await loginService(email, password);
       await login(data.accessToken, data.user);
-      navigate(redirectByRole(data.user.role));
+      void navigate(redirectByRole(data.user.role));
     } catch (err: unknown) {
       if (!navigator.onLine) {
         setError('Sin conexión a internet. Verificá tu red.');
       } else if (err instanceof Error) {
-        setError(err.message);
+        const status = (err as Error & { status?: number }).status;
+        setError(
+          status === 401 ? 'Email o contraseña incorrectos.' :
+          status === 429 ? 'Demasiados intentos. Esperá un minuto e intentá de nuevo.' :
+          err.message,
+        );
       } else {
         setError('Ocurrió un error inesperado. Intentá de nuevo.');
       }
@@ -73,6 +86,7 @@ const Login: React.FC = () => {
         </div>
 
         {/* Test credentials */}
+        {DEMO_MODE && (
         <div>
           <p className="text-xs font-semibold text-sidebar-text uppercase tracking-wider mb-3">
             Acceso rápido (demo)
@@ -97,6 +111,7 @@ const Login: React.FC = () => {
             Contraseña: password123
           </p>
         </div>
+        )}
       </div>
 
       {/* Right white panel */}
@@ -161,6 +176,7 @@ const Login: React.FC = () => {
             </form>
 
             {/* Mobile test credentials */}
+            {DEMO_MODE && (
             <div className="lg:hidden mt-6 pt-5 border-t border-border">
               <p className="text-xs font-semibold text-content-3 uppercase tracking-wider mb-3">
                 Acceso rápido (demo)
@@ -184,6 +200,7 @@ const Login: React.FC = () => {
               </div>
               <p className="text-xs text-content-3 mt-2.5">Contraseña: password123</p>
             </div>
+            )}
           </div>
 
           <p className="text-center text-sm text-content-3 mt-6">

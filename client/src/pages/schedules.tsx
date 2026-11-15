@@ -6,6 +6,7 @@ import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
 import Select from '../components/ui/Select';
 import { useToast } from '../components/ui/Toast';
+import { getErrorMessage } from '../services/apiError';
 
 const DAYS       = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
 const DAYS_SHORT = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
@@ -39,12 +40,12 @@ const Schedules: React.FC = () => {
   const [submitting, setSubmitting] = useState(false);
   const [viewBizId, setViewBizId] = useState('');
 
-  useEffect(() => { fetchSchedules(); fetchBusinesses(); }, []);
+  useEffect(() => { void fetchSchedules(); void fetchBusinesses(); }, []);
 
   const fetchSchedules = async () => {
     setLoading(true);
     try { setSchedules(await scheduleService.getAll()); }
-    catch (err: any) { toast(err.response?.data?.message || 'Error al cargar horarios', 'error'); }
+    catch (err) { toast(getErrorMessage(err, 'Error al cargar horarios'), 'error'); }
     finally { setLoading(false); }
   };
 
@@ -88,9 +89,9 @@ const Schedules: React.FC = () => {
         toast('Horario creado', 'success');
       }
       setShowModal(false);
-      fetchSchedules();
-    } catch (err: any) {
-      toast(err.response?.data?.message || 'Error al guardar', 'error');
+      void fetchSchedules();
+    } catch (err) {
+      toast(getErrorMessage(err, 'Error al guardar'), 'error');
     } finally {
       setSubmitting(false);
     }
@@ -102,8 +103,8 @@ const Schedules: React.FC = () => {
       await scheduleService.delete(id);
       setSchedules(prev => prev.filter(s => s.id !== id));
       toast('Horario eliminado', 'success');
-    } catch (err: any) {
-      toast(err.response?.data?.message || 'Error al eliminar', 'error');
+    } catch (err) {
+      toast(getErrorMessage(err, 'Error al eliminar'), 'error');
     }
   };
 

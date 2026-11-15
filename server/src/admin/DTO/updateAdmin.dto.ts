@@ -1,3 +1,4 @@
+import { NormalizeEmail } from '../../decorators/normalize-email.decorator';
 import { ApiProperty } from '@nestjs/swagger';
 import { IsString, IsOptional, IsEmail } from 'class-validator';
 
@@ -16,6 +17,7 @@ export class UpdateAdminDto {
     example: 'admin.carlos@example.com',
     required: false,
   })
+  @NormalizeEmail()
   @IsEmail()
   @IsOptional()
   email?: string;
@@ -28,13 +30,4 @@ export class UpdateAdminDto {
   @IsString()
   @IsOptional()
   phone?: string;
-
-  @ApiProperty({
-    description: 'Admin Role (Just ADMIN)',
-    example: 'ADMIN',
-    required: false,
-  })
-  @IsString()
-  @IsOptional()
-  role?: 'ADMIN';
 }

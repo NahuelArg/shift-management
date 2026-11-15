@@ -23,7 +23,7 @@ import { RolesGuard } from '../guard/roles.guard';
 import { Roles } from '../decorators/roles.decorator';
 import { CreateBusinessDto } from './dto/Create-Business.dto';
 import { UpdateBusinessDto } from './dto/updateBusiness.dto';
-import {PublicBusinessDto} from "./dto/PublicBusinessDto.dto";
+import { PublicBusinessDto } from './dto/PublicBusinessDto.dto';
 
 @ApiTags('Business')
 @Controller('business')
@@ -179,11 +179,7 @@ export class BusinessController {
     @Req() req: RequestWithUser,
   ): Promise<BusinessDto> {
     const userId = req.user.userId;
-    return this.businessService.update(
-      id,
-      updateBusinessDto,
-      userId,
-    );
+    return this.businessService.update(id, updateBusinessDto, userId);
   }
 
   /**

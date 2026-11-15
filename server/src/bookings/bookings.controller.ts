@@ -11,10 +11,6 @@ import {
   Patch,
   Query,
   BadRequestException,
-  NotFoundException,
-  ForbiddenException,
-  ValidationPipe,
-  UsePipes,
   ParseIntPipe,
 } from '@nestjs/common';
 import { BookingsService } from './bookings.service';
@@ -27,6 +23,7 @@ import {
 } from '@nestjs/swagger';
 import { BookingDto } from './dto/BookingsDto.dto';
 import { UpdateBookingDto } from './dto/updateBookingDto.dto';
+import { UpdateBookingStatusDto } from './dto/updateBookingStatusDto.dto';
 import { JwtAuthGuard } from '../guard/jwt.guard';
 import { RolesGuard } from '../guard/roles.guard';
 import { Roles } from '../decorators/roles.decorator';
@@ -63,11 +60,12 @@ export class BookingsController {
     });
   }
 
-
   // ✅ GET bookings assigned to employee
   @Get('my-assignments')
   @Roles('EMPLOYEE')
-  @ApiOperation({ summary: 'Get bookings assigned to current employee (EMPLOYEE)' })
+  @ApiOperation({
+    summary: 'Get bookings assigned to current employee (EMPLOYEE)',
+  })
   @ApiResponse({ status: 200, type: [BookingDto] })
   async getMyAssignments(@Request() req: RequestWithUser): Promise<Booking[]> {
     return this.bookingsService.getBookingsByEmployee(req.user.userId);
@@ -83,40 +81,36 @@ export class BookingsController {
   }
 
   @Post()
-  @UsePipes(new ValidationPipe({ transform: true }))
-  @ApiOperation({ summary: 'Create a new booking' })
-  @ApiResponse({ status: 201, type: CreateBookingDto })
+  @ApiOperation({
+    summary: 'Create a new booking',
+    description:
+      'CLIENT books for themselves. ADMIN (own businesses) and EMPLOYEE (own business) can book for a client via userId, or as walk-in. Price and timezone come from the server.',
+  })
+  @ApiResponse({ status: 201, type: BookingDto })
   async create(
-    @Body() createBookingDto: CreateBookingDto & { userId?: string },
+    // Antes el tipo era una intersección (Dto & {...}) y ValidationPipe no validaba nada
+    @Body() createBookingDto: CreateBookingDto,
     @Request() req: RequestWithUser,
   ): Promise<Booking> {
-const bookingData = {
-      ...createBookingDto,
-      timezone: createBookingDto.timezone || 'UTC',
-      userId: req.user.role === 'CLIENT' ? req.user.userId : (createBookingDto.userId ?? null),
-    };
-
-    return this.bookingsService.create(bookingData);
+    return this.bookingsService.create(createBookingDto, {
+      userId: req.user.userId,
+      role: req.user.role,
+    });
   }
-
 
   // ✅ PUT update a booking (just own or any if ADMIN)
   @Put(':id')
-  @Roles('CLIENT', 'ADMIN')
-  @ApiOperation({ summary: 'Update a booking' })
+  @Roles('ADMIN')
+  @ApiOperation({
+    summary:
+      'Reassign employee or adjust price of a booking (ADMIN, own businesses)',
+  })
   async updateBooking(
     @Param('id') id: string,
     @Body() updateBookingDto: UpdateBookingDto,
     @Request() req: RequestWithUser,
   ): Promise<Booking> {
-    const booking = await this.bookingsService.findOne(id);
-    if (!booking) {
-      throw new NotFoundException('Booking not found');
-    }
-    if (req.user.role !== 'ADMIN' && booking.userId !== req.user.userId) {
-      throw new ForbiddenException('Not authorized to update this booking');
-    }
-    return this.bookingsService.update(id, updateBookingDto);
+    return this.bookingsService.update(id, updateBookingDto, req.user.userId);
   }
 
   // ✅ PATCH change the status of a booking
@@ -129,13 +123,9 @@ const bookingData = {
   })
   async updateBookingStatus(
     @Param('id') id: string,
-    @Body() body: UpdateBookingDto,
+    @Body() body: UpdateBookingStatusDto,
     @Request() req: RequestWithUser,
   ) {
-    if (!body.status) {
-      throw new BadRequestException('Booking status is required');
-    }
-
     // Las reglas de autorización por rol viven en el service (testeables y en un solo lugar)
     return this.bookingsService.changeStatus(
       { userId: req.user.userId, role: req.user.role },
@@ -152,10 +142,14 @@ const bookingData = {
     @Query('date') date: string,
     @Query('endTime') endTime: string,
   ) {
-      if (!businessId || !date || !endTime) {
-        throw new BadRequestException('Missing required query parameters');
-      }
-    return this.bookingsService.findAvailableEmployee(businessId, new Date(date), new Date(endTime));
+    if (!businessId || !date || !endTime) {
+      throw new BadRequestException('Missing required query parameters');
+    }
+    return this.bookingsService.findAvailableEmployee(
+      businessId,
+      new Date(date),
+      new Date(endTime),
+    );
   }
 
   // ✅ DELETE a booking (just own or any if ADMIN)
@@ -170,4 +164,3 @@ const bookingData = {
     return this.bookingsService.delete(id, req.user);
   }
 }
-

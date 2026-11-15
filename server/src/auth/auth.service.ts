@@ -2,7 +2,6 @@ import {
   Injectable,
   BadRequestException,
   UnauthorizedException,
-  NotFoundException,
   ConflictException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
@@ -13,6 +12,10 @@ import { LoginDto } from './dto/LoginDto.dto';
 import { UserDto } from '../users/dto/UserDto.dto';
 import { Role } from '@prisma/client';
 
+// Hash bcrypt válido de una contraseña aleatoria, usado solo para igualar tiempos
+const DUMMY_HASH =
+  '$2b$10$CwTycUXWue0Thq9StjUM0uJ8.6YVYmFQ7RnhrhQ5Gf7aJ8kPq3eU6';
+
 @Injectable()
 export class AuthService {
   constructor(
@@ -21,7 +24,8 @@ export class AuthService {
   ) {}
 
   async register(data: RegisterDto): Promise<UserDto> {
-    const { email, password, name, authProvider = 'LOCAL' } = data;
+    const { email, password, name } = data;
+    const authProvider = 'LOCAL';
 
     const existingUser = await this.prisma.user.findUnique({
       where: { email },
@@ -93,31 +97,18 @@ export class AuthService {
   ): Promise<{ accessToken: string; user: UserDto }> {
     const { email, password } = loginDto;
 
-    if (!email || !email.includes('@')) {
-      throw new UnauthorizedException('Please enter a valid email address');
-    }
-
     const user = await this.prisma.user.findUnique({
       where: { email },
+      omit: { password: false }, // único lugar que necesita el hash
     });
 
-    if (!user) {
-      throw new NotFoundException('No account found with this email address');
-    }
-
-    if (user.authProvider !== 'LOCAL') {
-      throw new UnauthorizedException(
-        `Please log in using ${user.authProvider}`,
-      );
-    }
-    if (!user.password) {
-      throw new UnauthorizedException(
-        'This account does not have a password set. Please use social login',
-      );
-    }
-    const isPasswordValid = await compare(password, user.password);
-    if (!isPasswordValid) {
-      throw new UnauthorizedException('The password you entered is incorrect');
+    // Siempre se ejecuta bcrypt (contra un hash señuelo si el usuario no existe)
+    // y siempre se responde el mismo mensaje: así ni el texto ni el tiempo de
+    // respuesta revelan qué emails están registrados (user enumeration).
+    const passwordHash = user?.authProvider === 'LOCAL' ? user.password : null;
+    const isPasswordValid = await compare(password, passwordHash ?? DUMMY_HASH);
+    if (!user || !passwordHash || !isPasswordValid) {
+      throw new UnauthorizedException('Invalid email or password');
     }
 
     const payload = { userId: user.id, email: user.email, role: user.role };

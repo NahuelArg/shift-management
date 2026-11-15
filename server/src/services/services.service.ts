@@ -7,7 +7,7 @@ import {
   ForbiddenException,
   UnprocessableEntityException,
 } from '@nestjs/common';
-import { PrismaService, } from '../../prisma/prisma.service';
+import { PrismaService } from '../../prisma/prisma.service';
 import { Service } from '@prisma/client';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { CreateServiceDto } from './dto/create-service.dto';
@@ -15,103 +15,115 @@ import { UpdateServiceDto } from './dto/updateServices.dto';
 import { BusinessWithServices } from './dto/businessWithService.dto';
 
 @Injectable()
-
-
 export class ServicesService {
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(private readonly prisma: PrismaService) {}
 
-  async getServicesByBusinessId(businessId: string, userId: string): Promise<Service[]> {
-    if (!businessId || !userId) throw new BadRequestException('Args not provided')
+  async getServicesByBusinessId(
+    businessId: string,
+    userId: string,
+  ): Promise<Service[]> {
+    if (!businessId || !userId)
+      throw new BadRequestException('Args not provided');
     const business = await this.prisma.business.findFirst({
       where: {
         id: businessId,
-        ownerId: userId
+        ownerId: userId,
       },
-      include: { services: true }
+      include: { services: { where: { active: true } } },
     });
-    if (!business) throw new ForbiddenException('Forbidden')
-    const service = business.services
-    return service
+    if (!business) throw new ForbiddenException('Forbidden');
+    const service = business.services;
+    return service;
   }
 
   async findAll(userId: string): Promise<BusinessWithServices[]> {
-    if (!userId) throw new BadRequestException('Args not provided')
+    if (!userId) throw new BadRequestException('Args not provided');
     const businessWithServices = await this.prisma.business.findMany({
       where: {
-        ownerId: userId
+        ownerId: userId,
       },
       select: {
         name: true,
-        services: true,
-      }
+        services: { where: { active: true } },
+      },
     });
-    return businessWithServices
+    return businessWithServices;
   }
 
   async create(data: CreateServiceDto, userId: string): Promise<Service> {
     const business = await this.prisma.business.findFirst({
       where: {
         id: data.businessId,
-        ownerId: userId
-      }
-    })
-    if (!business) throw new ForbiddenException('Forbidden')
+        ownerId: userId,
+      },
+    });
+    if (!business) throw new ForbiddenException('Forbidden');
     try {
       return await this.prisma.service.create({ data });
     } catch (error) {
       if (error instanceof PrismaClientKnownRequestError) {
         if (error.code === 'P2002') {
-          throw new ConflictException('A service with that name already exists');
+          throw new ConflictException(
+            'A service with that name already exists',
+          );
         }
       }
-      throw new InternalServerErrorException('Internal Server Error')
+      throw new InternalServerErrorException('Internal Server Error');
     }
   }
-  async delete(id: string, userId: string, businessId: string): Promise<Service> {
-    if (!id || !userId) throw new BadRequestException('Bad Request')
+  async delete(
+    id: string,
+    userId: string,
+    businessId: string,
+  ): Promise<Service> {
+    if (!id || !userId) throw new BadRequestException('Bad Request');
     const business = await this.prisma.business.findFirst({
       where: {
         id: businessId,
-        ownerId: userId
-      }
+        ownerId: userId,
+      },
     });
-    if (!business) throw new ForbiddenException('Forbidden')
+    if (!business) throw new ForbiddenException('Forbidden');
     try {
-      const service = await this.prisma.service.delete({
+      // Soft delete: se desactiva en vez de borrar, así las reservas pasadas
+      // conservan su servicio y los ingresos históricos no cambian
+      const service = await this.prisma.service.update({
         where: {
           id,
-          businessId
+          businessId,
+          active: true,
         },
+        data: { active: false },
       });
-      return service
+      return service;
     } catch (error) {
       if (error instanceof PrismaClientKnownRequestError) {
         if (error.code === 'P2025') {
           throw new NotFoundException('Not Found');
         }
       }
-      throw new InternalServerErrorException('Internal Server Error')
+      throw new InternalServerErrorException('Internal Server Error');
     }
   }
   async update(
     id: string,
     updateServiceDto: UpdateServiceDto,
     userId: string,
-    businessId: string
+    businessId: string,
   ): Promise<Service> {
-    if (!id || !userId) throw new BadRequestException('Bad Request')
+    if (!id || !userId) throw new BadRequestException('Bad Request');
     const business = await this.prisma.business.findFirst({
       where: {
         id: businessId,
-        ownerId: userId
-      }
+        ownerId: userId,
+      },
     });
-    if (!business) throw new ForbiddenException('Forbidden')
+    if (!business) throw new ForbiddenException('Forbidden');
     try {
       return await this.prisma.service.update({
         where: {
           id,
-          businessId
+          businessId,
         },
         data: updateServiceDto,
       });
@@ -123,7 +135,7 @@ export class ServicesService {
     }
   }
   async getServicesByEmployee(employeeId: string): Promise<Service[]> {
-    if (!employeeId) throw new BadRequestException('Bad Request')
+    if (!employeeId) throw new BadRequestException('Bad Request');
     const user = await this.prisma.user.findUnique({
       where: { id: employeeId },
       select: {
@@ -136,11 +148,13 @@ export class ServicesService {
     }
 
     if (!user.businessId) {
-      throw new UnprocessableEntityException('Employee is not assigned to any business');
+      throw new UnprocessableEntityException(
+        'Employee is not assigned to any business',
+      );
     }
 
     return await this.prisma.service.findMany({
-      where: { businessId: user.businessId },
+      where: { businessId: user.businessId, active: true },
       orderBy: { name: 'asc' },
     });
   }

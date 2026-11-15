@@ -19,12 +19,15 @@ export default tseslint.config([
       ecmaVersion: 2020,
       globals: globals.browser,
       parserOptions: {
-        project: ['./tsconfig.json', './tsconfig.app.json'],
+        project: ['./tsconfig.json', './tsconfig.app.json', './tsconfig.node.json'],
         tsconfigRootDir: import.meta.dirname,
       },
     },
     rules: {
       '@typescript-eslint/no-floating-promises': 'error',
+      // Regla de Fast Refresh (HMR en desarrollo), no de correctitud: archivos
+      // como AuthContext exportan el Provider y su hook. Igual que la plantilla de Vite.
+      'react-refresh/only-export-components': ['warn', { allowConstantExport: true }],
     },
   },
 ])

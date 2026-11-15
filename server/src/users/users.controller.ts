@@ -21,11 +21,10 @@ import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { UpdateUserDto } from './dto/updateUser.dto';
 import { RequestWithUser } from 'src/types/express-request.interface';
 
-
 @ApiTags('Users')
 @Controller('users')
 export class UsersController {
-  constructor(private readonly usersService: UsersService) { }
+  constructor(private readonly usersService: UsersService) {}
   @Delete(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @ApiBearerAuth()
@@ -38,7 +37,8 @@ export class UsersController {
   })
   async deleteUser(
     @Param('id') id: string,
-    @Request() req: RequestWithUser): Promise<UserDto> {
+    @Request() req: RequestWithUser,
+  ): Promise<UserDto> {
     return await this.usersService.delete(id, req.user.userId);
   }
   @Get()
@@ -56,11 +56,19 @@ export class UsersController {
   @ApiBearerAuth()
   @Roles('EMPLOYEE', 'ADMIN')
   @ApiOperation({ summary: 'Search users by email (EMPLOYEE/ADMIN)' })
-  @ApiResponse({ status: 200, description: 'List of users matching search', type: [UserDto] })
+  @ApiResponse({
+    status: 200,
+    description: 'List of users matching search',
+    type: [UserDto],
+  })
   async searchUsers(
     @Query('email') email: string,
-    @Request() req: RequestWithUser): Promise<Omit<UserDto, 'password'>[]> {
-    return await this.usersService.searchByEmail(email, req.user.userId);
+    @Request() req: RequestWithUser,
+  ): Promise<Pick<UserDto, 'id' | 'name' | 'email' | 'phone'>[]> {
+    return await this.usersService.searchByEmail(email, {
+      userId: req.user.userId,
+      role: req.user.role,
+    });
   }
 
   @Post()
@@ -74,9 +82,8 @@ export class UsersController {
     type: UserDto,
   })
   async createUser(@Body() body: CreateUserDto): Promise<UserDto> {
-    return await this.usersService.create(body)
+    return await this.usersService.create(body);
   }
-
 
   @Put(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -91,7 +98,7 @@ export class UsersController {
   async updateUser(
     @Param('id') id: string,
     @Body() updateUserDto: UpdateUserDto,
-    @Request() req: RequestWithUser
+    @Request() req: RequestWithUser,
   ): Promise<UserDto> {
     return await this.usersService.update(id, updateUserDto, req.user.userId);
   }

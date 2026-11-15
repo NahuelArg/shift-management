@@ -46,7 +46,7 @@ const ServiceSelector: React.FC<ServiceSelectorProps> = ({
         setLoading(false);
       }
     };
-    fetchServices();
+    void fetchServices();
   }, [businessId, token]);
 
   const handleServiceChange = (e: React.ChangeEvent<HTMLSelectElement>) => {

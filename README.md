@@ -90,7 +90,7 @@ Reservas · Empleados · Servicios · Métricas — todo en un solo lugar
 | **Frontend** | React 19, TypeScript, Vite, Tailwind CSS, React Router v7 |
 | **Backend** | NestJS 11, TypeScript, Passport JWT, class-validator |
 | **ORM / DB** | Prisma 6, PostgreSQL 16 |
-| **Autenticación** | JWT + bcrypt, estrategias Passport (Google/Apple preparadas) |
+| **Autenticación** | JWT + bcrypt, rate limiting en login/registro |
 | **Documentación** | Swagger / OpenAPI |
 | **Testing** | Jest 29, ts-jest, Supertest |
 | **Deploy** | Vercel (frontend), Render (backend), Supabase (DB) |
@@ -363,12 +363,12 @@ Todos los issues fueron trackeados vía GitHub Issues → PR → merge a main.
 
 ## Roadmap
 
-- [ ] Timezone configurable por negocio (actualmente usa timezone del browser)
+- [x] Timezone por negocio (`Business.timezone`, falta editarla desde la UI)
 - [ ] Notificaciones por email al crear/cancelar turno
-- [ ] Login con Google / Apple (estrategias Passport ya implementadas, pendiente integración)
+- [ ] Login con Google / Apple (pendiente)
 - [ ] Integración de pagos online
 - [ ] Módulo de caja completo (CashRegister, movimientos y cierres de caja)
-- [ ] Rate limiting en la API
+- [x] Rate limiting en la API
 
 ---
 

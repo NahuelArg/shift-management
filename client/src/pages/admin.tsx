@@ -10,6 +10,7 @@ import StatusBadge, { bookingStatusVariant } from '../components/ui/StatusBadge'
 import Modal from '../components/ui/Modal';
 import Button from '../components/ui/Button';
 import { useToast } from '../components/ui/Toast';
+import { getErrorMessage } from '../services/apiError';
 
 const TurnosIcon = () => (
     <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.75" viewBox="0 0 24 24">
@@ -126,7 +127,7 @@ const Admin: React.FC = () => {
   }, [user?.id]);
 
   useEffect(() => {
-    if (selectedBusiness) fetchData(selectedBusiness);
+    if (selectedBusiness) void fetchData(selectedBusiness);
   }, [selectedBusiness, fetchData]);
 
   return (
@@ -239,9 +240,9 @@ const Admin: React.FC = () => {
               await createBooking({ ...bookingData, businessId: selectedBusiness });
               toast('Turno creado exitosamente', 'success');
               setShowBookingForm(false);
-              fetchData(selectedBusiness);
-            } catch (err: any) {
-              toast(err.message || 'Error al crear el turno', 'error');
+              void fetchData(selectedBusiness);
+            } catch (err) {
+              toast(getErrorMessage(err, 'Error al crear el turno'), 'error');
               throw err;
             }
           }}

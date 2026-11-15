@@ -8,6 +8,7 @@ import StatusBadge, { bookingStatusVariant } from '../components/ui/StatusBadge'
 import Modal from '../components/ui/Modal';
 import { useToast } from '../components/ui/Toast';
 import { getAdminBusinesses } from '../services/adminBusinessCache';
+import { getErrorMessage } from '../services/apiError';
 
 interface CalendarBooking {
   id: string;
@@ -227,7 +228,7 @@ const Calendar: React.FC = () => {
     }
   };
 
-  useEffect(() => { fetchBookings(); }, [fetchBookings]);
+  useEffect(() => { void fetchBookings(); }, [fetchBookings]);
 
   // Stable color index map for fetched employees
   const colorMap = useMemo(() => {
@@ -848,9 +849,9 @@ const Calendar: React.FC = () => {
               await createBooking(data);
               toast('Turno creado', 'success');
               setShowNewBkg(false);
-              fetchBookings();
-            } catch (err: any) {
-              toast(err.message || 'Error al crear el turno', 'error');
+              void fetchBookings();
+            } catch (err) {
+              toast(getErrorMessage(err, 'Error al crear el turno'), 'error');
               throw err;
             }
           }}

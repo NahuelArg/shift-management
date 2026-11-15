@@ -2,7 +2,7 @@ import { ApiProperty, OmitType } from '@nestjs/swagger';
 import { IsOptional, IsUUID } from 'class-validator';
 import { BookingDto } from '../../bookings/dto/BookingsDto.dto'; // Importa el DTO de Booking
 import { CreateUserDto } from './CreateUserDto.dto';
-export class UserDto extends OmitType(CreateUserDto,['password'] as const) {
+export class UserDto extends OmitType(CreateUserDto, ['password'] as const) {
   @ApiProperty({
     description: 'User UUID',
     example: '1cfc9fb7-238d-4583-9754-6aff4be64b73',

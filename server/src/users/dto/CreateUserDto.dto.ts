@@ -1,3 +1,4 @@
+import { NormalizeEmail } from '../../decorators/normalize-email.decorator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Role } from '@prisma/client';
 import {
@@ -7,7 +8,6 @@ import {
   MinLength,
   IsEnum,
   IsNotEmpty,
-  IsNumber,
 } from 'class-validator';
 // No es necesario importar AuthProvider de Prisma
 
@@ -24,6 +24,7 @@ export class CreateUserDto {
     description: 'User email',
     example: 'juan.perez@example.com',
   })
+  @NormalizeEmail()
   @IsEmail()
   @IsNotEmpty()
   email: string;
@@ -46,7 +47,8 @@ export class CreateUserDto {
     example: 'CLIENT',
     required: false,
   })
-  @IsEnum(['CLIENT', 'ADMIN'])
+  // Solo se pueden crear clientes por esta vía (antes también ADMIN)
+  @IsEnum(['CLIENT'])
   @IsOptional()
   @IsString()
   role?: Role;

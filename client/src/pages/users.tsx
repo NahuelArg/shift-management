@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import axios from 'axios';
+import { apiClient } from '../services/apiClient';
 import type { Business } from '../services/businessService';
 import type { Employee } from '../services/userService';
 import Modal from '../components/ui/Modal';
@@ -9,8 +9,8 @@ import Input from '../components/ui/Input';
 import Select from '../components/ui/Select';
 import { useToast } from '../components/ui/Toast';
 import { getAdminBusinesses } from '../services/adminBusinessCache';
+import { getErrorMessage } from '../services/apiError';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 const PlusIcon = () => (
   <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
@@ -29,7 +29,7 @@ const TrashIcon = () => (
 );
 
 const Users: React.FC = () => {
-  const { user, token } = useAuth();
+  const { user } = useAuth();
   const { toast } = useToast();
 
   const [businesses, setBusinesses] = useState<Business[]>([]);
@@ -46,7 +46,8 @@ const Users: React.FC = () => {
   const [newEmployee, setNewEmployee] = useState({ name: '', email: '', password: '', businessId: '' });
   const [createLoading, setCreateLoading] = useState(false);
 
-  const [editEmployee, setEditEmployee] = useState<any | null>(null);
+  // Empleado en edición; `password` vacío = no cambiarla
+  const [editEmployee, setEditEmployee] = useState<(Employee & { password: string }) | null>(null);
   const [editLoading, setEditLoading] = useState(false);
 
   useEffect(() => {
@@ -59,39 +60,38 @@ const Users: React.FC = () => {
           setNewEmployee(e => ({ ...e, businessId: biz[0].id }));
         }
       })
-      .catch(err => toast(err.response?.data?.message || 'Error al cargar negocios', 'error'));
+      .catch(err => toast(getErrorMessage(err, 'Error al cargar negocios'), 'error'));
   }, [user?.id]);
 
   const fetchEmployees = async () => {
     if (!selectedBusiness) return;
     setLoadingEmployees(true);
     try {
-      const res = await axios.get(`${API_BASE_URL}/admin/employees`, {
+      const res = await apiClient.get('/admin/employees', {
         params: { businessId: selectedBusiness, search, page, limit },
-        headers: { Authorization: `Bearer ${token}` }
       });
       setEmployees(res.data.employees);
       setTotalEmployees(res.data.total);
-    } catch (err: any) {
-      toast(err.response?.data?.message || 'Error al cargar empleados', 'error');
+    } catch (err) {
+      toast(getErrorMessage(err, 'Error al cargar empleados'), 'error');
     } finally {
       setLoadingEmployees(false);
     }
   };
 
-  useEffect(() => { fetchEmployees(); }, [selectedBusiness, search, page]);
+  useEffect(() => { void fetchEmployees(); }, [selectedBusiness, search, page]);
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     setCreateLoading(true);
     try {
-      await axios.post(`${API_BASE_URL}/admin/employee`, { ...newEmployee, role: 'EMPLOYEE', authProvider: 'LOCAL' }, { headers: { Authorization: `Bearer ${token}` } });
+      await apiClient.post('/admin/employee', { ...newEmployee, role: 'EMPLOYEE', authProvider: 'LOCAL' });
       toast('Empleado creado', 'success');
       setShowCreate(false);
       setNewEmployee({ name: '', email: '', password: '', businessId: selectedBusiness });
-      fetchEmployees();
-    } catch (err: any) {
-      toast(err.response?.data?.message || 'Error al crear empleado', 'error');
+      void fetchEmployees();
+    } catch (err) {
+      toast(getErrorMessage(err, 'Error al crear empleado'), 'error');
     } finally {
       setCreateLoading(false);
     }
@@ -99,17 +99,18 @@ const Users: React.FC = () => {
 
   const handleEdit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!editEmployee) return;
     setEditLoading(true);
     try {
-      await axios.put(`${API_BASE_URL}/admin/employee/${editEmployee.id}`, {
+      await apiClient.put(`/admin/employee/${editEmployee.id}`, {
         name: editEmployee.name, email: editEmployee.email,
         ...(editEmployee.password && { password: editEmployee.password })
-      }, { headers: { Authorization: `Bearer ${token}` } });
+      });
       toast('Empleado actualizado', 'success');
       setEditEmployee(null);
-      fetchEmployees();
-    } catch (err: any) {
-      toast(err.response?.data?.message || 'Error al actualizar', 'error');
+      void fetchEmployees();
+    } catch (err) {
+      toast(getErrorMessage(err, 'Error al actualizar'), 'error');
     } finally {
       setEditLoading(false);
     }
@@ -118,7 +119,7 @@ const Users: React.FC = () => {
   const handleDelete = async (id: string) => {
     if (!window.confirm('¿Eliminar este empleado?')) return;
     try {
-      await axios.delete(`${API_BASE_URL}/admin/employee/${id}`, { headers: { Authorization: `Bearer ${token}` } });
+      await apiClient.delete(`/admin/employee/${id}`);
       setEmployees(prev => prev.filter(e => e.id !== id));
       setTotalEmployees(prev => prev - 1);
       toast('Empleado eliminado', 'success');
@@ -278,7 +279,7 @@ const Users: React.FC = () => {
                   Editar empleado
                 </button>
                 <button
-                  onClick={() => { handleDelete(selectedEmployee.id); setSelectedEmployee(null); }}
+                  onClick={() => { void handleDelete(selectedEmployee.id); setSelectedEmployee(null); }}
                   className="w-full py-2 rounded-lg border border-border text-sm font-medium text-danger-text hover:bg-danger-light transition-colors"
                 >
                   Eliminar
@@ -309,9 +310,9 @@ const Users: React.FC = () => {
       <Modal open={!!editEmployee} onClose={() => setEditEmployee(null)} title="Editar empleado" size="sm">
         {editEmployee && (
           <form onSubmit={handleEdit} className="flex flex-col gap-4">
-            <Input label="Nombre" value={editEmployee.name} onChange={e => setEditEmployee((p: any) => ({ ...p, name: e.target.value }))} required />
-            <Input label="Email" type="email" value={editEmployee.email} onChange={e => setEditEmployee((p: any) => ({ ...p, email: e.target.value }))} required />
-            <Input label="Nueva contraseña (opcional)" type="password" value={editEmployee.password} onChange={e => setEditEmployee((p: any) => ({ ...p, password: e.target.value }))} />
+            <Input label="Nombre" value={editEmployee.name} onChange={e => setEditEmployee(p => p && { ...p, name: e.target.value })} required />
+            <Input label="Email" type="email" value={editEmployee.email} onChange={e => setEditEmployee(p => p && { ...p, email: e.target.value })} required />
+            <Input label="Nueva contraseña (opcional)" type="password" value={editEmployee.password} onChange={e => setEditEmployee(p => p && { ...p, password: e.target.value })} />
             <Button type="submit" loading={editLoading}>Guardar cambios</Button>
           </form>
         )}
