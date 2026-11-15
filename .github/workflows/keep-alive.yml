@@ -3,7 +3,7 @@
 #
 # Configuración: en GitHub → Settings → Secrets and variables → Actions,
 # crear el secret HEALTHCHECK_URL con la URL pública, ej:
-#   https://tu-api.onrender.com/health/db
+#   https://shift-management-1-n8hg.onrender.com/health/db
 name: Keep alive
 
 on:
