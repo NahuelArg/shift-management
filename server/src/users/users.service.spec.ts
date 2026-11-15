@@ -104,35 +104,33 @@ describe('UsersService', () => {
   })
 
   describe('searchByEmail', () => {
-    it('should throw BadRequestException if email not provided', async () => {
-      await expect(service.searchByEmail(null as any, null as any)).rejects.toThrow(BadRequestException)
+    it('rejects queries shorter than 3 characters', async () => {
+      await expect(service.searchByEmail('ab', { userId: 'a', role: 'ADMIN' })).rejects.toThrow(BadRequestException)
     })
-    it('should return users matching email', async () => {
-      prisma.business.findMany.mockResolvedValue([{ id: 'biz-id' }] as any);
-      prisma.user.findMany.mockResolvedValue([{
-            name: 'user1',
-            id: 'userId',
-            email: 'user@email.com',
-            phone: null,
-            role: 'EMPLOYEE',
-            authProvider: 'LOCAL',
-            businessId: 'biz-id',
-          }] as any);
-      const user = await service.searchByEmail('user@email.com', 'userId')
-      expect(user).toEqual(
-        [
-          {
-            name: 'user1',
-            id: 'userId',
-            email: 'user@email.com',
-            phone: null,
-            role: 'EMPLOYEE',
-            authProvider: 'LOCAL',
-            businessId: 'biz-id',
-          }
-        ]
-      )
 
+    it('searches clients of the admin businesses (partial) or by exact email', async () => {
+      prisma.business.findMany.mockResolvedValue([{ id: 'biz-1' }, { id: 'biz-2' }] as any);
+      prisma.user.findMany.mockResolvedValue([{ id: 'c1', name: 'Ana', email: 'ana@x.com', phone: null }] as any);
+      const result = await service.searchByEmail('  ANA ', { userId: 'admin1', role: 'ADMIN' });
+      expect(result).toEqual([{ id: 'c1', name: 'Ana', email: 'ana@x.com', phone: null }]);
+      expect(prisma.user.findMany).toHaveBeenCalledWith(expect.objectContaining({
+        where: {
+          role: 'CLIENT',
+          OR: [
+            { email: { equals: 'ana', mode: 'insensitive' } },
+            { email: { contains: 'ana', mode: 'insensitive' }, bookings: { some: { businessId: { in: ['biz-1', 'biz-2'] } } } },
+          ],
+        },
+        select: { id: true, name: true, email: true, phone: true },
+      }));
+    })
+
+    it('uses the employee business for employees', async () => {
+      prisma.user.findUnique.mockResolvedValue({ businessId: 'biz-9' } as any);
+      prisma.user.findMany.mockResolvedValue([]);
+      await service.searchByEmail('ana@x.com', { userId: 'emp1', role: 'EMPLOYEE' });
+      const where = prisma.user.findMany.mock.calls[0][0]!.where as any;
+      expect(where.OR[1].bookings.some.businessId.in).toEqual(['biz-9']);
     })
   })
 });

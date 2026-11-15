@@ -1,3 +1,4 @@
+import { NormalizeEmail } from '../../decorators/normalize-email.decorator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsString,
@@ -21,6 +22,7 @@ export class CreateAdminDto {
     description: 'User email',
     example: 'juan.perez@example.com',
   })
+  @NormalizeEmail()
   @IsEmail()
   @IsNotEmpty()
   email: string;

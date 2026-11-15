@@ -26,13 +26,21 @@ export class SchedulesService {
     )
     return schedules;
   }
-  async findOne(id: string): Promise<Schedule> {
+  async findOne(id: string, userId: string): Promise<Schedule> {
     if (!id) throw new BadRequestException('ID IS NOT PROVIDED')
-    const schedule = await this.prisma.schedule.findUnique({ where: { id } })
+    // Solo horarios de negocios propios (404 en vez de 403 para no confirmar que existe)
+    const schedule = await this.prisma.schedule.findFirst({
+      where: { id, business: { ownerId: userId } },
+    })
     if (!schedule) throw new NotFoundException('Schedule not found')
     return schedule;
   }
-  async create(data: CreateScheduleDto): Promise<Schedule> {
+  async create(data: CreateScheduleDto, userId: string): Promise<Schedule> {
+    const business = await this.prisma.business.findFirst({
+      where: { id: data.businessId, ownerId: userId },
+      select: { id: true },
+    })
+    if (!business) throw new ForbiddenException('You can only add schedules to your own businesses')
     const minutesFrom = toMinutes(data.from)
     const minutesTo = toMinutes(data.to)
     if (minutesFrom >= minutesTo) {

@@ -59,8 +59,11 @@ export class UsersController {
   @ApiResponse({ status: 200, description: 'List of users matching search', type: [UserDto] })
   async searchUsers(
     @Query('email') email: string,
-    @Request() req: RequestWithUser): Promise<Omit<UserDto, 'password'>[]> {
-    return await this.usersService.searchByEmail(email, req.user.userId);
+    @Request() req: RequestWithUser): Promise<Pick<UserDto, 'id' | 'name' | 'email' | 'phone'>[]> {
+    return await this.usersService.searchByEmail(email, {
+      userId: req.user.userId,
+      role: req.user.role,
+    });
   }
 
   @Post()

@@ -5,7 +5,7 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { PrismaService } from 'prisma/prisma.service';
-import { Booking, Prisma, User } from '@prisma/client';
+import { Booking, Prisma } from '@prisma/client';
 import { BookingDto } from './dto/BookingsDto.dto';
 import { UpdateBookingDto } from './dto/updateBookingDto.dto';
 import { BookingStatus } from '@prisma/client';
@@ -136,87 +136,95 @@ export class BookingsService {
       );
     }
 
-    // ── Empleado ──────────────────────────────────────────────────────────
-    let finalEmployeeId: string | null = employeeId || null;
-    if (!finalEmployeeId) {
-      const available = await this.findAvailableEmployee(businessId, dateUtc, endTime);
-      if (!available || available.length === 0) {
+    // ── Empleado, conflictos y alta: dentro de una transacción ────────────
+    // pg_advisory_xact_lock serializa la creación de reservas del mismo negocio:
+    // dos pedidos simultáneos ya no pueden ver el mismo hueco libre y reservarlo
+    // los dos (race condition). El lock se libera solo al terminar la transacción.
+    return this.prisma.$transaction(async (tx) => {
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${businessId}))`;
+
+      // ── Empleado ──────────────────────────────────────────────────────────
+      let finalEmployeeId: string | null = employeeId || null;
+      if (!finalEmployeeId) {
+        const available = await this.findAvailableEmployee(businessId, dateUtc, endTime, tx);
+        if (!available || available.length === 0) {
+          throw new BadRequestException(
+            'No available employees for the selected time slot',
+          );
+        }
+        finalEmployeeId = available[0].id;
+      } else {
+        const employee = await tx.user.findFirst({
+          where: { id: finalEmployeeId, businessId, role: 'EMPLOYEE' },
+        });
+        if (!employee) {
+          throw new BadRequestException('Employee not found in this business');
+        }
+      }
+
+      const conflicting = await tx.booking.findFirst({
+        where: {
+          employeeId: finalEmployeeId,
+          status: { not: 'CANCELLED' },
+          date: { lt: endTime },
+          endTime: { gt: dateUtc },
+        },
+      });
+      if (conflicting) {
         throw new BadRequestException(
-          'No available employees for the selected time slot',
+          'The selected employee is not available at the chosen time',
         );
       }
-      finalEmployeeId = available[0].id;
-    } else {
-      const employee = await this.prisma.user.findFirst({
-        where: { id: finalEmployeeId, businessId, role: 'EMPLOYEE' },
+
+      return tx.booking.create({
+        data: {
+          userId,
+          serviceId,
+          businessId,
+          employeeId: finalEmployeeId,
+          date: dateUtc,
+          endTime,
+          timezone,
+          finalPrice: service.price,
+          status: BookingStatus.PENDING,
+        },
+        include: {
+          employee: { select: { id: true, name: true, email: true } },
+          service: true,
+          business: true,
+          user: { select: { id: true, name: true, email: true } },
+        },
       });
-      if (!employee) {
-        throw new BadRequestException('Employee not found in this business');
-      }
-    }
-
-    const conflicting = await this.prisma.booking.findFirst({
-      where: {
-        employeeId: finalEmployeeId,
-        status: { not: 'CANCELLED' },
-        date: { lt: endTime },
-        endTime: { gt: dateUtc },
-      },
-    });
-    if (conflicting) {
-      throw new BadRequestException(
-        'The selected employee is not available at the chosen time',
-      );
-    }
-
-    return this.prisma.booking.create({
-      data: {
-        userId,
-        serviceId,
-        businessId,
-        employeeId: finalEmployeeId,
-        date: dateUtc,
-        endTime,
-        timezone,
-        finalPrice: service.price,
-        status: BookingStatus.PENDING,
-      },
-      include: {
-        employee: { select: { id: true, name: true, email: true } },
-        service: true,
-        business: true,
-        user: { select: { id: true, name: true, email: true } },
-      },
     });
   }
+
+  /**
+   * Borra una reserva.
+   * - ADMIN: reservas de sus negocios.
+   * - CLIENT: sus propias reservas, salvo las COMPLETED (son historial de cobro).
+   * Antes se buscaba por { id, userId } (nadie podía borrar reservas ajenas,
+   * tampoco el admin) y al ADMIN se le comparaba su businessId, que es null.
+   */
   async delete(
     id: string,
-    user: { 
-      userId: string,
-      role: string },
+    user: { userId: string; role: string },
   ): Promise<BookingDto> {
-    if(!id || !user ) throw new BadRequestException('Bad Request')
-    const booking = await this.prisma.booking.findUnique({ where: {
-      id,
-      userId: user.userId } });
-    if (!booking) {
-      throw new NotFoundException('Booking not found');
-    }
-    const bookingUser = await this.prisma.user.findUnique({
-      where: { id: user.userId},
+    if (!id || !user) throw new BadRequestException('Bad Request');
+    const booking = await this.prisma.booking.findUnique({
+      where: { id },
+      include: { business: { select: { ownerId: true } } },
     });
-    if(!bookingUser) throw new NotFoundException('Not found')
-    const userBusinessId = bookingUser.businessId;
-  if(user.role === 'CLIENT'){
-    if (booking.userId !== user.userId) {
-      throw new ForbiddenException('Forbidden');
+    if (!booking) throw new NotFoundException('Booking not found');
+
+    const allowed =
+      (user.role === 'ADMIN' && booking.business.ownerId === user.userId) ||
+      (user.role === 'CLIENT' && booking.userId === user.userId);
+    if (!allowed) throw new ForbiddenException('Forbidden');
+
+    if (user.role === 'CLIENT' && booking.status === BookingStatus.COMPLETED) {
+      throw new BadRequestException('Completed bookings cannot be deleted');
     }
-  }
-  if(user.role === 'EMPLOYEE' || user.role === 'ADMIN'){
-    if (userBusinessId !== booking.businessId) {
-      throw new ForbiddenException('Forbidden');
-    }
-  }
+
     const deleted = await this.prisma.booking.delete({ where: { id } });
     return {
       id: deleted.id,
@@ -227,8 +235,6 @@ export class BookingsService {
       status: deleted.status,
       createdAt: deleted.createdAt,
     };
-
-
   }
   async update(
     id: string,
@@ -398,8 +404,9 @@ export class BookingsService {
     businessId: string,
     startTime: Date,
     endTime: Date,
+    db: Prisma.TransactionClient = this.prisma,
   ): Promise<{ id: string; name: string }[]> {
-    const employees = await this.prisma.user.findMany({
+    const employees = await db.user.findMany({
       where: {
         businessId,
         role: 'EMPLOYEE',
@@ -414,7 +421,7 @@ export class BookingsService {
     }
     const employeeIds = employees.map(e => e.id)
   
-    const conflictingBookings = await this.prisma.booking.findMany({
+    const conflictingBookings = await db.booking.findMany({
         where: {
           employeeId: {in:employeeIds},
           status: { not: 'CANCELLED' },

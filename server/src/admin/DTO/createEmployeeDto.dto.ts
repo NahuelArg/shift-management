@@ -1,3 +1,4 @@
+import { NormalizeEmail } from '../../decorators/normalize-email.decorator';
 import { ApiProperty } from '@nestjs/swagger';
 import { IsString, IsNotEmpty, IsEmail, IsEnum, IsUUID } from 'class-validator';
 import { Role, AuthProvider } from '@prisma/client';  // ← enum de PRISMA
@@ -11,6 +12,7 @@ export class CreateEmployeeDto {
   name!: string;
 
   @ApiProperty({ example: 'empleado@example.com' })
+  @NormalizeEmail()
   @IsEmail()
   email!: string;
 

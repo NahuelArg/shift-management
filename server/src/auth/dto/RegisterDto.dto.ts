@@ -1,38 +1,27 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsString, IsEmail, IsEnum, IsOptional } from 'class-validator';
-import { AuthProvider } from '@prisma/client';
+import { NormalizeEmail } from '../../decorators/normalize-email.decorator';
+import { ApiProperty } from '@nestjs/swagger';
+import { IsEmail, IsNotEmpty, IsString, MaxLength, MinLength } from 'class-validator';
 
+/**
+ * Registro público: solo cuentas LOCAL con contraseña y rol CLIENT.
+ * Antes se aceptaba authProvider GOOGLE/APPLE sin contraseña, lo que permitía
+ * "ocupar" el email de otra persona (no hay login social implementado).
+ */
 export class RegisterDto {
-  @ApiProperty({
-    description: 'User Name',
-    example: 'Juan Perez',
-  })
+  @ApiProperty({ description: 'User Name', example: 'Juan Perez' })
   @IsString()
+  @IsNotEmpty()
+  @MaxLength(100)
   name: string;
 
-  @ApiProperty({
-    description: 'User Email',
-    example: 'juan.perez@example.com',
-  })
+  @ApiProperty({ description: 'User Email', example: 'juan.perez@example.com' })
+  @NormalizeEmail()
   @IsEmail()
   email: string;
 
-  @ApiPropertyOptional({
-    description:
-      'User Password (required only for LOCAL auth, min 6 characters)',
-    example: 'my_secure_password',
-  })
-  @IsOptional()
+  @ApiProperty({ description: 'Password (6-72 characters)', example: 'my_secure_password' })
   @IsString()
-  password?: string;
-
-  @ApiPropertyOptional({
-    description: 'Auth Provider',
-    example: 'LOCAL',
-    enum: ['LOCAL', 'GOOGLE', 'APPLE'],
-    default: 'LOCAL',
-  })
-  @IsOptional()
-  @IsEnum(['LOCAL', 'GOOGLE', 'APPLE'])
-  authProvider?: AuthProvider;
+  @MinLength(6)
+  @MaxLength(72) // bcrypt ignora lo que pasa de 72 bytes
+  password: string;
 }

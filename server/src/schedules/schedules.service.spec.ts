@@ -50,8 +50,9 @@ describe('SchedulesService', () => {
   });
   describe('FindOne', () => {
     it('should get schedule by id', async () => {
-      prisma.schedule.findUnique.mockResolvedValue({ id: 'schedule-id', dayOfWeek: 1, from: '10:00', to: '12:30', businessId: 'biz-213' } as any)
-      const result = await service.findOne('schedule-id')
+      prisma.schedule.findFirst.mockResolvedValue({ id: 'schedule-id', dayOfWeek: 1, from: '10:00', to: '12:30', businessId: 'biz-213' } as any)
+      const result = await service.findOne('schedule-id', 'owner-1')
+      expect(prisma.schedule.findFirst).toHaveBeenCalledWith({ where: { id: 'schedule-id', business: { ownerId: 'owner-1' } } })
       expect(result).toEqual(
         {
           id: 'schedule-id',
@@ -63,19 +64,27 @@ describe('SchedulesService', () => {
       )
     })
     it('should throw BadRequestException if id is not provided', async () => {
-      await expect(service.findOne(null as any)).rejects.toThrow(BadRequestException);
+      await expect(service.findOne(null as any, 'owner-1')).rejects.toThrow(BadRequestException);
     })
     it('should throw NotFoundException if schedule id is not found', async () => {
-      await expect(service.findOne('schedule-123')).rejects.toThrow(NotFoundException);
+      prisma.schedule.findFirst.mockResolvedValue(null)
+      await expect(service.findOne('schedule-123', 'owner-1')).rejects.toThrow(NotFoundException);
     })
   });
   describe('Create', () => {
     it('should throw BadRequestException if fromMinutes > or = than toMinutes', async () => {
-      await expect(service.create({ from: '10:00', to: '09:00', dayOfWeek: 1, businessId: 'biz1' })).rejects.toThrow(BadRequestException);
+      prisma.business.findFirst.mockResolvedValue({ id: 'biz1' } as any)
+      await expect(service.create({ from: '10:00', to: '09:00', dayOfWeek: 1, businessId: 'biz1' }, 'owner-1')).rejects.toThrow(BadRequestException);
+    })
+    it('should forbid creating schedules in a business the admin does not own', async () => {
+      prisma.business.findFirst.mockResolvedValue(null)
+      await expect(service.create({ from: '09:00', to: '18:00', dayOfWeek: 1, businessId: 'biz-ajeno' }, 'owner-1')).rejects.toThrow(ForbiddenException);
+      expect(prisma.schedule.create).not.toHaveBeenCalled()
     })
     it('should create a schedule', async () => {
       prisma.schedule.create.mockResolvedValue({ id: 'schedule1', from: '17:00', to: '19:00', dayOfWeek: 1, businessId: 'biz1' })
-      const result = await service.create({ from: '17:00', to: '19:00', dayOfWeek: 1, businessId: 'biz1' })
+      prisma.business.findFirst.mockResolvedValue({ id: 'biz1' } as any)
+      const result = await service.create({ from: '17:00', to: '19:00', dayOfWeek: 1, businessId: 'biz1' }, 'owner-1')
       expect(result).toEqual({
         id: 'schedule1',
         from: '17:00',

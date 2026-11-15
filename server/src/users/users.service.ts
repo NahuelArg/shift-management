@@ -87,34 +87,52 @@ export class UsersService {
     });
   }
 
-  async searchByEmail(email: string, userId: string): Promise<Omit<User, 'password'>[]> {
-    if (!email) throw new BadRequestException('args not provided')
-    const businesses = await this.prisma.business.findMany({
-      where: { ownerId: userId },
-      select: { id: true }
-    });
-    const businessIds = businesses.map(b => b.id);
-    const userByEmail = await this.prisma.user.findMany({
+  /**
+   * Búsqueda de clientes para crear reservas en nombre de ellos (ADMIN/EMPLOYEE).
+   * - Coincidencia parcial: solo clientes que ya reservaron en los negocios del
+   *   usuario (no se puede listar a los clientes de otros negocios).
+   * - Email exacto: cualquier cliente, para poder darle su primer turno.
+   * Antes filtraba por `businessId` de negocios propios: los clientes tienen
+   * businessId = null y los empleados no son dueños, así que nunca devolvía nada.
+   */
+  async searchByEmail(
+    email: string,
+    actor: { userId: string; role: string },
+  ): Promise<Pick<User, 'id' | 'name' | 'email' | 'phone'>[]> {
+    const query = email?.trim().toLowerCase();
+    if (!query || query.length < 3) {
+      throw new BadRequestException('Search must have at least 3 characters');
+    }
+
+    let businessIds: string[] = [];
+    if (actor.role === 'ADMIN') {
+      const owned = await this.prisma.business.findMany({
+        where: { ownerId: actor.userId },
+        select: { id: true },
+      });
+      businessIds = owned.map((b) => b.id);
+    } else {
+      const me = await this.prisma.user.findUnique({
+        where: { id: actor.userId },
+        select: { businessId: true },
+      });
+      if (me?.businessId) businessIds = [me.businessId];
+    }
+
+    return this.prisma.user.findMany({
       where: {
-        businessId:{in:businessIds},
-        email: {
-          contains: email,
-          mode: 'insensitive',
-        },
+        role: 'CLIENT',
+        OR: [
+          { email: { equals: query, mode: 'insensitive' } },
+          {
+            email: { contains: query, mode: 'insensitive' },
+            bookings: { some: { businessId: { in: businessIds } } },
+          },
+        ],
       },
-      take: 10, 
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        role: true,
-        phone: true,
-        createdAt: true,
-        updatedAt: true,
-        authProvider: true,
-        businessId: true,
-      },
+      take: 10,
+      orderBy: { name: 'asc' },
+      select: { id: true, name: true, email: true, phone: true },
     });
-    return userByEmail
   }
 }

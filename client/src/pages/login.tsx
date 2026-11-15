@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { login as loginService } from '../services/authService';
 import { redirectByRole } from '../context/AuthContext';
@@ -21,7 +21,11 @@ const Login: React.FC = () => {
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState<string | null>(null);
+  const [searchParams] = useSearchParams();
+  // El interceptor de apiClient redirige a /login?expired=1 ante un 401
+  const [error, setError] = useState<string | null>(() =>
+    searchParams.get('expired') ? 'Tu sesión expiró. Iniciá sesión de nuevo.' : null,
+  );
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -36,7 +40,12 @@ const Login: React.FC = () => {
       if (!navigator.onLine) {
         setError('Sin conexión a internet. Verificá tu red.');
       } else if (err instanceof Error) {
-        setError(err.message);
+        const status = (err as Error & { status?: number }).status;
+        setError(
+          status === 401 ? 'Email o contraseña incorrectos.' :
+          status === 429 ? 'Demasiados intentos. Esperá un minuto e intentá de nuevo.' :
+          err.message,
+        );
       } else {
         setError('Ocurrió un error inesperado. Intentá de nuevo.');
       }

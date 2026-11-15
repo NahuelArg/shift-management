@@ -57,15 +57,16 @@ describe('AuthService', () => {
       prisma.user.findUnique.mockResolvedValue(mockUser as any)
       await expect(() => service.register({
         name: mockUser.name,
-        email: mockUser.email
+        email: mockUser.email,
+        password: 'secret123',
       })).rejects.toThrow(ConflictException)
     })
-    it('should throw BadRequestException if AuthProvider is LOCAL and password is null', async () => {
+    it('should throw BadRequestException if password is empty', async () => {
       prisma.user.findUnique.mockResolvedValue(null)
       await expect(() => service.register({
         name: mockUser.name,
         email: mockUser.email,
-        authProvider: 'LOCAL',
+        password: '   ',
       })).rejects.toThrow(BadRequestException)
     })
     it('should throw BadRequestException if password < 6 characters', async () => {
@@ -86,12 +87,12 @@ describe('AuthService', () => {
         role: 'CLIENT',
         businessId: null,
         createdAt: expect.any(Date),
-        authProvider: 'GOOGLE'
+        authProvider: 'LOCAL'
       } as any)
       await expect(service.register({
         name: 'John',
         email: 'email@test.com',
-        authProvider: 'GOOGLE'
+        password: 'secret123',
       })).resolves.toEqual(expect.objectContaining({
         id: '1',
         name: 'name',
@@ -100,7 +101,11 @@ describe('AuthService', () => {
         role: 'CLIENT',
         businessId: null,
         createdAt: new Date,
-        authProvider: 'GOOGLE',
+        authProvider: 'LOCAL',
+      }))
+      // El registro público siempre crea cuentas LOCAL con rol CLIENT
+      expect(prisma.user.create).toHaveBeenCalledWith(expect.objectContaining({
+        data: expect.objectContaining({ authProvider: 'LOCAL', role: 'CLIENT' }),
       }))
     })
   })
@@ -112,12 +117,12 @@ describe('AuthService', () => {
         email: 'email@test.com',
       })).rejects.toThrow(UnauthorizedException)
     })
-    it('should throw NotFoundException if user do not exist', async () => {
+    it('should answer with the same generic 401 when the user does not exist (no enumeration)', async () => {
       prisma.user.findUnique.mockResolvedValue(null)
       await expect(() => service.login({
         password: '1234567789',
         email: 'email@test.com',
-      })).rejects.toThrow(NotFoundException)
+      })).rejects.toThrow(new UnauthorizedException('Invalid email or password'))
     })
     it('should throw UnauthorizedException if user is not local', async () => {
       prisma.user.findUnique.mockResolvedValue({ id: '1', email: 'test@test.com', password: '123456789', authProvider: 'GOOGLE' } as any)

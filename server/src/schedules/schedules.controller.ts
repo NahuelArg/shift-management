@@ -74,8 +74,11 @@ export class SchedulesController {
     description: 'Get Schedule by ID',
     type: ScheduleDto,
   })
-  async findOne(@Param('id') id: string): Promise<Schedule> {
-    return this.schedulesService.findOne(id);
+  async findOne(
+    @Param('id') id: string,
+    @Request() req: RequestWithUser,
+  ): Promise<Schedule> {
+    return this.schedulesService.findOne(id, req.user.userId);
   }
 
   @Post()
@@ -89,15 +92,13 @@ export class SchedulesController {
     type: ScheduleDto,
   })
   @ApiResponse({ status: 400, description: 'Error creating schedule' })
-  async create(@Body() body: CreateScheduleDto): Promise<Schedule> {
-    try {
-      return await this.schedulesService.create(body);
-    } catch (error) {
-      if (error instanceof Error) {
-        throw new BadRequestException(error.message);
-      }
-    }
-    throw new BadRequestException('Unknown error occurred');
+  async create(
+    @Body() body: CreateScheduleDto,
+    @Request() req: RequestWithUser,
+  ): Promise<Schedule> {
+    // Antes no se pasaba el usuario: cualquier admin creaba horarios en negocios ajenos.
+    // Las excepciones HTTP del service (400/403) se propagan tal cual.
+    return this.schedulesService.create(body, req.user.userId);
   }
   @Put(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import axios from 'axios';
+import { apiClient } from '../services/apiClient';
 import type { Business } from '../services/businessService';
 import type { Employee } from '../services/userService';
 import Modal from '../components/ui/Modal';
@@ -10,7 +10,6 @@ import Select from '../components/ui/Select';
 import { useToast } from '../components/ui/Toast';
 import { getAdminBusinesses } from '../services/adminBusinessCache';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 const PlusIcon = () => (
   <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
@@ -29,7 +28,7 @@ const TrashIcon = () => (
 );
 
 const Users: React.FC = () => {
-  const { user, token } = useAuth();
+  const { user } = useAuth();
   const { toast } = useToast();
 
   const [businesses, setBusinesses] = useState<Business[]>([]);
@@ -66,9 +65,8 @@ const Users: React.FC = () => {
     if (!selectedBusiness) return;
     setLoadingEmployees(true);
     try {
-      const res = await axios.get(`${API_BASE_URL}/admin/employees`, {
+      const res = await apiClient.get('/admin/employees', {
         params: { businessId: selectedBusiness, search, page, limit },
-        headers: { Authorization: `Bearer ${token}` }
       });
       setEmployees(res.data.employees);
       setTotalEmployees(res.data.total);
@@ -85,7 +83,7 @@ const Users: React.FC = () => {
     e.preventDefault();
     setCreateLoading(true);
     try {
-      await axios.post(`${API_BASE_URL}/admin/employee`, { ...newEmployee, role: 'EMPLOYEE', authProvider: 'LOCAL' }, { headers: { Authorization: `Bearer ${token}` } });
+      await apiClient.post('/admin/employee', { ...newEmployee, role: 'EMPLOYEE', authProvider: 'LOCAL' });
       toast('Empleado creado', 'success');
       setShowCreate(false);
       setNewEmployee({ name: '', email: '', password: '', businessId: selectedBusiness });
@@ -101,10 +99,10 @@ const Users: React.FC = () => {
     e.preventDefault();
     setEditLoading(true);
     try {
-      await axios.put(`${API_BASE_URL}/admin/employee/${editEmployee.id}`, {
+      await apiClient.put(`/admin/employee/${editEmployee.id}`, {
         name: editEmployee.name, email: editEmployee.email,
         ...(editEmployee.password && { password: editEmployee.password })
-      }, { headers: { Authorization: `Bearer ${token}` } });
+      });
       toast('Empleado actualizado', 'success');
       setEditEmployee(null);
       fetchEmployees();
@@ -118,7 +116,7 @@ const Users: React.FC = () => {
   const handleDelete = async (id: string) => {
     if (!window.confirm('¿Eliminar este empleado?')) return;
     try {
-      await axios.delete(`${API_BASE_URL}/admin/employee/${id}`, { headers: { Authorization: `Bearer ${token}` } });
+      await apiClient.delete(`/admin/employee/${id}`);
       setEmployees(prev => prev.filter(e => e.id !== id));
       setTotalEmployees(prev => prev - 1);
       toast('Empleado eliminado', 'success');
