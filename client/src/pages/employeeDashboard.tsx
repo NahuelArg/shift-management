@@ -252,17 +252,17 @@ const EmployeeDashboard: React.FC = () => {
               </div>
               <div className="space-y-2">
                 {todayBookings.map(b => (
-                  <div key={b.id} className="flex items-center gap-3 p-3 bg-surface rounded-xl border border-border shadow-sm">
+                  <div key={b.id} className="flex flex-wrap sm:flex-nowrap items-center gap-3 p-3 bg-surface rounded-xl border border-border shadow-sm">
                     <div className="bg-success-light rounded-lg px-2 py-2 text-center shrink-0 min-w-[48px]">
                       <p className="text-xs font-bold text-success font-mono leading-none">{b.startTime}</p>
                       <p className="text-xs text-success opacity-70 mt-0.5">{b.service.durationMin}m</p>
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-semibold text-content truncate">{b.user?.name ?? 'Walk-in'}</p>
-                      <p className="text-xs text-content-3">{b.service.name}</p>
+                      <p className="text-xs text-content-3 truncate">{b.service.name}</p>
                     </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      <span className="text-sm font-bold text-content font-mono">${b.finalPrice.toLocaleString('es-AR')}</span>
+                    <div className="flex items-center justify-end gap-2 w-full sm:w-auto shrink-0">
+                      <span className="text-sm font-bold text-content font-mono mr-auto sm:mr-0">${b.finalPrice.toLocaleString('es-AR')}</span>
                       <StatusBadge label={b.status} variant={bookingStatusVariant(b.status)} />
                       {b.status !== 'COMPLETED' && b.status !== 'CANCELLED' && (
                         <button

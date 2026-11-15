@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useState } from 'react';
 import { jwtDecode } from 'jwt-decode';
 import { invalidateAdminBusinesses } from '../services/adminBusinessCache';
 
@@ -28,6 +28,21 @@ const isTokenExpired = (token: string): boolean => {
   }
 };
 
+const readStoredSession = (): { token: string | null; user: User | null } => {
+  try {
+    const storedToken = localStorage.getItem('token');
+    const storedUser = localStorage.getItem('user');
+    if (storedToken && storedUser && !isTokenExpired(storedToken)) {
+      return { token: storedToken, user: JSON.parse(storedUser) as User };
+    }
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+  } catch {
+    // localStorage bloqueado o JSON corrupto: se trata como sesión inexistente
+  }
+  return { token: null, user: null };
+};
+
 export const redirectByRole = (role: User['role']): string => {
   switch (role) {
     case 'ADMIN':     return '/dashboard/admin';
@@ -38,21 +53,12 @@ export const redirectByRole = (role: User['role']): string => {
 };
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [token, setToken] = useState<string | null>(null);
-
-  useEffect(() => {
-    const storedToken = localStorage.getItem('token');
-    const storedUser = localStorage.getItem('user');
-
-    if (storedToken && !isTokenExpired(storedToken)) {
-      setToken(storedToken);
-      if (storedUser) setUser(JSON.parse(storedUser));
-    } else {
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-    }
-  }, []);
+  // Lazy initial state: se lee localStorage ANTES del primer render.
+  // Si se hiciera en un useEffect, el primer render tendría user = null y
+  // PrivateRoute redirigiría a /login al recargar cualquier página protegida.
+  const [session] = useState(readStoredSession);
+  const [user, setUser] = useState<User | null>(session.user);
+  const [token, setToken] = useState<string | null>(session.token);
 
   const login = async (token: string, user: User) => {
     setToken(token);

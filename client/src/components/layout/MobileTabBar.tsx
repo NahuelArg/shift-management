@@ -56,7 +56,7 @@ const MobileTabBar: React.FC = () => {
   return (
     <nav
       className="md:hidden fixed bottom-0 inset-x-0 z-30 bg-surface border-t border-border
-                 flex items-center justify-around px-2 pb-safe"
+                 flex items-stretch px-1 pb-safe"
       style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
     >
       {visibleTabs.map(tab => {
@@ -65,11 +65,13 @@ const MobileTabBar: React.FC = () => {
           <Link
             key={tab.to}
             to={tab.to}
-            className={`flex flex-col items-center gap-0.5 py-2 px-3 text-xs font-medium transition-colors
+            aria-current={active ? 'page' : undefined}
+            // flex-1 + min-w-0: cada pestaña ocupa el mismo ancho y puede achicarse
+            className={`flex-1 min-w-0 flex flex-col items-center gap-0.5 py-2 px-1 text-[11px] sm:text-xs font-medium transition-colors
               ${active ? 'text-primary' : 'text-content-3 hover:text-content-2'}`}
           >
             {tab.icon}
-            <span>{tab.label}</span>
+            <span className="max-w-full truncate">{tab.label}</span>
           </Link>
         );
       })}

@@ -133,31 +133,33 @@ const Schedules: React.FC = () => {
             </select>
           )}
         </div>
-        <div className="grid grid-cols-7">
+        <div className="grid grid-cols-1 lg:grid-cols-7">
           {[0,1,2,3,4,5,6].map(dayIdx => {
             const daySchedules = schedules.filter(s => s.businessId === viewBizId && s.dayOfWeek === dayIdx);
             const isWeekend = dayIdx === 0 || dayIdx === 6;
             return (
               <div
                 key={dayIdx}
-                className={`p-3 min-h-[80px] border-r border-border last:border-r-0
+                className={`p-3 flex items-center justify-between gap-3 lg:block lg:min-h-[80px] border-b lg:border-b-0 lg:border-r border-border last:border-0
                   ${daySchedules.length > 0 ? '' : 'bg-surface-2'}
                   ${isWeekend && daySchedules.length === 0 ? 'opacity-50' : ''}`}
               >
-                <p className={`text-xs font-bold uppercase tracking-wider mb-2
+                <p className={`text-xs font-bold uppercase tracking-wider lg:mb-2
                   ${daySchedules.length > 0 ? 'text-primary' : 'text-content-3'}`}>
                   {DAYS_SHORT[dayIdx]}
                 </p>
                 {daySchedules.length > 0 ? (
-                  daySchedules.map(s => (
+                  <div className="flex flex-wrap justify-end gap-1 lg:block">
+                  {daySchedules.map(s => (
                     <button
                       key={s.id}
                       onClick={() => openEdit(s)}
-                      className="w-full text-left px-2 py-1.5 rounded-md mb-1 bg-primary/10 border border-primary/30 hover:bg-primary/15 transition-colors"
+                      className="w-auto lg:w-full text-left px-2 py-1.5 rounded-md lg:mb-1 bg-primary/10 border border-primary/30 hover:bg-primary/15 transition-colors"
                     >
                       <p className="text-xs font-bold text-primary font-mono">{s.from}–{s.to}</p>
                     </button>
-                  ))
+                  ))}
+                  </div>
                 ) : (
                   <p className="text-xs text-content-3 italic">Cerrado</p>
                 )}

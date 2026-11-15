@@ -155,7 +155,7 @@ const Users: React.FC = () => {
         ].map(s => (
           <div key={s.label} className="bg-surface rounded-xl border border-border shadow-card p-4">
             <p className="text-xs text-content-3 uppercase tracking-wider mb-1">{s.label}</p>
-            <p className={`text-sm font-bold truncate px-2 py-0.5 rounded-md inline-block ${s.color}`}>{s.value}</p>
+            <p className={`text-sm font-bold truncate px-2 py-0.5 rounded-md inline-block max-w-full align-bottom ${s.color}`}>{s.value}</p>
           </div>
         ))}
       </div>
@@ -166,7 +166,7 @@ const Users: React.FC = () => {
         </Select>
       )}
 
-      <div className="flex gap-4 min-h-0">
+      <div className="flex flex-col lg:flex-row gap-4 min-h-0">
         {/* Table */}
         <div className="flex-1 min-w-0 bg-surface rounded-xl shadow-card border border-border p-5">
           <div className="flex items-center justify-between flex-wrap gap-3 mb-4">
@@ -192,8 +192,15 @@ const Users: React.FC = () => {
             <table className="w-full text-sm">
               <thead className="bg-surface-2">
                 <tr>
-                  {['Nombre', 'Email', 'Rol', 'Creado', 'Acciones'].map(h => (
-                    <th key={h} className="px-4 py-2.5 text-left text-xs font-medium text-content-3 uppercase tracking-wider">{h}</th>
+                  {/* En mobile se ocultan columnas secundarias para que las acciones queden visibles */}
+                  {[
+                    { h: 'Nombre', cls: '' },
+                    { h: 'Email', cls: 'hidden md:table-cell' },
+                    { h: 'Rol', cls: 'hidden lg:table-cell' },
+                    { h: 'Creado', cls: 'hidden lg:table-cell' },
+                    { h: 'Acciones', cls: '' },
+                  ].map(({ h, cls }) => (
+                    <th key={h} className={`px-4 py-2.5 text-left text-xs font-medium text-content-3 uppercase tracking-wider ${cls}`}>{h}</th>
                   ))}
                 </tr>
               </thead>
@@ -210,18 +217,22 @@ const Users: React.FC = () => {
                     onClick={() => setSelectedEmployee(selectedEmployee?.id === emp.id ? null : emp)}
                     className={`cursor-pointer transition-colors ${selectedEmployee?.id === emp.id ? 'bg-primary-light border-l-2 border-primary' : 'hover:bg-surface-2'}`}
                   >
-                    <td className="px-4 py-3 font-medium text-content">{emp.name}</td>
-                    <td className="px-4 py-3 text-content-2">{emp.email}</td>
-                    <td className="px-4 py-3">
+                    <td className="px-4 py-3 font-medium text-content">
+                      {emp.name}
+                      {/* Email debajo del nombre cuando la columna Email está oculta */}
+                      <span className="block md:hidden text-xs font-normal text-content-3 break-all mt-0.5">{emp.email}</span>
+                    </td>
+                    <td className="px-4 py-3 text-content-2 hidden md:table-cell break-all">{emp.email}</td>
+                    <td className="px-4 py-3 hidden lg:table-cell">
                       <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-info-light text-info-text">
                         {emp.role || 'EMPLOYEE'}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-content-3">{new Date(emp.createdAt).toLocaleDateString('es-AR')}</td>
+                    <td className="px-4 py-3 text-content-3 hidden lg:table-cell">{new Date(emp.createdAt).toLocaleDateString('es-AR')}</td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
-                        <button onClick={() => setEditEmployee({ ...emp, password: '' })} className="w-7 h-7 flex items-center justify-center rounded-md border border-border text-content-3 hover:border-primary hover:text-primary hover:bg-primary-light transition-colors"><EditIcon /></button>
-                        <button onClick={() => handleDelete(emp.id)} className="w-7 h-7 flex items-center justify-center rounded-md border border-border text-content-3 hover:border-danger hover:text-danger hover:bg-danger-light transition-colors"><TrashIcon /></button>
+                        <button onClick={() => setEditEmployee({ ...emp, password: '' })} aria-label="Editar empleado" className="w-9 h-9 sm:w-7 sm:h-7 flex items-center justify-center rounded-md border border-border text-content-3 hover:border-primary hover:text-primary hover:bg-primary-light transition-colors"><EditIcon /></button>
+                        <button onClick={() => handleDelete(emp.id)} aria-label="Eliminar empleado" className="w-9 h-9 sm:w-7 sm:h-7 flex items-center justify-center rounded-md border border-border text-content-3 hover:border-danger hover:text-danger hover:bg-danger-light transition-colors"><TrashIcon /></button>
                       </div>
                     </td>
                   </tr>
@@ -233,7 +244,7 @@ const Users: React.FC = () => {
 
         {/* Detail panel */}
         {selectedEmployee && (
-          <aside className="w-64 shrink-0 bg-surface rounded-xl shadow-card border border-border flex flex-col overflow-hidden animate-slide-in-right">
+          <aside className="w-full lg:w-64 shrink-0 bg-surface rounded-xl shadow-card border border-border flex flex-col overflow-hidden animate-slide-in-right">
             <div className="flex items-center justify-between px-4 py-3 border-b border-border">
               <span className="text-xs font-bold text-content-3 uppercase tracking-wider">Detalle</span>
               <button onClick={() => setSelectedEmployee(null)} className="w-6 h-6 flex items-center justify-center rounded hover:bg-surface-3 text-content-3 transition-colors">

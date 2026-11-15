@@ -43,7 +43,7 @@ const Register: React.FC = () => {
 
       <div className="flex-1 flex items-center justify-center px-4 py-12">
         <div className="w-full max-w-sm">
-          <div className="bg-surface rounded-2xl shadow-modal p-8 animate-fade-in">
+          <div className="bg-surface rounded-2xl shadow-modal p-6 sm:p-8 animate-fade-in">
             <div className="mb-6 text-center">
               <h1 className="text-2xl font-bold text-content">Crear cuenta</h1>
               <p className="text-sm text-content-3 mt-1">Completá tus datos para comenzar</p>

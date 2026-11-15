@@ -100,7 +100,7 @@ const Login: React.FC = () => {
       </div>
 
       {/* Right white panel */}
-      <div className="flex-1 flex items-center justify-center px-6 py-12 bg-surface-2">
+      <div className="flex-1 min-w-0 flex items-center justify-center px-4 sm:px-6 py-12 bg-surface-2">
         <div className="w-full max-w-sm">
           {/* Mobile logo */}
           <Link to="/home" className="flex items-center justify-center gap-2 mb-8 lg:hidden">
@@ -113,7 +113,7 @@ const Login: React.FC = () => {
             <span className="font-bold text-content">ShiftManager</span>
           </Link>
 
-          <div className="bg-surface rounded-2xl shadow-modal p-8 animate-fade-in">
+          <div className="bg-surface rounded-2xl shadow-modal p-6 sm:p-8 animate-fade-in">
             <div className="mb-6">
               <h2 className="text-xl font-bold text-content">Bienvenido</h2>
               <p className="text-sm text-content-3 mt-1">Ingresá con tus credenciales para continuar.</p>
@@ -173,11 +173,12 @@ const Login: React.FC = () => {
                     onClick={() => fillCredential(cred)}
                     className="w-full flex items-center justify-between px-4 py-3 hover:bg-surface-3 transition-colors text-left"
                   >
-                    <div className="flex items-center gap-2.5">
+                    {/* min-w-0 permite que el hijo flex se achique; truncate corta con "…" */}
+                    <div className="flex items-center gap-2.5 min-w-0">
                       <span className="w-2 h-2 rounded-full bg-success shrink-0" />
-                      <span className="text-content-2 text-sm">{cred.email}</span>
+                      <span className="text-content-2 text-sm truncate">{cred.email}</span>
                     </div>
-                    <span className="text-xs text-content-3">{cred.role}</span>
+                    <span className="text-xs text-content-3 shrink-0 ml-2">{cred.role}</span>
                   </button>
                 ))}
               </div>
