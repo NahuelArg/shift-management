@@ -121,8 +121,12 @@ const bookingData = {
 
   // ✅ PATCH change the status of a booking
   @Patch(':id/status')
-  @Roles('ADMIN', 'EMPLOYEE')
-  @ApiOperation({ summary: 'Change the status of a booking (ADMIN/EMPLOYEE)' })
+  @Roles('ADMIN', 'EMPLOYEE', 'CLIENT')
+  @ApiOperation({
+    summary: 'Change the status of a booking',
+    description:
+      'ADMIN: bookings of own businesses. EMPLOYEE: assigned bookings. CLIENT: can only cancel own PENDING/CONFIRMED bookings.',
+  })
   async updateBookingStatus(
     @Param('id') id: string,
     @Body() body: UpdateBookingDto,
@@ -132,17 +136,12 @@ const bookingData = {
       throw new BadRequestException('Booking status is required');
     }
 
-    // Si es EMPLOYEE, verificar que la reserva esté asignada a él
-    if (req.user.role === 'EMPLOYEE') {
-      const booking = await this.bookingsService.findOne(id);
-      if (!booking) {
-        throw new NotFoundException('Booking not found');
-      }
-      if (booking.employeeId !== req.user.userId) {
-        throw new ForbiddenException('Not authorized to update this booking');
-      }
-    }
-    return this.bookingsService.updateStatus(id, body.status);
+    // Las reglas de autorización por rol viven en el service (testeables y en un solo lugar)
+    return this.bookingsService.changeStatus(
+      { userId: req.user.userId, role: req.user.role },
+      id,
+      body.status,
+    );
   }
 
   @Get('available-employees')

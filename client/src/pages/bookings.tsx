@@ -105,6 +105,7 @@ const Bookings = () => {
                 <BookingStatusButton
                   bookingId={b.id}
                   currentStatus={b.status}
+                  role={user?.role ?? 'CLIENT'}
                   onStatusUpdate={fetchBookings}
                 />
               </div>

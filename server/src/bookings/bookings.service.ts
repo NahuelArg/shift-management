@@ -276,6 +276,60 @@ export class BookingsService {
       ...(filters.limit ? { take: Math.min(filters.limit, 100) } : {}),
     });
   }
+  /**
+   * Cambia el estado de una reserva aplicando las reglas de cada rol:
+   * - ADMIN:    solo reservas de negocios que le pertenecen.
+   * - EMPLOYEE: solo reservas asignadas a él.
+   * - CLIENT:   solo sus propias reservas, y únicamente para cancelarlas
+   *             mientras estén PENDING o CONFIRMED.
+   */
+  async changeStatus(
+    actor: { userId: string; role: string },
+    id: string,
+    status: BookingStatus,
+  ) {
+    const booking = await this.prisma.booking.findUnique({
+      where: { id },
+      select: {
+        userId: true,
+        employeeId: true,
+        status: true,
+        business: { select: { ownerId: true } },
+      },
+    });
+    if (!booking) throw new NotFoundException('Booking not found');
+
+    switch (actor.role) {
+      case 'ADMIN':
+        if (booking.business.ownerId !== actor.userId) {
+          throw new ForbiddenException('Not authorized to update this booking');
+        }
+        break;
+      case 'EMPLOYEE':
+        if (booking.employeeId !== actor.userId) {
+          throw new ForbiddenException('Not authorized to update this booking');
+        }
+        break;
+      case 'CLIENT': {
+        if (booking.userId !== actor.userId) {
+          throw new ForbiddenException('Not authorized to update this booking');
+        }
+        if (status !== BookingStatus.CANCELLED) {
+          throw new ForbiddenException('Clients can only cancel their bookings');
+        }
+        const cancellable: BookingStatus[] = [BookingStatus.PENDING, BookingStatus.CONFIRMED];
+        if (!cancellable.includes(booking.status)) {
+          throw new BadRequestException('This booking can no longer be cancelled');
+        }
+        break;
+      }
+      default:
+        throw new ForbiddenException('Not authorized to update this booking');
+    }
+
+    return this.updateStatus(id, status);
+  }
+
   async updateStatus(id: string, status: BookingStatus) {
     return this.prisma.booking.update({
       where: { id },

@@ -141,6 +141,67 @@ describe('BookingsService', () => {
       expect(result).toEqual({ ...mockBooking, ...updateData });
     });
   })
+  describe('changeStatus (reglas por rol)', () => {
+    const booking = (over: Partial<{ userId: string; employeeId: string; status: BookingStatus; ownerId: string }> = {}) => ({
+      userId: over.userId ?? 'client1',
+      employeeId: over.employeeId ?? 'emp1',
+      status: over.status ?? BookingStatus.PENDING,
+      business: { ownerId: over.ownerId ?? 'admin1' },
+    });
+    const updated = { ...mockBooking, status: BookingStatus.CANCELLED };
+
+    beforeEach(() => prisma.booking.update.mockResolvedValue(updated as any));
+
+    it('throws NotFound when the booking does not exist', async () => {
+      prisma.booking.findUnique.mockResolvedValue(null);
+      await expect(service.changeStatus({ userId: 'admin1', role: 'ADMIN' }, 'x', BookingStatus.CONFIRMED))
+        .rejects.toThrow(NotFoundException);
+    });
+
+    it('ADMIN can update bookings of a business they own', async () => {
+      prisma.booking.findUnique.mockResolvedValue(booking() as any);
+      await service.changeStatus({ userId: 'admin1', role: 'ADMIN' }, 'b1', BookingStatus.CONFIRMED);
+      expect(prisma.booking.update).toHaveBeenCalledWith({ where: { id: 'b1' }, data: { status: BookingStatus.CONFIRMED } });
+    });
+
+    it('ADMIN cannot update bookings of another business', async () => {
+      prisma.booking.findUnique.mockResolvedValue(booking({ ownerId: 'otherAdmin' }) as any);
+      await expect(service.changeStatus({ userId: 'admin1', role: 'ADMIN' }, 'b1', BookingStatus.CONFIRMED))
+        .rejects.toThrow(ForbiddenException);
+      expect(prisma.booking.update).not.toHaveBeenCalled();
+    });
+
+    it('EMPLOYEE can only update bookings assigned to them', async () => {
+      prisma.booking.findUnique.mockResolvedValue(booking({ employeeId: 'emp2' }) as any);
+      await expect(service.changeStatus({ userId: 'emp1', role: 'EMPLOYEE' }, 'b1', BookingStatus.COMPLETED))
+        .rejects.toThrow(ForbiddenException);
+    });
+
+    it('CLIENT can cancel their own pending booking', async () => {
+      prisma.booking.findUnique.mockResolvedValue(booking() as any);
+      await service.changeStatus({ userId: 'client1', role: 'CLIENT' }, 'b1', BookingStatus.CANCELLED);
+      expect(prisma.booking.update).toHaveBeenCalledWith({ where: { id: 'b1' }, data: { status: BookingStatus.CANCELLED } });
+    });
+
+    it('CLIENT cannot confirm a booking', async () => {
+      prisma.booking.findUnique.mockResolvedValue(booking() as any);
+      await expect(service.changeStatus({ userId: 'client1', role: 'CLIENT' }, 'b1', BookingStatus.CONFIRMED))
+        .rejects.toThrow(ForbiddenException);
+    });
+
+    it('CLIENT cannot cancel someone else\'s booking', async () => {
+      prisma.booking.findUnique.mockResolvedValue(booking({ userId: 'client2' }) as any);
+      await expect(service.changeStatus({ userId: 'client1', role: 'CLIENT' }, 'b1', BookingStatus.CANCELLED))
+        .rejects.toThrow(ForbiddenException);
+    });
+
+    it('CLIENT cannot cancel a completed booking', async () => {
+      prisma.booking.findUnique.mockResolvedValue(booking({ status: BookingStatus.COMPLETED }) as any);
+      await expect(service.changeStatus({ userId: 'client1', role: 'CLIENT' }, 'b1', BookingStatus.CANCELLED))
+        .rejects.toThrow(BadRequestException);
+      expect(prisma.booking.update).not.toHaveBeenCalled();
+    });
+  })
   describe('getBookingsByEmployee', () => {
     it('should return an array of bookings for the employee', async () => {
       prisma.booking.findMany.mockResolvedValue([mockBooking]);
