@@ -78,7 +78,7 @@ function App() {
             </PrivateRoute>
           } />
           <Route path="/calendar" element={
-            <PrivateRoute requiredRole="ADMIN">
+            <PrivateRoute requiredRole={['ADMIN', 'EMPLOYEE']}>
               <AppShell><Calendar /></AppShell>
             </PrivateRoute>
           } />

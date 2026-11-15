@@ -1,3 +1,4 @@
+import { isAxiosError } from 'axios';
 import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { apiClient } from '../services/apiClient';
@@ -139,7 +140,9 @@ const MiniCalendar: React.FC<{ selected: Date; onSelect: (d: Date) => void }> = 
 
 // ── Main component ───────────────────────────────────────────────────────────
 const Calendar: React.FC = () => {
-  const { token } = useAuth();
+  const { token, user } = useAuth();
+  // El empleado ve solo sus turnos asignados; el admin, los de todo su negocio
+  const isEmployee = user?.role === 'EMPLOYEE';
   const { toast } = useToast();
 
   const [bookings,      setBookings]      = useState<CalendarBooking[]>([]);
@@ -164,9 +167,14 @@ const Calendar: React.FC = () => {
   }, []);
 
 
-  // Fetch business + employees for this admin
+  // Fetch business + employees (admin) o solo el propio empleado
   useEffect(() => {
     if (!token) return;
+    if (isEmployee) {
+      // Los endpoints /admin/* son solo para ADMIN: el empleado es su única columna
+      if (user) setEmployees([{ id: user.id, name: user.name }]);
+      return;
+    }
     getAdminBusinesses().then(list => {
       const biz = list[0];
       if (!biz) return;
@@ -178,20 +186,46 @@ const Calendar: React.FC = () => {
         })
         .catch(() => {});
     }).catch(() => {});
-  }, [token]);
+  }, [token, isEmployee, user]);
 
   const fetchBookings = useCallback(async () => {
     if (!token) return;
     setLoading(true);
     try {
-      const res = await apiClient.get('/bookings');
-      setBookings(res.data);
+      if (isEmployee && user) {
+        // my-assignments no incluye `employee` (son todos del usuario): lo completamos
+        const res = await apiClient.get<CalendarBooking[]>('/bookings/my-assignments');
+        setBookings(res.data.map(b => ({ ...b, employee: b.employee ?? { id: user.id, name: user.name } })));
+      } else {
+        const res = await apiClient.get('/bookings');
+        setBookings(res.data);
+      }
     } catch {
       toast('No se pudieron cargar los turnos', 'error');
     } finally {
       setLoading(false);
     }
-  }, [token]);
+  }, [token, isEmployee, user]);
+
+  // Cambiar estado (ADMIN y EMPLOYEE tienen permiso en PATCH /bookings/:id/status)
+  const [updatingStatus, setUpdatingStatus] = useState(false);
+  const updateStatus = async (id: string, status: 'CONFIRMED' | 'COMPLETED' | 'CANCELLED') => {
+    setUpdatingStatus(true);
+    try {
+      await apiClient.patch(`/bookings/${id}/status`, { status });
+      setBookings(prev => prev.map(b => (b.id === id ? { ...b, status } : b)));
+      setSelectedBkg(prev => (prev && prev.id === id ? { ...prev, status } : prev));
+      toast(
+        status === 'CONFIRMED' ? 'Turno confirmado' : status === 'COMPLETED' ? 'Turno completado' : 'Turno cancelado',
+        'success',
+      );
+    } catch (err) {
+      const message = isAxiosError<{ message?: string }>(err) ? err.response?.data?.message : undefined;
+      toast(message || 'No se pudo actualizar el turno', 'error');
+    } finally {
+      setUpdatingStatus(false);
+    }
+  };
 
   useEffect(() => { fetchBookings(); }, [fetchBookings]);
 
@@ -342,7 +376,8 @@ const Calendar: React.FC = () => {
           )}
         </div>
 
-        {/* Employee filter */}
+        {/* Employee filter (el empleado solo se ve a sí mismo: no hace falta) */}
+        {!isEmployee && (
         <div className="border-t border-border p-4 flex-1">
           <p className="text-xs font-bold text-content-3 uppercase tracking-wider mb-3">Empleados</p>
           <div className="space-y-0.5">
@@ -372,6 +407,7 @@ const Calendar: React.FC = () => {
             })}
           </div>
         </div>
+        )}
       </aside>
   );
 
@@ -461,16 +497,19 @@ const Calendar: React.FC = () => {
                 {pendingCount} Pendientes
               </span>
             </div>
-            <button
-              onClick={() => setShowNewBkg(true)}
-              aria-label="Nuevo turno"
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-content-inverse text-xs font-semibold hover:opacity-90 transition-opacity shrink-0"
-            >
-              <svg width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                <path strokeLinecap="round" d="M12 5v14M5 12h14"/>
-              </svg>
-              <span className="hidden sm:inline">Nuevo turno</span>
-            </button>
+            {/* El empleado crea reservas desde su panel ("Nueva reserva") */}
+            {!isEmployee && (
+              <button
+                onClick={() => setShowNewBkg(true)}
+                aria-label="Nuevo turno"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-content-inverse text-xs font-semibold hover:opacity-90 transition-opacity shrink-0"
+              >
+                <svg width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" d="M12 5v14M5 12h14"/>
+                </svg>
+                <span className="hidden sm:inline">Nuevo turno</span>
+              </button>
+            )}
           </div>
         </div>
 
@@ -716,14 +755,31 @@ const Calendar: React.FC = () => {
               {selectedBkg.status !== 'CANCELLED' && selectedBkg.status !== 'COMPLETED' && (
                 <div className="flex flex-col gap-2 pt-2 border-t border-border">
                   {selectedBkg.status === 'PENDING' && (
-                    <button className="w-full py-2 rounded-lg bg-success text-content-inverse text-sm font-semibold hover:opacity-90 transition-opacity">
+                    <button
+                      type="button"
+                      disabled={updatingStatus}
+                      onClick={() => void updateStatus(selectedBkg.id, 'CONFIRMED')}
+                      className="w-full py-2 rounded-lg bg-success-text text-content-inverse text-sm font-semibold hover:opacity-90 transition-opacity disabled:opacity-50"
+                    >
                       Confirmar turno
                     </button>
                   )}
-                  <button className="w-full py-2 rounded-lg bg-primary text-content-inverse text-sm font-semibold hover:opacity-90 transition-opacity">
+                  <button
+                    type="button"
+                    disabled={updatingStatus}
+                    onClick={() => void updateStatus(selectedBkg.id, 'COMPLETED')}
+                    className="w-full py-2 rounded-lg bg-primary text-content-inverse text-sm font-semibold hover:opacity-90 transition-opacity disabled:opacity-50"
+                  >
                     Marcar completado
                   </button>
-                  <button className="w-full py-2 rounded-lg border border-border text-danger-text text-sm font-semibold hover:bg-danger-light transition-colors">
+                  <button
+                    type="button"
+                    disabled={updatingStatus}
+                    onClick={() => {
+                      if (window.confirm('¿Cancelar este turno?')) void updateStatus(selectedBkg.id, 'CANCELLED');
+                    }}
+                    className="w-full py-2 rounded-lg border border-border text-danger-text text-sm font-semibold hover:bg-danger-light transition-colors disabled:opacity-50"
+                  >
                     Cancelar turno
                   </button>
                 </div>

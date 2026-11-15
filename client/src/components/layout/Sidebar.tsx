@@ -76,6 +76,7 @@ const navByRole: Record<string, NavItem[]> = {
   ],
   EMPLOYEE: [
     { to: '/dashboard/employee', label: 'Mis Turnos', icon: <HomeIcon /> },
+    { to: '/calendar',           label: 'Calendario', icon: <CalendarIcon /> },
     { to: '/bookings',           label: 'Historial',  icon: <HistoryIcon /> },
   ],
   CLIENT: [

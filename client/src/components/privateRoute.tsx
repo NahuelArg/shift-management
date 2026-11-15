@@ -2,9 +2,12 @@ import React from 'react'
 import { Navigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 
+type Role = 'ADMIN' | 'CLIENT' | 'EMPLOYEE';
+
 interface PrivateRouteProps {
     children: React.ReactNode;
-    requiredRole?: 'ADMIN' | 'CLIENT' | 'EMPLOYEE';
+    /** Un rol o una lista de roles permitidos */
+    requiredRole?: Role | Role[];
 }
 
 const PrivateRoute: React.FC<PrivateRouteProps> = ({ children, requiredRole }) => {
@@ -14,7 +17,8 @@ const PrivateRoute: React.FC<PrivateRouteProps> = ({ children, requiredRole }) =
         return <Navigate to="/login" />;
     }
 
-    if (requiredRole && user.role !== requiredRole) {
+    const allowed = requiredRole === undefined ? null : Array.isArray(requiredRole) ? requiredRole : [requiredRole];
+    if (allowed && !allowed.includes(user.role)) {
         return <Navigate to="/"  />;
     }
 
