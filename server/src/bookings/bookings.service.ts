@@ -237,15 +237,18 @@ export class BookingsService {
     return booking;
   }
   async getBookingByQuery(filters: {
+    ownerId: string;
     status?: BookingStatus;
     date?: string;
     userId?: string;
+    businessId?: string;
+    limit?: number;
   }) {
-    const where: {
-      status?: BookingStatus;
-      date?: { gte: Date; lte: Date };
-      userId?: string;
-    } = {};
+    // Un admin solo ve reservas de los negocios que le pertenecen
+    const where: Prisma.BookingWhereInput = {
+      business: { ownerId: filters.ownerId },
+    };
+    if (filters.businessId) where.businessId = filters.businessId;
     if (filters.status) where.status = filters.status;
     if (filters.date) {
       const targetDate = new Date(filters.date);
@@ -268,7 +271,9 @@ export class BookingsService {
         employee: { select: { id: true, name: true } },
         business: { select: { id: true, name: true } },
       },
-      orderBy: { date: 'asc' },
+      // Con limit devolvemos las más recientes (ej. "últimas 5" del dashboard)
+      orderBy: { date: filters.limit ? 'desc' : 'asc' },
+      ...(filters.limit ? { take: Math.min(filters.limit, 100) } : {}),
     });
   }
   async updateStatus(id: string, status: BookingStatus) {

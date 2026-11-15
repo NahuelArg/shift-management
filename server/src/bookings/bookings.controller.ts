@@ -15,6 +15,7 @@ import {
   ForbiddenException,
   ValidationPipe,
   UsePipes,
+  ParseIntPipe,
 } from '@nestjs/common';
 import { BookingsService } from './bookings.service';
 import { Booking, BookingStatus } from '@prisma/client';
@@ -45,11 +46,21 @@ export class BookingsController {
   @ApiOperation({ summary: 'Filter bookings (ADMIN)' })
   @ApiResponse({ status: 200, type: [BookingDto] })
   async getBookingByQuery(
+    @Request() req: RequestWithUser,
     @Query('status') status?: BookingStatus,
     @Query('date') date?: string,
     @Query('userId') userId?: string,
+    @Query('businessId') businessId?: string,
+    @Query('limit', new ParseIntPipe({ optional: true })) limit?: number,
   ) {
-    return this.bookingsService.getBookingByQuery({ status, date, userId });
+    return this.bookingsService.getBookingByQuery({
+      ownerId: req.user.userId,
+      status,
+      date,
+      userId,
+      businessId,
+      limit,
+    });
   }
 
 

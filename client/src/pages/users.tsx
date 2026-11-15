@@ -8,6 +8,7 @@ import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
 import Select from '../components/ui/Select';
 import { useToast } from '../components/ui/Toast';
+import { getAdminBusinesses } from '../services/adminBusinessCache';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
@@ -50,9 +51,8 @@ const Users: React.FC = () => {
 
   useEffect(() => {
     if (!user?.id) return;
-    axios.get(`${API_BASE_URL}/admin/me`, { headers: { Authorization: `Bearer ${token}` } })
-      .then(res => {
-        const biz = res.data.businesses || [];
+    getAdminBusinesses<Business>()
+      .then(biz => {
         setBusinesses(biz);
         if (biz.length > 0) {
           setSelectedBusiness(biz[0].id);

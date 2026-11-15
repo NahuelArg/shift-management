@@ -157,7 +157,6 @@ export class AdminService {
         businesses: true,
       },
     });
-    this.logger.debug(`User with Business: ${JSON.stringify(userWithBusiness)}`);
     if (!userWithBusiness) {
       throw new ForbiddenException(
         'Business not found or you do not have access to it.',
@@ -171,28 +170,33 @@ export class AdminService {
         'You do not have permission to access this business metrics.',
       );
     }
-    const allBookings = await this.prisma.booking.findMany({
-      where: { businessId, date: { gte: startDate, lte: endDate } },
-      select: {
-        date: true,
-        finalPrice: true,
-        status: true,
-        timezone: true,
-        service: { select: { name: true } },
-      },
-      orderBy: { date: 'asc' },
-    });
+    // Las 3 consultas son independientes entre sí: ejecutarlas en paralelo
+    // cuesta 1 viaje de red a la base de datos en lugar de 3.
+    const dateRange = { gte: startDate, lte: endDate };
+    const [allBookings, totalBookings, totalRevenue] = await Promise.all([
+      this.prisma.booking.findMany({
+        where: { businessId, date: dateRange },
+        select: {
+          date: true,
+          finalPrice: true,
+          status: true,
+          timezone: true,
+          service: { select: { name: true } },
+        },
+        orderBy: { date: 'asc' },
+      }),
+      this.prisma.booking.count({
+        where: { businessId, date: dateRange },
+      }),
+      this.prisma.booking.aggregate({
+        _sum: { finalPrice: true },
+        where: { businessId, status: 'COMPLETED', date: dateRange },
+      }),
+    ]);
     const bookingsByGroup = this.groupBookingsByPeriod(
       allBookings,
       groupByLowerCase as 'day' | 'month' | 'year',
     );
-
-    const totalBookings = await this.prisma.booking.count({
-      where: {
-        businessId,
-        date: { gte: startDate, lte: endDate },
-      },
-    });
     const bookingByService = allBookings.map((b) => ({
       serviceName: b.service.name,
       date: b.date.toISOString(),
@@ -200,14 +204,6 @@ export class AdminService {
       status: b.status,
       timezone: b.timezone,
     }));
-    const totalRevenue = await this.prisma.booking.aggregate({
-      _sum: { finalPrice: true },
-      where: {
-        businessId,
-        status: 'COMPLETED',
-        date: { gte: startDate, lte: endDate },
-      },
-    });
     const result = {
       totalBookings,
       totalRevenue: totalRevenue._sum.finalPrice || 0,
