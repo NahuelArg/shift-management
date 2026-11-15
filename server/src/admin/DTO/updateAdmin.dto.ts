@@ -28,13 +28,4 @@ export class UpdateAdminDto {
   @IsString()
   @IsOptional()
   phone?: string;
-
-  @ApiProperty({
-    description: 'Admin Role (Just ADMIN)',
-    example: 'ADMIN',
-    required: false,
-  })
-  @IsString()
-  @IsOptional()
-  role?: 'ADMIN';
 }

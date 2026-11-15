@@ -41,8 +41,8 @@ describe('BusinessService', () => {
     expect(service).toBeDefined();
   });
   const mockBusinesses: Business[] = [
-    { id: 'biz-1', name: 'Business 1', ownerId: 'user-id', createdAt: new Date(), updatedAt: new Date() },
-    { id: 'biz-2', name: 'Business 2', ownerId: 'user-id', createdAt: new Date(), updatedAt: new Date() },
+    { id: 'biz-1', name: 'Business 1', ownerId: 'user-id', timezone: 'Europe/Madrid', createdAt: new Date(), updatedAt: new Date() },
+    { id: 'biz-2', name: 'Business 2', ownerId: 'user-id', timezone: 'Europe/Madrid', createdAt: new Date(), updatedAt: new Date() },
   ];
   describe('getBusinessesByUserId', () => {
     it('should throw BadRequestException if userId is not provided', async () => {
@@ -98,13 +98,13 @@ describe('BusinessService', () => {
     });
 
     it('should throw ForbiddenException if user does not own the business', async () => {
-      const mockBusiness: Business = { id: 'biz-id', name: 'Business 1', ownerId: 'other-user-id', createdAt: new Date(), updatedAt: new Date() };
+      const mockBusiness: Business = { id: 'biz-id', name: 'Business 1', ownerId: 'other-user-id', timezone: 'Europe/Madrid', createdAt: new Date(), updatedAt: new Date() };
       prisma.business.findUnique.mockResolvedValue(mockBusiness);
       await expect(service.getBusinessById('biz-id', 'user-id')).rejects.toThrow(ForbiddenException);
     });
 
     it('should return the business if found', async () => {
-      const mockBusiness: Business = { id: 'biz-id', name: 'Business 1', ownerId: 'user-id', createdAt: new Date(), updatedAt: new Date() };
+      const mockBusiness: Business = { id: 'biz-id', name: 'Business 1', ownerId: 'user-id', timezone: 'Europe/Madrid', createdAt: new Date(), updatedAt: new Date() };
       prisma.business.findUnique.mockResolvedValue(mockBusiness);
       const result = await service.getBusinessById('biz-id', 'user-id');
       expect(result).toEqual(mockBusiness);
@@ -134,7 +134,7 @@ describe('BusinessService', () => {
       await expect(service.create({ name: 'Business 1', ownerId: 'user-id' })).rejects.toThrow(NotFoundException)
     });
     it('should create and return the business if owner is ADMIN', async () => {
-      const mockBusiness: Business = { id: 'biz-id', name: 'Business 1', ownerId: 'user-id', createdAt: new Date(), updatedAt: new Date() };
+      const mockBusiness: Business = { id: 'biz-id', name: 'Business 1', ownerId: 'user-id', timezone: 'Europe/Madrid', createdAt: new Date(), updatedAt: new Date() };
       prisma.user.findUnique.mockResolvedValue({ role: 'ADMIN' } as any);
       prisma.business.create.mockResolvedValue(mockBusiness);
       const result = await service.create({ name: 'Business 1', ownerId: 'user-id' });

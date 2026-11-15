@@ -46,7 +46,8 @@ export class CreateUserDto {
     example: 'CLIENT',
     required: false,
   })
-  @IsEnum(['CLIENT', 'ADMIN'])
+  // Solo se pueden crear clientes por esta vía (antes también ADMIN)
+  @IsEnum(['CLIENT'])
   @IsOptional()
   @IsString()
   role?: Role;

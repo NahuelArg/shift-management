@@ -115,22 +115,43 @@ describe('BookingsService', () => {
       await expect(() => service.findOne('1')).rejects.toThrow(NotFoundException);
     });
   })
-  describe('update', () => {
-    it('should update and return the booking', async () => {
-      const updateData = { status: 'CONFIRMED' as BookingStatus };
-      prisma.booking.update.mockResolvedValue({ ...mockBooking, ...updateData });
-      const result = await service.update('1', updateData);
-      expect(result).toEqual({ ...mockBooking, ...updateData });
+  describe('update (ADMIN)', () => {
+    const owned = {
+      businessId: 'b1',
+      date: new Date('2030-01-01T10:00:00Z'),
+      endTime: new Date('2030-01-01T11:00:00Z'),
+      business: { ownerId: 'admin1' },
+    };
+
+    it('throws NotFound when the booking does not exist', async () => {
+      prisma.booking.findUnique.mockResolvedValue(null);
+      await expect(service.update('1', { finalPrice: 10 }, 'admin1')).rejects.toThrow(NotFoundException);
     });
-    it('should throw NotFoundException if booking not found', async () => {
-      const prismaError = new Prisma.PrismaClientKnownRequestError('Not found',
-        {
-          code: 'P2025',
-          clientVersion: '5.0.0'
-        }
-      );
-      prisma.booking.update.mockRejectedValue(prismaError);
-      await expect(() => service.update('1', { status: 'CONFIRMED' as BookingStatus })).rejects.toThrow(NotFoundException);
+
+    it('forbids admins from editing bookings of another business', async () => {
+      prisma.booking.findUnique.mockResolvedValue({ ...owned, business: { ownerId: 'other' } } as any);
+      await expect(service.update('1', { finalPrice: 10 }, 'admin1')).rejects.toThrow(ForbiddenException);
+      expect(prisma.booking.update).not.toHaveBeenCalled();
+    });
+
+    it('updates only the allowed fields', async () => {
+      prisma.booking.findUnique.mockResolvedValue(owned as any);
+      prisma.booking.update.mockResolvedValue(mockBooking);
+      await service.update('1', { finalPrice: 50 }, 'admin1');
+      expect(prisma.booking.update).toHaveBeenCalledWith({ where: { id: '1' }, data: { finalPrice: 50 } });
+    });
+
+    it('rejects reassigning to an employee of another business', async () => {
+      prisma.booking.findUnique.mockResolvedValue(owned as any);
+      prisma.user.findFirst.mockResolvedValue(null);
+      await expect(service.update('1', { employeeId: 'emp9' }, 'admin1')).rejects.toThrow(BadRequestException);
+    });
+
+    it('rejects reassigning to a busy employee', async () => {
+      prisma.booking.findUnique.mockResolvedValue(owned as any);
+      prisma.user.findFirst.mockResolvedValue(userMock as any);
+      prisma.booking.findFirst.mockResolvedValue(mockBooking);
+      await expect(service.update('1', { employeeId: 'emp2' }, 'admin1')).rejects.toThrow(BadRequestException);
     });
   })
   describe('updateStatus', () => {
@@ -317,85 +338,127 @@ describe('BookingsService', () => {
      });
   })
   describe('create', () => {
-      const data = {
-        userId: 'user1',
-        serviceId: 'service1',
-        businessId: '123',
-        date: new Date('2025-01-01T10:00:00Z'),
-        timezone: 'Europe/Madrid',
-        employeeId: 'employee1',
-        finalPrice: 100,
-      };
-      it('should throw BadRequestException if businessId is not provided', async () => {
-        await expect(() => service.create({ ...data, businessId: null as any })).rejects.toThrow(BadRequestException);
-      });
-      it('should throw BadRequestException if serviceId is not provided', async () => {
-        await expect(() => service.create({ ...data, serviceId: null as any })).rejects.toThrow(BadRequestException);
-      });
-      it('should throw BadRequestException if date is not provided', async () => {
-        await expect(() => service.create({ ...data, date: null as any })).rejects.toThrow(BadRequestException);
-      });
-      it('should throw BadRequestException if service does not exist in database', async () => {
-        prisma.service.findUnique.mockResolvedValue(null);
-        await expect(() => service.create(data)).rejects.toThrow(BadRequestException);
-      });
-     it('should throw BadRequestException if service duration is invalid', async () => {
-        prisma.service.findUnique.mockResolvedValue({ durationMin: 0 } as any);
-        await expect(() => service.create(data)).rejects.toThrow(BadRequestException);
-      });
-       it('should throw BadRequestException if service duration is negative', async () => {
-        prisma.service.findUnique.mockResolvedValue({ durationMin: -30 } as any);
-        await expect(() => service.create(data)).rejects.toThrow(BadRequestException);
-      });
-       it('should throw BadRequestException if service duration is null', async () => {
-        prisma.service.findUnique.mockResolvedValue({ durationMin: null } as any);
-        await expect(() => service.create(data)).rejects.toThrow(BadRequestException);
-      });
-      // isNan(parsedDate) bad requestException
-      it('should throw BadRequestException if date format is invalid', async () => {
-        prisma.service.findUnique.mockResolvedValue({ durationMin: 60 } as any);
-          const invalidData = { ...data, date: 'invalid-date' };
-          await expect(() => service.create(invalidData)).rejects.toThrow(BadRequestException);
-      });
-      it('should throw BadRequestException if there is no schedule for the booking time', async () => {
-        prisma.service.findUnique.mockResolvedValue({ durationMin: 60 } as any);
-        prisma.schedule.findFirst.mockResolvedValue(null);
-        await expect(() => service.create(data)).rejects.toThrow(BadRequestException);
-      });
-      // endMinutes > closeMinutes bad requestException
-      it('should throw BadRequestException if booking time is outside schedule', async () => {
-        prisma.service.findUnique.mockResolvedValue({ durationMin: 60 } as any);
-        prisma.schedule.findFirst.mockResolvedValue({ from: '09:00', to: '10:30' } as any);
-        await expect(() => service.create(data)).rejects.toThrow(BadRequestException);
-      });
-      it('should throw BadRequestException if there are no available employees for the booking time', async () => {
-        const dataWithoutEmployee = { ...data, employeeId: undefined as any };
-        prisma.service.findUnique.mockResolvedValue({ durationMin: 60 } as any);
-        prisma.schedule.findFirst.mockResolvedValue({ from: '09:00', to: '18:00' } as any);
-        prisma.user.findMany.mockResolvedValue([])
-        await expect(() => service.create(dataWithoutEmployee)).rejects.toThrow(BadRequestException);
-      });
-      it('should throw BadRequestException if the employee does not exist in the specified business', async () => {
-        prisma.booking.findFirst.mockResolvedValue(null);
-        prisma.user.findFirst.mockResolvedValue(null);
-        await expect(() => service.create(data)).rejects.toThrow(BadRequestException);
-      });
-      it('should throw BadRequestException if the employee has another booking at the same time', async () => {
-        prisma.user.findFirst.mockResolvedValue({ ...userMock, businessId: '123' } as any);
-        prisma.booking.findFirst.mockResolvedValue({ ...mockBooking, employeeId: 'employee1' });
-      await expect(() => service.create(data)).rejects.toThrow(BadRequestException);
-      })
-      // Success
-      it('should create and return the booking', async () => {
-        prisma.service.findUnique.mockResolvedValue({ durationMin: 60 } as any);
-        prisma.schedule.findFirst.mockResolvedValue({ from: '09:00', to: '18:00' } as any);
-        prisma.booking.findFirst.mockResolvedValue(null);
-        prisma.user.findFirst.mockResolvedValue({ ...userMock, businessId: '123' } as any);
-        prisma.booking.create.mockResolvedValue(mockBooking);
-        const result = await service.create(data);
-        expect(result).toEqual(mockBooking);
-      });   
+    // Fecha futura (en 7 días, 10:00 UTC = 11:00 o 12:00 en Madrid)
+    const future = new Date(Date.now() + 7 * 24 * 3600e3);
+    future.setUTCHours(10, 0, 0, 0);
+    const data = {
+      serviceId: 'service1',
+      businessId: 'b1',
+      date: future.toISOString(),
+      employeeId: 'employee1',
+      finalPrice: 1, // debe ignorarse
+      timezone: 'Pacific/Kiritimati', // debe ignorarse
+    };
+    const client = { userId: 'client1', role: 'CLIENT' };
+    const admin = { userId: 'admin1', role: 'ADMIN' };
 
-    
+    // Camino feliz: cada test sobrescribe solo lo que necesita
+    const happyPath = () => {
+      prisma.business.findUnique.mockResolvedValue({ id: 'b1', ownerId: 'admin1', timezone: 'Europe/Madrid' } as any);
+      prisma.service.findUnique.mockResolvedValue({ id: 'service1', businessId: 'b1', durationMin: 60, price: 2500 } as any);
+      prisma.schedule.findFirst.mockResolvedValue({ from: '09:00', to: '18:00' } as any);
+      prisma.user.findFirst.mockResolvedValue({ ...userMock, businessId: 'b1' } as any);
+      prisma.booking.findFirst.mockResolvedValue(null);
+      prisma.booking.create.mockResolvedValue(mockBooking);
+    };
+
+    it('rejects a missing business', async () => {
+      happyPath();
+      prisma.business.findUnique.mockResolvedValue(null);
+      await expect(service.create(data, client)).rejects.toThrow(BadRequestException);
+    });
+
+    it('rejects a service that does not exist', async () => {
+      happyPath();
+      prisma.service.findUnique.mockResolvedValue(null);
+      await expect(service.create(data, client)).rejects.toThrow(BadRequestException);
+    });
+
+    it('rejects a service from another business', async () => {
+      happyPath();
+      prisma.service.findUnique.mockResolvedValue({ businessId: 'other', durationMin: 60, price: 1 } as any);
+      await expect(service.create(data, client)).rejects.toThrow('Service does not belong to this business');
+    });
+
+    it.each([0, -30, null])('rejects an invalid service duration (%p)', async (durationMin) => {
+      happyPath();
+      prisma.service.findUnique.mockResolvedValue({ businessId: 'b1', durationMin, price: 1 } as any);
+      await expect(service.create(data, client)).rejects.toThrow(BadRequestException);
+    });
+
+    it('rejects an invalid date', async () => {
+      happyPath();
+      await expect(service.create({ ...data, date: 'invalid-date' }, client)).rejects.toThrow('Invalid date format');
+    });
+
+    it('rejects a date in the past', async () => {
+      happyPath();
+      await expect(service.create({ ...data, date: '2020-01-01T10:00:00Z' }, client)).rejects.toThrow('Cannot book a date in the past');
+    });
+
+    it('rejects a time outside opening hours', async () => {
+      happyPath();
+      prisma.schedule.findFirst.mockResolvedValue(null);
+      await expect(service.create(data, client)).rejects.toThrow(BadRequestException);
+    });
+
+    it('rejects when the service would end after closing time', async () => {
+      happyPath();
+      prisma.schedule.findFirst.mockResolvedValue({ from: '09:00', to: '10:30' } as any);
+      await expect(service.create(data, client)).rejects.toThrow(BadRequestException);
+    });
+
+    it('rejects when no employee is available', async () => {
+      happyPath();
+      prisma.user.findMany.mockResolvedValue([]);
+      await expect(service.create({ ...data, employeeId: undefined }, client)).rejects.toThrow('No available employees');
+    });
+
+    it('rejects an employee that is not in the business', async () => {
+      happyPath();
+      prisma.user.findFirst.mockResolvedValue(null);
+      await expect(service.create(data, client)).rejects.toThrow('Employee not found in this business');
+    });
+
+    it('rejects when the employee is already booked', async () => {
+      happyPath();
+      prisma.booking.findFirst.mockResolvedValue(mockBooking);
+      await expect(service.create(data, client)).rejects.toThrow('not available');
+    });
+
+    it('forbids an admin from booking in a business they do not own', async () => {
+      happyPath();
+      prisma.business.findUnique.mockResolvedValue({ id: 'b1', ownerId: 'someone-else', timezone: 'Europe/Madrid' } as any);
+      await expect(service.create(data, admin)).rejects.toThrow(ForbiddenException);
+    });
+
+    it('forbids an employee from booking in another business', async () => {
+      happyPath();
+      prisma.user.findUnique.mockResolvedValue({ businessId: 'other' } as any);
+      await expect(service.create(data, { userId: 'emp1', role: 'EMPLOYEE' })).rejects.toThrow(ForbiddenException);
+    });
+
+    it('uses the server-side price, the business timezone and the authenticated client', async () => {
+      happyPath();
+      const result = await service.create({ ...data, userId: 'someone-else' }, client);
+      expect(result).toEqual(mockBooking);
+      expect(prisma.booking.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            userId: 'client1',          // no el userId del body
+            finalPrice: 2500,           // no el finalPrice del body
+            timezone: 'Europe/Madrid',  // no la timezone del body
+          }),
+        }),
+      );
+    });
+
+    it('lets an admin book a walk-in (no client) in their own business', async () => {
+      happyPath();
+      await service.create(data, admin);
+      expect(prisma.booking.create).toHaveBeenCalledWith(
+        expect.objectContaining({ data: expect.objectContaining({ userId: null }) }),
+      );
+    });
   })
 })

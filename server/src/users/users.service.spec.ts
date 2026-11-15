@@ -1,3 +1,4 @@
+import * as bcrypt from 'bcrypt';
 import { Test, TestingModule } from '@nestjs/testing';
 import { UsersService } from './users.service';
 import { DeepMockProxy, mockDeep } from 'jest-mock-extended';
@@ -79,6 +80,14 @@ describe('UsersService', () => {
   })
 
   describe('update', () => {
+    it('hashes the password instead of storing it in plain text', async () => {
+      prisma.user.findFirst.mockResolvedValue({ id: 'user1' } as any);
+      prisma.user.update.mockResolvedValue({ id: 'user1' } as any);
+      await service.update('user1', { password: 'secret123' }, 'admin-1');
+      const saved = prisma.user.update.mock.calls[0][0].data as { password: string };
+      expect(saved.password).not.toBe('secret123');
+      expect(await bcrypt.compare('secret123', saved.password)).toBe(true);
+    })
     it('should throw BadRequestException if id not provided', async () => {
       await expect(service.update(null as any, null as any, null as any)).rejects.toThrow(BadRequestException)
     })

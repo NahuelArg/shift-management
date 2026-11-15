@@ -57,6 +57,9 @@ model User {
 model Business {
   id            String         @id @default(uuid())
   name          String
+  // Zona horaria IANA del negocio: se usa para validar el horario de atención
+  // (antes se usaba la que mandaba el cliente, que podía falsearla)
+  timezone      String         @default("Europe/Madrid")
   owner         User           @relation("BusinessOwner", fields: [ownerId], references: [id])
   ownerId       String
   services      Service[]

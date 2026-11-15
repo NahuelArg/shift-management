@@ -6,6 +6,10 @@ import { redirectByRole } from '../context/AuthContext';
 import Input from '../components/ui/Input';
 import Button from '../components/ui/Button';
 
+// Panel de acceso rápido con cuentas demo. Se controla con VITE_DEMO_MODE para
+// poder apagarlo en un entorno con datos reales sin tocar código.
+const DEMO_MODE = import.meta.env.VITE_DEMO_MODE === 'true';
+
 const TEST_CREDENTIALS = [
   { email: 'admin1@test.com',    role: 'Admin' },
   { email: 'employee1@test.com', role: 'Empleado' },
@@ -73,6 +77,7 @@ const Login: React.FC = () => {
         </div>
 
         {/* Test credentials */}
+        {DEMO_MODE && (
         <div>
           <p className="text-xs font-semibold text-sidebar-text uppercase tracking-wider mb-3">
             Acceso rápido (demo)
@@ -97,6 +102,7 @@ const Login: React.FC = () => {
             Contraseña: password123
           </p>
         </div>
+        )}
       </div>
 
       {/* Right white panel */}
@@ -161,6 +167,7 @@ const Login: React.FC = () => {
             </form>
 
             {/* Mobile test credentials */}
+            {DEMO_MODE && (
             <div className="lg:hidden mt-6 pt-5 border-t border-border">
               <p className="text-xs font-semibold text-content-3 uppercase tracking-wider mb-3">
                 Acceso rápido (demo)
@@ -184,6 +191,7 @@ const Login: React.FC = () => {
               </div>
               <p className="text-xs text-content-3 mt-2.5">Contraseña: password123</p>
             </div>
+            )}
           </div>
 
           <p className="text-center text-sm text-content-3 mt-6">

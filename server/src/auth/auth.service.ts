@@ -99,6 +99,7 @@ export class AuthService {
 
     const user = await this.prisma.user.findUnique({
       where: { email },
+      omit: { password: false }, // único lugar que necesita el hash
     });
 
     if (!user) {

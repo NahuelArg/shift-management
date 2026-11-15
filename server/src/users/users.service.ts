@@ -76,9 +76,14 @@ export class UsersService {
         },
       })
     if (!userToUpdate) throw new NotFoundException('user not found')
+    const { password, ...rest } = updateUserDto;
     return await this.prisma.user.update({
       where: { id },
-      data: updateUserDto,
+      data: {
+        ...rest,
+        // Antes la contraseña se guardaba en texto plano
+        ...(password ? { password: await bcrypt.hash(password, 10) } : {}),
+      },
     });
   }
 

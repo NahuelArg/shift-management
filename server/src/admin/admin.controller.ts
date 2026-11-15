@@ -8,6 +8,7 @@ import {
   Put,
   Param,
   NotFoundException,
+  ForbiddenException,
   Query,
   Delete,
 } from '@nestjs/common';
@@ -156,7 +157,12 @@ export class AdminController {
   async updateUser(
     @Param('id') id: string,
     @Body() updateAdminDto: UpdateAdminDto,
+    @Request() req: RequestWithUser,
   ): Promise<UserDto> {
+    // Un admin solo puede editar su propio perfil (antes podía editar a cualquier usuario)
+    if (id !== req.user.userId) {
+      throw new ForbiddenException('You can only update your own profile');
+    }
     const admin = await this.adminService.updateAdmin(id, updateAdminDto);
     if (!admin) {
       throw new NotFoundException('Admin not found');
