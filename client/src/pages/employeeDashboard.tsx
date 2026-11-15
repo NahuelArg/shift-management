@@ -237,7 +237,7 @@ const EmployeeDashboard: React.FC = () => {
           {todayBookings.length > 0 && (
             <div className="p-4 rounded-xl bg-success/5 border border-success/20">
               <div className="flex items-center justify-between mb-2">
-                <p className="text-xs font-bold text-success uppercase tracking-wider">
+                <p className="text-xs font-bold text-success-text uppercase tracking-wider">
                   Turnos de hoy — {todayBookings.length}
                 </p>
                 <span className="text-xs text-content-3">
@@ -254,8 +254,8 @@ const EmployeeDashboard: React.FC = () => {
                 {todayBookings.map(b => (
                   <div key={b.id} className="flex flex-wrap sm:flex-nowrap items-center gap-3 p-3 bg-surface rounded-xl border border-border shadow-sm">
                     <div className="bg-success-light rounded-lg px-2 py-2 text-center shrink-0 min-w-[48px]">
-                      <p className="text-xs font-bold text-success font-mono leading-none">{b.startTime}</p>
-                      <p className="text-xs text-success opacity-70 mt-0.5">{b.service.durationMin}m</p>
+                      <p className="text-xs font-bold text-success-text font-mono leading-none">{b.startTime}</p>
+                      <p className="text-xs text-success-text mt-0.5">{b.service.durationMin}m</p>
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-semibold text-content truncate">{b.user?.name ?? 'Walk-in'}</p>

@@ -12,12 +12,13 @@ const sizeClasses = {
   lg: 'w-12 h-12 text-base',
 };
 
+// Siempre fondo -light + texto -text: las iniciales son texto y necesitan ≥ 4.5:1
 const colorClasses = [
-  'bg-primary-light text-primary',
-  'bg-success-light text-success',
-  'bg-warning-light text-warning',
-  'bg-info-light text-info',
-  'bg-danger-light text-danger',
+  'bg-primary-light text-primary-text',
+  'bg-success-light text-success-text',
+  'bg-warning-light text-warning-text',
+  'bg-info-light text-info-text',
+  'bg-danger-light text-danger-text',
 ];
 
 const initials = (name: string) =>
@@ -41,6 +42,7 @@ const Avatar: React.FC<AvatarProps> = ({ name, size = 'md', className = '' }) =>
       select-none shrink-0
       ${colorFromName(name)} ${sizeClasses[size]} ${className}
     `}
+    role="img"
     aria-label={name}
   >
     {initials(name)}

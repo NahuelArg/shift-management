@@ -30,11 +30,11 @@ const DAY_L    = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','S�
 
 // Employee color palette using design system tokens
 const PALETTE = [
-  { chip: 'bg-success-light border-success text-success-text',  av: 'bg-success-light text-success',  dot: 'bg-success'  },
-  { chip: 'bg-info-light border-info text-info-text',           av: 'bg-info-light text-info',         dot: 'bg-info'     },
-  { chip: 'bg-primary-light border-primary text-primary',       av: 'bg-primary-light text-primary',   dot: 'bg-primary'  },
-  { chip: 'bg-warning-light border-warning text-warning-text',  av: 'bg-warning-light text-warning',   dot: 'bg-warning'  },
-  { chip: 'bg-danger-light border-danger text-danger-text',     av: 'bg-danger-light text-danger',     dot: 'bg-danger'   },
+  { chip: 'bg-success-light border-success text-success-text',  av: 'bg-success-light text-success-text',  dot: 'bg-success'  },
+  { chip: 'bg-info-light border-info text-info-text',           av: 'bg-info-light text-info-text',         dot: 'bg-info'     },
+  { chip: 'bg-primary-light border-primary text-primary-text',       av: 'bg-primary-light text-primary-text',   dot: 'bg-primary'  },
+  { chip: 'bg-warning-light border-warning text-warning-text',  av: 'bg-warning-light text-warning-text',   dot: 'bg-warning'  },
+  { chip: 'bg-danger-light border-danger text-danger-text',     av: 'bg-danger-light text-danger-text',     dot: 'bg-danger'   },
 ];
 
 const initials = (name: string) =>
@@ -86,6 +86,7 @@ const MiniCalendar: React.FC<{ selected: Date; onSelect: (d: Date) => void }> = 
       <div className="flex items-center justify-between mb-3">
         <button
           onClick={() => setMonth(m => new Date(m.getFullYear(), m.getMonth() - 1, 1))}
+          aria-label="Mes anterior"
           className="w-6 h-6 flex items-center justify-center rounded hover:bg-surface-3 text-content-3 transition-colors"
         >
           <svg width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
@@ -97,6 +98,7 @@ const MiniCalendar: React.FC<{ selected: Date; onSelect: (d: Date) => void }> = 
         </span>
         <button
           onClick={() => setMonth(m => new Date(m.getFullYear(), m.getMonth() + 1, 1))}
+          aria-label="Mes siguiente"
           className="w-6 h-6 flex items-center justify-center rounded hover:bg-surface-3 text-content-3 transition-colors"
         >
           <svg width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
@@ -123,7 +125,7 @@ const MiniCalendar: React.FC<{ selected: Date; onSelect: (d: Date) => void }> = 
               onClick={() => onSelect(d)}
               className={`h-7 w-7 mx-auto rounded-full text-xs flex items-center justify-center transition-colors font-medium
                 ${isSel  ? 'bg-primary text-content-inverse' :
-                  isTod  ? 'bg-primary-light text-primary' :
+                  isTod  ? 'bg-primary-light text-primary-text' :
                            'hover:bg-surface-3 text-content-2'}`}
             >
               {day}
@@ -416,6 +418,7 @@ const Calendar: React.FC = () => {
             <div className="flex items-center gap-1">
               <button
                 onClick={() => navigate(-1)}
+                aria-label="Anterior"
                 className="w-7 h-7 flex items-center justify-center rounded-lg border border-border hover:bg-surface-3 text-content-3 transition-colors"
               >
                 <svg width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
@@ -424,6 +427,7 @@ const Calendar: React.FC = () => {
               </button>
               <button
                 onClick={() => navigate(1)}
+                aria-label="Siguiente"
                 className="w-7 h-7 flex items-center justify-center rounded-lg border border-border hover:bg-surface-3 text-content-3 transition-colors"
               >
                 <svg width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
@@ -450,7 +454,7 @@ const Calendar: React.FC = () => {
               <span className="text-xs font-medium text-content-3 bg-surface-2 px-2.5 py-1 rounded-full border border-border">
                 {bookings.length} Total
               </span>
-              <span className="text-xs font-medium text-primary bg-primary-light px-2.5 py-1 rounded-full">
+              <span className="text-xs font-medium text-primary-text bg-primary-light px-2.5 py-1 rounded-full">
                 {todayBkgs.length} Hoy
               </span>
               <span className="text-xs font-medium text-warning-text bg-warning-light px-2.5 py-1 rounded-full">
@@ -459,6 +463,7 @@ const Calendar: React.FC = () => {
             </div>
             <button
               onClick={() => setShowNewBkg(true)}
+              aria-label="Nuevo turno"
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-content-inverse text-xs font-semibold hover:opacity-90 transition-opacity shrink-0"
             >
               <svg width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
@@ -560,7 +565,7 @@ const Calendar: React.FC = () => {
                                   {new Date(b.date).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })}
                                   {' '}{b.service?.name}
                                 </div>
-                                <div className="truncate opacity-75">{b.user?.name ?? 'Walk-in'}</div>
+                                <div className="truncate font-normal">{b.user?.name ?? 'Walk-in'}</div>
                               </button>
                             ))}
                           </div>
@@ -643,7 +648,7 @@ const Calendar: React.FC = () => {
                               onClick={() => setSelectedBkg(b)}
                             >
                               <div className="truncate font-semibold">{b.service?.name ?? '—'}</div>
-                              <div className="truncate opacity-75">{b.user?.name ?? '—'}</div>
+                              <div className="truncate font-normal">{b.user?.name ?? '—'}</div>
                             </button>
                           );
                         })}
@@ -718,7 +723,7 @@ const Calendar: React.FC = () => {
                   <button className="w-full py-2 rounded-lg bg-primary text-content-inverse text-sm font-semibold hover:opacity-90 transition-opacity">
                     Marcar completado
                   </button>
-                  <button className="w-full py-2 rounded-lg border border-border text-danger text-sm font-semibold hover:bg-danger-light transition-colors">
+                  <button className="w-full py-2 rounded-lg border border-border text-danger-text text-sm font-semibold hover:bg-danger-light transition-colors">
                     Cancelar turno
                   </button>
                 </div>

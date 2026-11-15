@@ -93,7 +93,7 @@ const Login: React.FC = () => {
               </button>
             ))}
           </div>
-          <p className="text-xs text-sidebar-text mt-2.5 opacity-60">
+          <p className="text-xs text-sidebar-text mt-2.5">
             Contraseña: password123
           </p>
         </div>
@@ -182,7 +182,7 @@ const Login: React.FC = () => {
                   </button>
                 ))}
               </div>
-              <p className="text-xs text-content-3 mt-2.5 opacity-60">Contraseña: password123</p>
+              <p className="text-xs text-content-3 mt-2.5">Contraseña: password123</p>
             </div>
           </div>
 

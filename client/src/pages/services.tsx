@@ -144,6 +144,7 @@ const Services: React.FC = () => {
       {(businesses.length > 1 || services.length > 0) && (
         <div className="flex items-center gap-3 flex-wrap">
           <select
+            aria-label="Filtrar por negocio"
             value={filterBusiness}
             onChange={e => setFilterBusiness(e.target.value)}
             className="px-3 py-1.5 rounded-lg border border-border bg-surface text-sm text-content focus:border-primary outline-none"
@@ -198,8 +199,8 @@ const Services: React.FC = () => {
                     <td className="px-4 py-3 text-content-3 max-w-xs truncate hidden lg:table-cell">{s.description || '—'}</td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-1">
-                        <button onClick={() => openEdit(s)} aria-label="Editar servicio" className="w-9 h-9 sm:w-7 sm:h-7 flex items-center justify-center rounded-md border border-border text-content-3 hover:border-primary hover:text-primary hover:bg-primary-light transition-colors" title="Editar"><EditIcon /></button>
-                        <button onClick={() => handleDelete(s.id)} aria-label="Eliminar servicio" className="w-9 h-9 sm:w-7 sm:h-7 flex items-center justify-center rounded-md border border-border text-content-3 hover:border-danger hover:text-danger hover:bg-danger-light transition-colors" title="Eliminar"><TrashIcon /></button>
+                        <button onClick={() => openEdit(s)} aria-label="Editar servicio" className="w-9 h-9 sm:w-7 sm:h-7 flex items-center justify-center rounded-md border border-border text-content-3 hover:border-primary hover:text-primary-text hover:bg-primary-light transition-colors" title="Editar"><EditIcon /></button>
+                        <button onClick={() => handleDelete(s.id)} aria-label="Eliminar servicio" className="w-9 h-9 sm:w-7 sm:h-7 flex items-center justify-center rounded-md border border-border text-content-3 hover:border-danger hover:text-danger-text hover:bg-danger-light transition-colors" title="Eliminar"><TrashIcon /></button>
                       </div>
                     </td>
                   </tr>

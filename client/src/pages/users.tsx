@@ -148,10 +148,10 @@ const Users: React.FC = () => {
       {/* Stats row */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
-          { label: 'Total empleados', value: totalEmployees, color: 'bg-primary-light text-primary' },
-          { label: 'En esta página',  value: employees.length, color: 'bg-info-light text-info' },
+          { label: 'Total empleados', value: totalEmployees, color: 'bg-primary-light text-primary-text' },
+          { label: 'En esta página',  value: employees.length, color: 'bg-info-light text-info-text' },
           { label: 'Página',          value: `${page} / ${totalPages}`, color: 'bg-surface-3 text-content-2' },
-          { label: 'Negocio activo',  value: businesses.find(b => b.id === selectedBusiness)?.name ?? '—', color: 'bg-success-light text-success' },
+          { label: 'Negocio activo',  value: businesses.find(b => b.id === selectedBusiness)?.name ?? '—', color: 'bg-success-light text-success-text' },
         ].map(s => (
           <div key={s.label} className="bg-surface rounded-xl border border-border shadow-card p-4">
             <p className="text-xs text-content-3 uppercase tracking-wider mb-1">{s.label}</p>
@@ -231,8 +231,8 @@ const Users: React.FC = () => {
                     <td className="px-4 py-3 text-content-3 hidden lg:table-cell">{new Date(emp.createdAt).toLocaleDateString('es-AR')}</td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
-                        <button onClick={() => setEditEmployee({ ...emp, password: '' })} aria-label="Editar empleado" className="w-9 h-9 sm:w-7 sm:h-7 flex items-center justify-center rounded-md border border-border text-content-3 hover:border-primary hover:text-primary hover:bg-primary-light transition-colors"><EditIcon /></button>
-                        <button onClick={() => handleDelete(emp.id)} aria-label="Eliminar empleado" className="w-9 h-9 sm:w-7 sm:h-7 flex items-center justify-center rounded-md border border-border text-content-3 hover:border-danger hover:text-danger hover:bg-danger-light transition-colors"><TrashIcon /></button>
+                        <button onClick={() => setEditEmployee({ ...emp, password: '' })} aria-label="Editar empleado" className="w-9 h-9 sm:w-7 sm:h-7 flex items-center justify-center rounded-md border border-border text-content-3 hover:border-primary hover:text-primary-text hover:bg-primary-light transition-colors"><EditIcon /></button>
+                        <button onClick={() => handleDelete(emp.id)} aria-label="Eliminar empleado" className="w-9 h-9 sm:w-7 sm:h-7 flex items-center justify-center rounded-md border border-border text-content-3 hover:border-danger hover:text-danger-text hover:bg-danger-light transition-colors"><TrashIcon /></button>
                       </div>
                     </td>
                   </tr>
@@ -253,7 +253,7 @@ const Users: React.FC = () => {
             </div>
             <div className="flex-1 overflow-y-auto p-4 space-y-3">
               <div className="text-center py-2">
-                <div className="w-12 h-12 rounded-full bg-info-light flex items-center justify-center text-info font-bold text-lg mx-auto mb-2">
+                <div className="w-12 h-12 rounded-full bg-info-light flex items-center justify-center text-info-text font-bold text-lg mx-auto mb-2">
                   {selectedEmployee.name.split(' ').slice(0, 2).map(w => w[0]).join('').toUpperCase()}
                 </div>
                 <p className="font-bold text-content text-sm">{selectedEmployee.name}</p>
@@ -279,7 +279,7 @@ const Users: React.FC = () => {
                 </button>
                 <button
                   onClick={() => { handleDelete(selectedEmployee.id); setSelectedEmployee(null); }}
-                  className="w-full py-2 rounded-lg border border-border text-sm font-medium text-danger hover:bg-danger-light transition-colors"
+                  className="w-full py-2 rounded-lg border border-border text-sm font-medium text-danger-text hover:bg-danger-light transition-colors"
                 >
                   Eliminar
                 </button>

@@ -204,7 +204,7 @@ const Schedules: React.FC = () => {
                   <tr key={s.id} className="hover:bg-surface-2 transition-colors">
                     <td className={`px-4 py-3 text-content-2 ${multiBusiness ? 'hidden sm:table-cell' : 'hidden'}`}>{getBusinessName(s.businessId)}</td>
                     <td className="px-4 py-3">
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary-light text-primary">
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary-light text-primary-text">
                         {DAYS[s.dayOfWeek]}
                       </span>
                       {multiBusiness && (
@@ -217,7 +217,7 @@ const Schedules: React.FC = () => {
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
                         <button onClick={() => openEdit(s)} aria-label="Editar horario" className="w-9 h-9 sm:w-7 sm:h-7 flex items-center justify-center rounded-md text-content-2 hover:bg-surface-3 transition-colors"><EditIcon /></button>
-                        <button onClick={() => handleDelete(s.id)} aria-label="Eliminar horario" className="w-9 h-9 sm:w-7 sm:h-7 flex items-center justify-center rounded-md text-danger hover:bg-danger-light transition-colors"><TrashIcon /></button>
+                        <button onClick={() => handleDelete(s.id)} aria-label="Eliminar horario" className="w-9 h-9 sm:w-7 sm:h-7 flex items-center justify-center rounded-md text-danger-text hover:bg-danger-light transition-colors"><TrashIcon /></button>
                       </div>
                     </td>
                   </tr>
@@ -246,12 +246,12 @@ const Schedules: React.FC = () => {
             const [h2, m2] = formData.to.split(':').map(Number);
             const mins = (h2 * 60 + m2) - (h1 * 60 + m1);
             if (mins <= 0) return (
-              <p className="text-xs text-danger bg-danger-light px-3 py-2 rounded-lg">
+              <p className="text-xs text-danger-text bg-danger-light px-3 py-2 rounded-lg">
                 La hora de cierre debe ser posterior a la de apertura
               </p>
             );
             return (
-              <p className="text-xs text-primary bg-primary-light px-3 py-2 rounded-lg font-medium">
+              <p className="text-xs text-primary-text bg-primary-light px-3 py-2 rounded-lg font-medium">
                 Duración: {Math.floor(mins / 60)}h {mins % 60 > 0 ? `${mins % 60}m` : ''}
               </p>
             );

@@ -10,13 +10,15 @@ interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
 
 const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
   ({ label, error, hint, wrapperClassName = '', className = '', id, children, ...props }, ref) => {
-    const selectId = id ?? (label ? label.toLowerCase().replace(/\s+/g, '-') : undefined);
+    const autoId = React.useId();
+    const selectId = id ?? autoId;
+    const describedBy = error ? `${selectId}-error` : hint ? `${selectId}-hint` : undefined;
     return (
       <div className={`flex flex-col gap-1.5 ${wrapperClassName}`}>
         {label && (
           <label htmlFor={selectId} className="text-sm font-medium text-content-2">
             {label}
-            {props.required && <span className="text-danger ml-0.5">*</span>}
+            {props.required && <span className="text-danger-text ml-0.5">*</span>}
           </label>
         )}
         <div className="relative">
@@ -28,10 +30,11 @@ const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
               transition-colors duration-150
               focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary
               disabled:opacity-50 disabled:cursor-not-allowed
-              ${error ? 'border-danger' : 'border-border hover:border-border-strong'}
+              ${error ? 'border-danger' : 'border-border-strong hover:border-content-3'}
               ${className}
             `}
             aria-invalid={error ? 'true' : undefined}
+            aria-describedby={describedBy}
             {...props}
           >
             {children}
@@ -42,8 +45,8 @@ const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
             </svg>
           </span>
         </div>
-        {error && <p className="text-xs text-danger-text">{error}</p>}
-        {hint && !error && <p className="text-xs text-content-3">{hint}</p>}
+        {error && <p id={`${selectId}-error`} className="text-xs text-danger-text">{error}</p>}
+        {hint && !error && <p id={`${selectId}-hint`} className="text-xs text-content-3">{hint}</p>}
       </div>
     );
   }

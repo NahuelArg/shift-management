@@ -1,4 +1,4 @@
-import React, { createContext, useCallback, useContext, useRef, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 
 type ToastVariant = 'success' | 'error' | 'warning' | 'info';
@@ -48,11 +48,26 @@ const variantClasses: Record<ToastVariant, string> = {
 export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [toasts, setToasts] = useState<ToastItem[]>([]);
   const counter = useRef(0);
+  // Guardamos los temporizadores para cancelarlos si el provider se desmonta
+  // (si no, el setTimeout sigue vivo y llama a setState sobre un componente muerto).
+  const timers = useRef(new Set<ReturnType<typeof setTimeout>>());
+
+  useEffect(() => {
+    const pending = timers.current;
+    return () => {
+      pending.forEach(clearTimeout);
+      pending.clear();
+    };
+  }, []);
 
   const toast = useCallback((message: string, variant: ToastVariant = 'info') => {
     const id = ++counter.current;
     setToasts(prev => [...prev, { id, message, variant }]);
-    setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 4000);
+    const timer = setTimeout(() => {
+      timers.current.delete(timer);
+      setToasts(prev => prev.filter(t => t.id !== id));
+    }, 4000);
+    timers.current.add(timer);
   }, []);
 
   return (
@@ -68,7 +83,7 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
                 shadow-toast animate-toast-in text-sm font-medium max-w-sm
                 ${variantClasses[t.variant]}
               `}
-              role="alert"
+              role={t.variant === 'error' ? 'alert' : 'status'}
             >
               <span className="shrink-0">{icons[t.variant]}</span>
               <span className="flex-1">{t.message}</span>

@@ -182,7 +182,7 @@ const BusinessPage: React.FC = () => {
                     : 'hover:bg-surface-2 border-l-2 border-transparent'}`}
               >
                 <div className="w-9 h-9 rounded-xl bg-info-light flex items-center justify-center shrink-0">
-                  <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.75" viewBox="0 0 24 24" className="text-info"><path strokeLinecap="round" strokeLinejoin="round" d="M3 21h18M3 7l9-4 9 4M4 7v14M20 7v14M9 21V9m0 0h6m-6 0v12m6-12v12"/></svg>
+                  <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.75" viewBox="0 0 24 24" className="text-info-text"><path strokeLinecap="round" strokeLinejoin="round" d="M3 21h18M3 7l9-4 9 4M4 7v14M20 7v14M9 21V9m0 0h6m-6 0v12m6-12v12"/></svg>
                 </div>
                 <div className="min-w-0">
                   <p className="text-sm font-semibold text-content truncate">{b.name}</p>
@@ -209,7 +209,7 @@ const BusinessPage: React.FC = () => {
             <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 bg-surface rounded-xl shadow-card border border-border p-4 sm:p-5">
               <div className="flex items-center gap-3 sm:gap-4 min-w-0">
                 <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-info-light border border-info/20 flex items-center justify-center shrink-0">
-                  <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="1.75" viewBox="0 0 24 24" className="text-info"><path strokeLinecap="round" strokeLinejoin="round" d="M3 21h18M3 7l9-4 9 4M4 7v14M20 7v14M9 21V9m0 0h6m-6 0v12m6-12v12"/></svg>
+                  <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="1.75" viewBox="0 0 24 24" className="text-info-text"><path strokeLinecap="round" strokeLinejoin="round" d="M3 21h18M3 7l9-4 9 4M4 7v14M20 7v14M9 21V9m0 0h6m-6 0v12m6-12v12"/></svg>
                 </div>
                 <div className="min-w-0">
                   <h3 className="text-lg sm:text-xl font-bold text-content break-words">{selectedBusiness.name}</h3>
@@ -221,14 +221,14 @@ const BusinessPage: React.FC = () => {
               <div className="flex items-center gap-2 shrink-0">
                 <button
                   onClick={() => openEdit(selectedBusiness)}
-                  className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-border text-sm font-medium text-content-2 hover:border-info hover:text-info transition-colors"
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-border text-sm font-medium text-content-2 hover:border-info hover:text-info-text transition-colors"
                 >
                   <EditIcon /> Editar
                 </button>
                 <button
                   onClick={() => handleDelete(selectedBusiness.id)}
                   aria-label="Eliminar negocio"
-                  className="w-9 h-9 flex items-center justify-center rounded-lg border border-border text-content-3 hover:border-danger hover:text-danger hover:bg-danger-light transition-colors"
+                  className="w-9 h-9 flex items-center justify-center rounded-lg border border-border text-content-3 hover:border-danger hover:text-danger-text hover:bg-danger-light transition-colors"
                 >
                   <TrashIcon />
                 </button>
@@ -266,7 +266,7 @@ const BusinessPage: React.FC = () => {
                         <p className="font-medium text-content text-sm break-words">{s.name}</p>
                         <p className="text-xs text-content-3 font-mono">{s.durationMin} min · ${s.price?.toLocaleString('es-AR')}</p>
                       </div>
-                      <button onClick={() => handleDeleteService(s.id)} aria-label="Eliminar servicio" className="w-9 h-9 sm:w-7 sm:h-7 shrink-0 flex items-center justify-center rounded-md border border-border text-content-3 hover:border-danger hover:text-danger hover:bg-danger-light transition-colors"><TrashIcon /></button>
+                      <button onClick={() => handleDeleteService(s.id)} aria-label="Eliminar servicio" className="w-9 h-9 sm:w-7 sm:h-7 shrink-0 flex items-center justify-center rounded-md border border-border text-content-3 hover:border-danger hover:text-danger-text hover:bg-danger-light transition-colors"><TrashIcon /></button>
                     </div>
                   ))}
                 </div>

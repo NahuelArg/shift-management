@@ -10,13 +10,16 @@ interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
 
 const Input = React.forwardRef<HTMLInputElement, InputProps>(
   ({ label, error, hint, leftIcon, wrapperClassName = '', className = '', id, ...props }, ref) => {
-    const inputId = id ?? (label ? label.toLowerCase().replace(/\s+/g, '-') : undefined);
+    // useId genera un id único y estable (sin colisiones entre dos campos con la misma etiqueta)
+    const autoId = React.useId();
+    const inputId = id ?? autoId;
+    const describedBy = error ? `${inputId}-error` : hint ? `${inputId}-hint` : undefined;
     return (
       <div className={`flex flex-col gap-1.5 ${wrapperClassName}`}>
         {label && (
           <label htmlFor={inputId} className="text-sm font-medium text-content-2">
             {label}
-            {props.required && <span className="text-danger ml-0.5">*</span>}
+            {props.required && <span className="text-danger-text ml-0.5">*</span>}
           </label>
         )}
         <div className="relative">
@@ -34,12 +37,12 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
               transition-colors duration-150
               focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary
               disabled:opacity-50 disabled:cursor-not-allowed
-              ${error ? 'border-danger focus:ring-danger/30 focus:border-danger' : 'border-border hover:border-border-strong'}
+              ${error ? 'border-danger focus:ring-danger/30 focus:border-danger' : 'border-border-strong hover:border-content-3'}
               ${leftIcon ? 'pl-9' : ''}
               ${className}
             `}
             aria-invalid={error ? 'true' : undefined}
-            aria-describedby={error ? `${inputId}-error` : hint ? `${inputId}-hint` : undefined}
+            aria-describedby={describedBy}
             {...props}
           />
         </div>

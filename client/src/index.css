@@ -15,29 +15,23 @@
     width: 100%;
   }
 
+  /* Colores tomados de tailwind.config.js con theme(): una sola fuente de verdad */
   body {
-    font-family: 'DM Sans', ui-sans-serif, system-ui, sans-serif;
-    background-color: oklch(0.96 0.004 262);
-    color: oklch(0.18 0.01 262);
+    font-family: theme('fontFamily.sans');
+    background-color: theme('colors.surface.2');
+    color: theme('colors.content.DEFAULT');
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
 
-  @media (max-width: 768px) {
-  .calendar-page .page-body {
-    padding: 0.5rem;
-    padding-bottom: 5.5rem;
-  }
-}
-
   :focus-visible {
-    outline: 2px solid oklch(0.56 0.20 262);
+    outline: 2px solid theme('colors.primary.DEFAULT');
     outline-offset: 2px;
     border-radius: 4px;
   }
 
   ::selection {
-    background: oklch(0.56 0.20 262 / 0.2);
+    background: color-mix(in oklch, theme('colors.primary.DEFAULT') 20%, transparent);
   }
 
   ::-webkit-scrollbar {
@@ -48,11 +42,11 @@
     background: transparent;
   }
   ::-webkit-scrollbar-thumb {
-    background: oklch(0.78 0.010 262);
+    background: theme('colors.border.strong');
     border-radius: 9999px;
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: oklch(0.62 0.01 262);
+    background: theme('colors.content.3');
   }
 }
 
@@ -80,6 +74,12 @@
   @media (max-width: 768px) {
     .page-body {
       padding: 1rem;
+      padding-bottom: 5.5rem;
+    }
+
+    /* El calendario necesita más ancho útil en mobile */
+    .calendar-page .page-body {
+      padding: 0.5rem;
       padding-bottom: 5.5rem;
     }
   }

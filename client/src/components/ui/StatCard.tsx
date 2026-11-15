@@ -11,11 +11,11 @@ interface StatCardProps {
 }
 
 const accentMap = {
-  primary: 'bg-primary-light text-primary',
-  success: 'bg-success-light text-success',
-  warning: 'bg-warning-light text-warning',
-  danger:  'bg-danger-light  text-danger',
-  info:    'bg-info-light    text-info',
+  primary: 'bg-primary-light text-primary-text',
+  success: 'bg-success-light text-success-text',
+  warning: 'bg-warning-light text-warning-text',
+  danger:  'bg-danger-light  text-danger-text',
+  info:    'bg-info-light    text-info-text',
 };
 
 const StatCard: React.FC<StatCardProps> = ({
@@ -36,7 +36,7 @@ const StatCard: React.FC<StatCardProps> = ({
       <p className="text-lg min-[375px]:text-xl sm:text-2xl font-bold text-content leading-tight break-words">{value}</p>
       {subtitle && <p className="text-xs text-content-3 mt-0.5">{subtitle}</p>}
       {trend && (
-        <p className={`text-xs mt-1 font-medium ${trend.value >= 0 ? 'text-success' : 'text-danger'}`}>
+        <p className={`text-xs mt-1 font-medium ${trend.value >= 0 ? 'text-success-text' : 'text-danger-text'}`}>
           {trend.value >= 0 ? '↑' : '↓'} {Math.abs(trend.value)}% {trend.label}
         </p>
       )}

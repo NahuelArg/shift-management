@@ -25,10 +25,14 @@ const sizeClasses: Record<ButtonSize, string> = {
 };
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ variant = 'primary', size = 'md', loading, leftIcon, rightIcon, className = '', children, disabled, ...props }, ref) => (
+  // type="button" por defecto: el default del HTML es "submit", y un botón
+  // "Cancelar" dentro de un <form> terminaría enviando el formulario.
+  ({ variant = 'primary', size = 'md', loading, leftIcon, rightIcon, className = '', children, disabled, type = 'button', ...props }, ref) => (
     <button
       ref={ref}
+      type={type}
       disabled={disabled || loading}
+      aria-busy={loading || undefined}
       className={`
         inline-flex items-center justify-center font-medium transition-colors duration-150
         focus-visible:outline-none focus-visible:ring-2

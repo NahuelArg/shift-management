@@ -1,3 +1,12 @@
+/*
+ * Tokens base (single source of truth). Se definen una vez y se reutilizan,
+ * así un cambio de color no deja copias desincronizadas.
+ * Contrastes verificados con WCAG 2.1 AA (texto normal ≥ 4.5:1, UI ≥ 3:1):
+ *   blanco / primary 5.17 · content-3 / surface 5.80 · border-strong / surface 3.25
+ */
+const PRIMARY = 'oklch(0.50 0.20 145)';
+const WHITE   = 'oklch(0.99 0 0)';
+
 /** @type {import('tailwindcss').Config} */
 export default {
   content: [
@@ -8,32 +17,33 @@ export default {
     extend: {
       colors: {
         primary: {
-          DEFAULT: 'oklch(0.56 0.20 145)',
-          hover:   'oklch(0.50 0.20 145)',
+          DEFAULT: PRIMARY,
+          hover:   'oklch(0.44 0.20 145)',
           light:   'oklch(0.92 0.06 145)',
           muted:   'oklch(0.75 0.12 145)',
+          text:    'oklch(0.40 0.14 145)', // texto/iconos sobre primary-light (6.9:1)
         },
         surface: {
-          DEFAULT: 'oklch(0.99 0 0)',
+          DEFAULT: WHITE,
           2:       'oklch(0.96 0.004 145)',
           3:       'oklch(0.92 0.006 145)',
         },
         sidebar: {
           DEFAULT: 'oklch(0.14 0.025 145)',
           hover:   'oklch(0.20 0.025 145)',
-          active:  'oklch(0.56 0.20 145)',
+          active:  PRIMARY,
           text:    'oklch(0.75 0.02 145)',
-          'text-active': 'oklch(0.99 0 0)',
+          'text-active': WHITE,
         },
         border: {
           DEFAULT: 'oklch(0.88 0.006 145)',
-          strong:  'oklch(0.78 0.010 145)',
+          strong:  'oklch(0.64 0.010 145)', // borde de controles (≥ 3:1)
         },
         content: {
           DEFAULT: 'oklch(0.18 0.01 145)',
           2:       'oklch(0.42 0.01 145)',
-          3:       'oklch(0.62 0.01 145)',
-          inverse: 'oklch(0.99 0 0)',
+          3:       'oklch(0.50 0.01 145)', // hints/placeholders (≥ 4.5:1 sobre surface y surface-2)
+          inverse: WHITE,
         },
         success: {
           DEFAULT: 'oklch(0.60 0.18 145)',
