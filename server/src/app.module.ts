@@ -10,6 +10,7 @@ import { BookingsModule } from './bookings/bookings.module';
 import { SchedulesModule } from './schedules/schedules.module';
 import { AuthModule } from './auth/auth.module';
 import { AdminModule } from './admin/admin.module';
+import { HealthModule } from './health/health.module';
 import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 
@@ -25,6 +26,7 @@ import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
     SchedulesModule,
     AuthModule,
     AdminModule,
+    HealthModule,
   ],
   controllers: [AppController],
   providers: [AppService, {
