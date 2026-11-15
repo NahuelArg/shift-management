@@ -107,6 +107,7 @@ const Schedules: React.FC = () => {
     }
   };
 
+  const multiBusiness = businesses.length > 1;
   const getBusinessName = (id: string) => businesses.find(b => b.id === id)?.name ?? '—';
 
   return (
@@ -184,26 +185,39 @@ const Schedules: React.FC = () => {
             <table className="w-full text-sm">
               <thead className="bg-surface-2 border-b border-border">
                 <tr>
-                  {['Negocio', 'Día', 'Apertura', 'Cierre', 'Acciones'].map(h => (
-                    <th key={h} className="px-4 py-3 text-left text-xs font-medium text-content-3 uppercase tracking-wider">{h}</th>
+                  {/* Columnas adaptativas: en mobile se combinan apertura/cierre y el negocio
+                      va debajo del día; la columna Negocio solo existe si hay más de uno */}
+                  {[
+                    { h: 'Negocio',  cls: multiBusiness ? 'hidden sm:table-cell' : 'hidden' },
+                    { h: 'Día',      cls: '' },
+                    { h: 'Horario',  cls: 'sm:hidden' },
+                    { h: 'Apertura', cls: 'hidden sm:table-cell' },
+                    { h: 'Cierre',   cls: 'hidden sm:table-cell' },
+                    { h: 'Acciones', cls: '' },
+                  ].map(({ h, cls }) => (
+                    <th key={h} className={`px-4 py-3 text-left text-xs font-medium text-content-3 uppercase tracking-wider ${cls}`}>{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
                 {schedules.map(s => (
                   <tr key={s.id} className="hover:bg-surface-2 transition-colors">
-                    <td className="px-4 py-3 text-content-2">{getBusinessName(s.businessId)}</td>
+                    <td className={`px-4 py-3 text-content-2 ${multiBusiness ? 'hidden sm:table-cell' : 'hidden'}`}>{getBusinessName(s.businessId)}</td>
                     <td className="px-4 py-3">
                       <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary-light text-primary">
                         {DAYS[s.dayOfWeek]}
                       </span>
+                      {multiBusiness && (
+                        <span className="block sm:hidden text-xs text-content-3 mt-1 break-words">{getBusinessName(s.businessId)}</span>
+                      )}
                     </td>
-                    <td className="px-4 py-3 font-mono text-content">{s.from}</td>
-                    <td className="px-4 py-3 font-mono text-content">{s.to}</td>
+                    <td className="px-4 py-3 font-mono text-content whitespace-nowrap sm:hidden">{s.from} – {s.to}</td>
+                    <td className="px-4 py-3 font-mono text-content hidden sm:table-cell">{s.from}</td>
+                    <td className="px-4 py-3 font-mono text-content hidden sm:table-cell">{s.to}</td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
-                        <button onClick={() => openEdit(s)} className="w-7 h-7 flex items-center justify-center rounded-md text-content-2 hover:bg-surface-3 transition-colors"><EditIcon /></button>
-                        <button onClick={() => handleDelete(s.id)} className="w-7 h-7 flex items-center justify-center rounded-md text-danger hover:bg-danger-light transition-colors"><TrashIcon /></button>
+                        <button onClick={() => openEdit(s)} aria-label="Editar horario" className="w-9 h-9 sm:w-7 sm:h-7 flex items-center justify-center rounded-md text-content-2 hover:bg-surface-3 transition-colors"><EditIcon /></button>
+                        <button onClick={() => handleDelete(s.id)} aria-label="Eliminar horario" className="w-9 h-9 sm:w-7 sm:h-7 flex items-center justify-center rounded-md text-danger hover:bg-danger-light transition-colors"><TrashIcon /></button>
                       </div>
                     </td>
                   </tr>

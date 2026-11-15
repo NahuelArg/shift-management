@@ -84,3 +84,17 @@
     }
   }
 }
+
+/*
+ * iOS Safari hace zoom automático al enfocar un campo con font-size < 16px.
+ * En pantallas táctiles chicas forzamos 16px en los campos de formulario.
+ * Va fuera de @layer y con !important a propósito: tiene que ganarle a
+ * utilidades como `text-sm` que se aplican en cada componente.
+ */
+@media (max-width: 767px) {
+  input:not([type='checkbox']):not([type='radio']):not([type='range']),
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}

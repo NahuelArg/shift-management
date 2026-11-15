@@ -89,9 +89,15 @@ export const serviceService = {
     return response.data;
   },
 
+  /**
+   * GET /services devuelve los servicios agrupados por negocio:
+   *   [{ name: 'Mi negocio', services: [ ...Service ] }]
+   * La UI trabaja con una lista plana, así que la aplanamos acá (adapter),
+   * para que ningún componente dependa de la forma de la respuesta.
+   */
   async getAll(): Promise<Service[]> {
-    const response = await apiClient.get('/services');
-    return response.data;
+    const response = await apiClient.get<{ name: string; services: Service[] }[]>('/services');
+    return (response.data ?? []).flatMap(b => b.services ?? []);
   },
 
   async create(data: {

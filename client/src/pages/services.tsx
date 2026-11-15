@@ -114,7 +114,7 @@ const Services: React.FC = () => {
 
   const getBusinessName = (id: string) => businesses.find(b => b.id === id)?.name ?? '—';
 
-  const avgPrice    = services.length ? Math.round(services.reduce((s, sv) => s + sv.price, 0) / services.length) : 0;
+  const avgPrice    = services.length ? Math.round(services.reduce((s, sv) => s + (sv.price ?? 0), 0) / services.length) : 0;
   const avgDuration = services.length ? Math.round(services.reduce((s, sv) => s + sv.durationMin, 0) / services.length) : 0;
   const bizCount    = new Set(services.map(sv => sv.businessId)).size;
 
@@ -169,23 +169,37 @@ const Services: React.FC = () => {
             <table className="w-full text-sm">
               <thead className="bg-surface-2 border-b border-border">
                 <tr>
-                  {['Nombre', 'Negocio', 'Duración', 'Precio', 'Descripción', 'Acciones'].map(h => (
-                    <th key={h} className="px-4 py-3 text-left text-xs font-medium text-content-3 uppercase tracking-wider">{h}</th>
+                  {/* En mobile: Nombre (con negocio y duración debajo), Precio y Acciones */}
+                  {[
+                    { h: 'Nombre',      cls: '' },
+                    { h: 'Negocio',     cls: 'hidden md:table-cell' },
+                    { h: 'Duración',    cls: 'hidden sm:table-cell' },
+                    { h: 'Precio',      cls: '' },
+                    { h: 'Descripción', cls: 'hidden lg:table-cell' },
+                    { h: 'Acciones',    cls: '' },
+                  ].map(({ h, cls }) => (
+                    <th key={h} className={`px-4 py-3 text-left text-xs font-medium text-content-3 uppercase tracking-wider ${cls}`}>{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
                 {filteredServices.map(s => (
                   <tr key={s.id} className="hover:bg-surface-2 transition-colors">
-                    <td className="px-4 py-3 font-medium text-content">{s.name}</td>
-                    <td className="px-4 py-3 text-content-2">{getBusinessName(s.businessId)}</td>
-                    <td className="px-4 py-3 text-content-2 font-mono">{s.durationMin} min</td>
-                    <td className="px-4 py-3 font-medium text-content font-mono">${s.price != null ? s.price.toLocaleString('es-AR') : '—'}</td>
-                    <td className="px-4 py-3 text-content-3 max-w-xs truncate">{s.description || '—'}</td>
+                    <td className="px-4 py-3 font-medium text-content">
+                      <span className="break-words">{s.name}</span>
+                      <span className="block md:hidden text-xs font-normal text-content-3 mt-0.5 break-words">
+                        {getBusinessName(s.businessId)}
+                        <span className="sm:hidden"> · {s.durationMin} min</span>
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-content-2 hidden md:table-cell">{getBusinessName(s.businessId)}</td>
+                    <td className="px-4 py-3 text-content-2 font-mono whitespace-nowrap hidden sm:table-cell">{s.durationMin} min</td>
+                    <td className="px-4 py-3 font-medium text-content font-mono whitespace-nowrap">${s.price != null ? s.price.toLocaleString('es-AR') : '—'}</td>
+                    <td className="px-4 py-3 text-content-3 max-w-xs truncate hidden lg:table-cell">{s.description || '—'}</td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-1">
-                        <button onClick={() => openEdit(s)} className="w-7 h-7 flex items-center justify-center rounded-md border border-border text-content-3 hover:border-primary hover:text-primary hover:bg-primary-light transition-colors" title="Editar"><EditIcon /></button>
-                        <button onClick={() => handleDelete(s.id)} className="w-7 h-7 flex items-center justify-center rounded-md border border-border text-content-3 hover:border-danger hover:text-danger hover:bg-danger-light transition-colors" title="Eliminar"><TrashIcon /></button>
+                        <button onClick={() => openEdit(s)} aria-label="Editar servicio" className="w-9 h-9 sm:w-7 sm:h-7 flex items-center justify-center rounded-md border border-border text-content-3 hover:border-primary hover:text-primary hover:bg-primary-light transition-colors" title="Editar"><EditIcon /></button>
+                        <button onClick={() => handleDelete(s.id)} aria-label="Eliminar servicio" className="w-9 h-9 sm:w-7 sm:h-7 flex items-center justify-center rounded-md border border-border text-content-3 hover:border-danger hover:text-danger hover:bg-danger-light transition-colors" title="Eliminar"><TrashIcon /></button>
                       </div>
                     </td>
                   </tr>
