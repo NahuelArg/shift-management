@@ -687,21 +687,21 @@ await check(
     return codes.join(' ');
   },
 );
-await check(
-  'un CF-Connecting-IP falso tampoco evita el límite (Cloudflare lo sobrescribe)',
-  async () => {
-    if (SKIP_RATE_LIMIT) return 'omitida (SKIP_RATE_LIMIT=true)';
-    // La IP ya está bloqueada por la prueba anterior: todo debe ser 429
-    const codes = await failedLogins(5, (i) => ({
-      'CF-Connecting-IP': `198.51.100.${i}`,
-    }));
-    expect(
-      codes.every((c) => c === 429),
-      `una cabecera falsa saltó el bloqueo (${codes.join(' ')})`,
-    );
-    return codes.join(' ');
-  },
-);
+await check('un CF-Connecting-IP falso tampoco evita el límite', async () => {
+  if (SKIP_RATE_LIMIT) return 'omitida (SKIP_RATE_LIMIT=true)';
+  // La IP ya está bloqueada por la prueba anterior. Vale 429 (llegó a la app
+  // y sigue bloqueada) o 403 (Cloudflare rechaza que el cliente mande esa
+  // cabecera y la petición ni llega). Un 401 significaría que la app se
+  // creyó la IP falsa y la contó como un cliente nuevo.
+  const codes = await failedLogins(5, (i) => ({
+    'CF-Connecting-IP': `198.51.100.${i}`,
+  }));
+  expect(
+    codes.every((c) => c === 429 || c === 403),
+    `una cabecera falsa saltó el bloqueo (${codes.join(' ')})`,
+  );
+  return codes.join(' ');
+});
 
 // ── Resumen ───────────────────────────────────────────────────────────────
 const failed = results.filter((r) => !r.ok);
