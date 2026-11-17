@@ -647,45 +647,61 @@ for (const id of cleanup) {
 describe(
   '11. Rate limiting (último: bloquea el login ~1 minuto desde esta IP)',
 );
-await check(
-  'una IP falsa en X-Forwarded-For no evita el límite (TRUST_PROXY_HOPS bien configurado)',
-  async () => {
-    if (SKIP_RATE_LIMIT) return 'omitida (SKIP_RATE_LIMIT=true)';
-    // Cada intento declara una IP distinta. Si la app le creyera a esa cabecera,
-    // cada intento contaría como un cliente nuevo y nunca habría 429.
-    const codes = [];
-    for (let i = 1; i <= 12; i++) {
-      codes.push(
-        (
-          await api('POST', '/auth/login', {
-            body: { email: 'fuerza@bruta.com', password: 'xxxxxxx' },
-            headers: { 'X-Forwarded-For': `198.51.100.${i}` },
-          })
-        ).status,
-      );
-    }
-    expect(
-      codes.includes(429),
-      `nunca devolvió 429: la app usa la IP que manda el cliente (${codes.join(' ')})`,
-    );
-    return codes.join(' ');
-  },
-);
-await check('429 tras 10 intentos de login por minuto', async () => {
-  if (SKIP_RATE_LIMIT) return 'omitida (SKIP_RATE_LIMIT=true)';
+// Intentos de login fallidos, con cabeceras extra opcionales.
+async function failedLogins(n, headersFor = () => ({})) {
   const codes = [];
-  for (let i = 0; i < 12; i++) {
+  for (let i = 1; i <= n; i++) {
     codes.push(
       (
         await api('POST', '/auth/login', {
           body: { email: 'fuerza@bruta.com', password: 'xxxxxxx' },
+          headers: headersFor(i),
         })
       ).status,
     );
   }
-  expect(codes.includes(429), `nunca devolvió 429: ${codes.join(' ')}`);
-  return codes.join(' ');
-});
+  return codes;
+}
+
+await check(
+  'una IP falsa en X-Forwarded-For no evita el límite (la app cuenta por la IP real)',
+  async () => {
+    if (SKIP_RATE_LIMIT) return 'omitida (SKIP_RATE_LIMIT=true)';
+    // Cada intento declara una IP distinta. Límite: 10/min (las secciones
+    // anteriores ya hicieron logins, así que el 429 puede llegar antes).
+    const codes = await failedLogins(12, (i) => ({
+      'X-Forwarded-For': `198.51.100.${i}`,
+    }));
+    const first429 = codes.indexOf(429);
+    // Sin 429: la app se cree la IP falsa (o cuenta por IPs de proxy que rotan)
+    expect(
+      first429 !== -1 && first429 <= 10,
+      `no bloqueó a tiempo: la app no cuenta por la IP real (${codes.join(' ')})`,
+    );
+    // Un 401 después de un 429: el contador cambia de "cliente" entre peticiones
+    // (p. ej. cuenta por la IP del edge de Cloudflare, que rota)
+    expect(
+      codes.slice(first429).every((c) => c === 429),
+      `volvió a dejar pasar tras un 429: la IP con la que cuenta cambia entre peticiones (${codes.join(' ')})`,
+    );
+    return codes.join(' ');
+  },
+);
+await check(
+  'un CF-Connecting-IP falso tampoco evita el límite (Cloudflare lo sobrescribe)',
+  async () => {
+    if (SKIP_RATE_LIMIT) return 'omitida (SKIP_RATE_LIMIT=true)';
+    // La IP ya está bloqueada por la prueba anterior: todo debe ser 429
+    const codes = await failedLogins(5, (i) => ({
+      'CF-Connecting-IP': `198.51.100.${i}`,
+    }));
+    expect(
+      codes.every((c) => c === 429),
+      `una cabecera falsa saltó el bloqueo (${codes.join(' ')})`,
+    );
+    return codes.join(' ');
+  },
+);
 
 // ── Resumen ───────────────────────────────────────────────────────────────
 const failed = results.filter((r) => !r.ok);

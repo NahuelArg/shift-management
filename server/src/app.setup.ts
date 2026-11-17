@@ -8,9 +8,11 @@ import helmet from 'helmet';
  */
 export function configureApp(app: NestExpressApplication): void {
   // Render (y la mayoría de PaaS) pone un proxy delante de la app. Sin esto,
-  // req.ip es la IP del proxy y el rate limiting comparte un único cupo entre
-  // todos los usuarios. TRUST_PROXY_HOPS = cantidad de proxies de confianza
-  // (por defecto 1). No usar `true`: tomaría la IP que el cliente quiera mandar.
+  // req.ip es la IP del proxy. TRUST_PROXY_HOPS = cantidad de proxies de
+  // confianza (por defecto 1). No usar `true`: tomaría la IP que el cliente
+  // quiera mandar. Ojo: en Render la IP real NO está en X-Forwarded-For (solo
+  // la del edge de Cloudflare), así que el rate limit usa CLIENT_IP_HEADER
+  // (ver common/client-ip-throttler.guard.ts).
   app.set('trust proxy', Number(process.env.TRUST_PROXY_HOPS ?? 1));
 
   app.use(helmet());
