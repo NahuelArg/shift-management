@@ -13,7 +13,8 @@ import { AdminModule } from './admin/admin.module';
 import { HealthModule } from './health/health.module';
 import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { DecimalToNumberInterceptor } from './common/decimal-to-number.interceptor';
-import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import { ThrottlerModule } from '@nestjs/throttler';
+import { ClientIpThrottlerGuard } from './common/client-ip-throttler.guard';
 
 @Module({
   imports: [
@@ -32,7 +33,8 @@ import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
   controllers: [AppController],
   providers: [
     AppService,
-    { provide: APP_GUARD, useClass: ThrottlerGuard },
+    // Rate limit por IP real del cliente (CLIENT_IP_HEADER, ver el guard)
+    { provide: APP_GUARD, useClass: ClientIpThrottlerGuard },
     // Dinero: DECIMAL en la base, number en las respuestas JSON
     { provide: APP_INTERCEPTOR, useClass: DecimalToNumberInterceptor },
   ],

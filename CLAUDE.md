@@ -115,7 +115,7 @@ Key entities and relationships:
 - Swagger UI at `http://localhost:3000/api` — disabled when `NODE_ENV=production` unless `SWAGGER_ENABLED=true`
 - Global `ValidationPipe` with `whitelist: true`, `forbidNonWhitelisted: true`, `transform: true`. `@Body()` must be a DTO class: intersection types (`Dto & {...}`) emit `Object` metadata and silently disable validation
 - CORS restricted to `ALLOWED_ORIGINS` (comma-separated)
-- `trust proxy` = `TRUST_PROXY_HOPS` (default 1) so rate limiting sees the real client IP behind Render's proxy
+- `trust proxy` = `TRUST_PROXY_HOPS` (default 1). On Render the real client IP is NOT in `X-Forwarded-For` (only the rotating Cloudflare edge IP), so the global `ClientIpThrottlerGuard` keys the rate limit on `CLIENT_IP_HEADER` (`cf-connecting-ip` in production) and falls back to `req.ip`. Only set `CLIENT_IP_HEADER` when a trusted proxy always overwrites that header
 
 ## Client Architecture
 
@@ -162,6 +162,7 @@ NODE_ENV=development
 ALLOWED_ORIGINS=http://localhost:5173
 SWAGGER_ENABLED=      # optional, enables /api in production
 TRUST_PROXY_HOPS=1    # optional, proxies in front of the app
+CLIENT_IP_HEADER=     # optional, cf-connecting-ip on Render (rate limit key)
 ```
 
 ### Client (`client/.env`)
