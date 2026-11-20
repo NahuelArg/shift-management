@@ -1,5 +1,10 @@
-# Mantiene despiertos el servidor de Render (free tier se duerme tras ~15 min sin tráfico)
-# y la base de datos de Supabase (free tier se pausa tras 7 días sin actividad).
+# RESPALDO del keep-alive. El ping principal lo hace UptimeRobot cada 5 min contra
+# /health/db: los `schedule` de GitHub no son fiables (en la práctica se ejecutaban
+# cada 6-9 h en vez de cada 10 min), así que Render free (se duerme tras ~15 min)
+# no se mantenía despierto solo con esto.
+#
+# Este workflow queda cada hora como red de seguridad, sobre todo para Supabase
+# (free tier se pausa tras 7 días sin actividad) si UptimeRobot dejara de funcionar.
 #
 # Configuración: en GitHub → Settings → Secrets and variables → Actions,
 # crear el secret HEALTHCHECK_URL con la URL pública, ej:
@@ -8,8 +13,8 @@ name: Keep alive
 
 on:
   schedule:
-    # Cada 10 minutos (GitHub puede retrasar ejecuciones algunos minutos en horas pico)
-    - cron: '*/10 * * * *'
+    # Cada hora (GitHub puede retrasar o saltarse ejecuciones programadas)
+    - cron: '23 * * * *'
   workflow_dispatch: # Permite ejecutarlo manualmente desde la pestaña Actions
 
 jobs:
